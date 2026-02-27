@@ -50,6 +50,13 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 
+[layer_names/3d_physics]
+
+layer_1="snake_head"
+layer_2="snake_body"
+layer_3="walls"
+layer_4="fruits"
+
 [rendering]
 
 renderer/rendering_method="forward_plus"

@@ -17,6 +17,7 @@ var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
 var distance_traveled: float = 0.0
 @export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
+@export var dazed_scene: PackedScene = preload("res://scenes/effects/dazed_particles.tscn")
 # ----------------------------------------
 
 # Using an enum or constants for directions to prevent 180-degree turns
@@ -164,21 +165,11 @@ func die() -> void:
 	cam.make_current()
 	
 	# Dazed effect for the head
-	var stars = Node3D.new()
-	add_child.call_deferred(stars)
+	var dazed = dazed_scene.instantiate()
+	add_child.call_deferred(dazed)
 	(func(): 
-		stars.position = Vector3(0, 1.5, 0)
-		# Simple spinning stars using Sprite3D (placeholders for particles)
-		for i in range(2):
-			var star = Sprite3D.new()
-			star.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			star.modulate = Color(1, 1, 0, 1) # Yellow
-			stars.add_child(star)
-			star.position = Vector3(cos(i * PI), 0, sin(i * PI)) * 0.5
-		
-		var tween = create_tween()
-		tween.set_loops()
-		tween.tween_property(stars, "rotation:y", PI * 2.0, 1.0).as_relative()
+		dazed.position = Vector3(0, 1.5, 0)
+		dazed.emitting = true
 	).call_deferred()
 	
 	print("Snake Died!")
