@@ -1,7 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://c7k8v8l8j8x7y"]
+[gd_scene load_steps=12 format=3 uid="uid://c7k8v8l8j8x7y"]
 
-[ext_resource type="Script" path="res://scripts/core/Spinner.gd" id="1_spinner"]
+[ext_resource type="PackedScene" uid="uid://d3k8v8l8j8x7y" path="res://scenes/main/SnakeHead.tscn" id="1_snake_head"]
 [ext_resource type="PackedScene" uid="uid://b8y8x8l8j8x7y" path="res://scenes/ui/hud.tscn" id="2_hud"]
+[ext_resource type="Script" path="res://scripts/core/CameraManager.gd" id="3_camera_manager"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -22,7 +23,7 @@ glow_enabled = true
 code = "shader_type spatial;
 
 void fragment() {
-    vec2 pos = floor(UV * 20.0);
+    vec2 pos = floor(UV * 30.0);
     float checker = mod(pos.x + pos.y, 2.0);
     ALBEDO = mix(vec3(0.2), vec3(0.4), checker);
 }"
@@ -33,7 +34,17 @@ shader = SubResource("Shader_checkered")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_1"]
 material = SubResource("ShaderMaterial_checkered")
-size = Vector2(20, 20)
+size = Vector2(30, 30)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(1, 0, 1, 1)
+emission_enabled = true
+emission = Color(1, 0, 1, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(1, 2, 30)
 
 [node name="Main" type="Node3D"]
 
@@ -44,18 +55,47 @@ environment = SubResource("Environment_1")
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
 shadow_enabled = true
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.894427, 0.447214, 0, -0.447214, 0.894427, 0, 5, 10)
-
 [node name="Floor" type="StaticBody3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
 mesh = SubResource("PlaneMesh_1")
 
-[node name="Spinner" type="CSGPolygon3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 1, 0)
-polygon = PackedVector2Array(1, 0, 0.3236, 0.2351, 0.309, 0.9511, -0.1236, 0.3804, -0.809, 0.5878, -0.4, 0, -0.809, -0.5878, -0.1236, -0.3804, 0.309, -0.9511, 0.3236, -0.2351)
-depth = 0.5
-script = ExtResource("1_spinner")
+[node name="SnakeHead" parent="." instance=ExtResource("1_snake_head")]
+
+[node name="OverheadCam" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 30, 0)
+
+[node name="CameraManager" type="Node" parent="." node_paths=PackedStringArray("rider_cam", "overhead_cam")]
+script = ExtResource("3_camera_manager")
+rider_cam = NodePath("../SnakeHead/RiderCam")
+overhead_cam = NodePath("../OverheadCam")
 
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="Wall_North" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -15.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_North"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("BoxMesh_wall")
+
+[node name="Wall_South" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 15.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_South"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("BoxMesh_wall")
+
+[node name="Wall_West" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_West"]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="Wall_East" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.5, 1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_East"]
+mesh = SubResource("BoxMesh_wall")

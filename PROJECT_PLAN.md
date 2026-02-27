@@ -8,13 +8,13 @@
 ## Milestone 1: The Foundation (Inputs & Dual-Camera)
 *Core dependencies: Input mapping must exist before movement/toggling can be implemented.*
 
-1. **Input Map Configuration:**
+1. [x] **Input Map Configuration:**
     - Define actions in `project.godot`: `turn_left`, `turn_right`, `toggle_camera` (C), `restart` (R), and `quit` (Esc).
-2. **Dual-Camera System:**
+2. [x] **Dual-Camera System:**
     - **Rider Cam (Default):** A `Camera3D` attached to the Snake Head. Positioned slightly behind/above the eyes for a "rollercoaster" feel. Implement a slight "tilt/lean" effect when turning to enhance the sense of speed.
-    - **Overhead Cam:** A fixed `Camera3D` in the main scene providing a bird's-eye view.
-    - **Toggle Logic:** Use `make_current()` to switch between cameras. The switch should feel snappy but can be smoothed later with tweens.
-3. **Initial Environment:**
+3. [x] **Toggle Logic:**
+    - Use `make_current()` to switch between cameras. The switch should feel snappy but can be smoothed later with tweens.
+4. [x] **Initial Environment:**
     - Replace the temporary floor with a larger board.
     - **Glowing Walls:** Thick, colorful barriers using a `StandardMaterial3D` with high `emission_energy` to define the play area. Use `WorldBoundaryShape3D` or `BoxShape3D` for collision.
 

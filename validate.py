@@ -19,7 +19,9 @@ def verify_files():
         "project.godot",
         "scenes/main/main.tscn",
         "scenes/ui/hud.tscn",
-        "scripts/core/Spinner.gd",
+        "scenes/main/SnakeHead.tscn",
+        "scripts/core/SnakeHead.gd",
+        "scripts/core/CameraManager.gd",
         "scripts/utils/FPSCounter.gd"
     ]
     all_exist = True
@@ -28,6 +30,27 @@ def verify_files():
             print(f"Error: Missing file: {file_path}", file=sys.stderr)
             all_exist = False
     return all_exist
+
+def check_input_map():
+    """Checks for required input map actions in project.godot."""
+    required_actions = [
+        "turn_left",
+        "turn_right",
+        "toggle_camera",
+        "restart",
+        "quit"
+    ]
+    try:
+        project_file = Path("project.godot").read_text()
+        all_found = True
+        for action in required_actions:
+            if f"{action}=" not in project_file:
+                print(f"Error: Missing Input Map action: {action}", file=sys.stderr)
+                all_found = False
+        return all_found
+    except Exception as e:
+        print(f"Error reading project.godot: {e}", file=sys.stderr)
+        return False
 
 def run_headless_parse():
     """Runs Godot in headless mode to catch syntax errors."""
@@ -42,6 +65,7 @@ def run_headless_parse():
         )
         if result.returncode != 0:
             print("Error: Godot headless validation failed.", file=sys.stderr)
+            # Filter out known non-fatal warnings if necessary, but here we report all stderr
             print(result.stderr, file=sys.stderr)
             return False
         return True
@@ -57,6 +81,9 @@ def main():
         sys.exit(1)
     
     if not verify_files():
+        sys.exit(1)
+    
+    if not check_input_map():
         sys.exit(1)
     
     if not run_headless_parse():
