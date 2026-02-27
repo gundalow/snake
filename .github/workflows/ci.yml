@@ -18,8 +18,15 @@ jobs:
       - name: Setup Environment
         run: |
           apt-get update
-          apt-get install -y python3
+          apt-get install -y python3 wget unzip
           mkdir -v -p build
+
+          # Install Godot Export Templates
+          mkdir -v -p ~/.local/share/godot/export_templates/4.3.stable
+          wget https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip Godot_v4.3-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/4.3.stable/
+          rm -rf templates Godot_v4.3-stable_export_templates.tpz
 
       - name: Run Validation Script
         run: python3 validate.py

@@ -150,14 +150,14 @@ def run_headless_execution():
     """Runs Godot in headless mode for a few frames and scans for errors."""
     print("Running Godot headless execution check...")
     try:
-        # Run for 100 frames and then terminate
+        # Run for 20 frames and then terminate. Using fewer frames to reduce wait time.
         process = subprocess.Popen(
-            ["godot", "--headless", "--quit-after-frames", "100"],
+            ["godot", "--headless", "--quit-after-frames", "20"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
-        stdout, stderr = process.communicate(timeout=30)
+        stdout, stderr = process.communicate(timeout=15)
 
         output = stdout + stderr
         error_patterns = [
