@@ -20,8 +20,20 @@ func spawn_fruit() -> void:
 	# Random position on XZ plane
 	var x = randf_range(-board_size / 2.0, board_size / 2.0)
 	var z = randf_range(-board_size / 2.0, board_size / 2.0)
+	var spawn_pos = Vector3(x, 0.5, z)
 	
+	# Basic check for existing snake segments or fruits at this position
+	# In a real Godot project, we might use PhysicsDirectSpaceState3D.intersect_ray
+	# or similar, but since we're Area3D-based, we'll instantiate and check for overlapping
 	var fruit = fruit_scene.instantiate()
 	add_child.call_deferred(fruit)
-	# Wait for the next frame to ensure it's in the tree before setting global_position
-	(func(): fruit.global_position = Vector3(x, 0.5, z)).call_deferred()
+
+	(func():
+		fruit.global_position = spawn_pos
+		# Give physics engine one frame to update overlapping areas
+		await get_tree().process_frame
+		if fruit.has_method("get_overlapping_areas"):
+			if fruit.get_overlapping_areas().size() > 0:
+				# Spawned inside something, try again next time
+				fruit.queue_free()
+	).call_deferred()

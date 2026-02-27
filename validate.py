@@ -20,6 +20,7 @@ def verify_files():
         "scenes/main/main.tscn",
         "scenes/ui/hud.tscn",
         "scenes/main/SnakeHead.tscn",
+        "scenes/main/DazedParticles.tscn",
         "scripts/core/SnakeHead.gd",
         "scripts/core/CameraManager.gd",
         "scripts/utils/FPSCounter.gd"
@@ -50,6 +51,26 @@ def check_input_map():
         return all_found
     except Exception as e:
         print(f"Error reading project.godot: {e}", file=sys.stderr)
+        return False
+
+def check_hud_elements():
+    """Checks for required HUD elements in hud.tscn."""
+    required_nodes = [
+        "GameOverPanel",
+        "GameOverLabel",
+        "RestartLabel",
+        "QuitLabel"
+    ]
+    try:
+        hud_file = Path("scenes/ui/hud.tscn").read_text()
+        all_found = True
+        for node in required_nodes:
+            if f'name="{node}"' not in hud_file:
+                print(f"Error: Missing HUD element: {node}", file=sys.stderr)
+                all_found = False
+        return all_found
+    except Exception as e:
+        print(f"Error reading hud.tscn: {e}", file=sys.stderr)
         return False
 
 def run_headless_parse():
@@ -86,6 +107,9 @@ def main():
     if not check_input_map():
         sys.exit(1)
     
+    if not check_hud_elements():
+        sys.exit(1)
+
     if not run_headless_parse():
         sys.exit(1)
         

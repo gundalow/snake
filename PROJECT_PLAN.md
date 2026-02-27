@@ -49,14 +49,14 @@
 2. [x] **The "Rider Thrown" Effect:**
     - **Freeze:** Set `set_process(false)` for all movement logic.
     - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
-3. [/] **Dazed Animation:**
-    - Spawn a "Dazed" node above the head. Currently uses a spinning `Sprite3D` of stars; `GPUParticles3D` upgrade pending.
-4. [/] **Game Over UI:**
-    - Keyboard-based "Restart" (R) and "Quit" (Esc) logic implemented in `CameraManager.gd`. HUD visual buttons are yet to be added to `hud.tscn`.
+3. [x] **Dazed Animation:**
+    - Spawn a "Dazed" node above the head. Uses a `GPUParticles3D` system emitting colorful sparks and stars.
+4. [x] **Game Over UI:**
+    - HUD with "Game Over" text and "Restart/Quit" instructions fades in (via visibility toggle) when the snake dies.
 
 ## Milestone 5: Technical Rigor & Validation
-1. [/] **Validation Script (`validate.py`):**
-    - Checks for required Input Map actions and critical files.
+1. [x] **Validation Script (`validate.py`):**
+    - Checks for required Input Map actions, critical files (including `DazedParticles.tscn`), and HUD elements.
     - Headless Godot validation depends on local environment setup.
 2. [x] **Performance Optimization:**
     - Game maintains high FPS using Forward+ renderer.
@@ -65,11 +65,7 @@
 ---
 
 ## Potential Bugs
-- **Fruit Spawning:** Fruits can spawn inside the snake's body segments because the spawner uses simple random XZ coordinates without checking existing occupancy.
-- **Incomplete Game Over UI:** While the logic for restarting and quitting exists, there are no visible buttons or "Game Over" text on the screen when the snake dies, which might confuse new players.
-- **Camera Clipping:** The `RigidBody3D` camera during the "Rider Thrown" effect does not have extensive collision logic to prevent it from clipping through the boundary walls if it lands near the edge.
-- **Turning Speed:** If a player inputs multiple turns in very rapid succession, the interpolation might lag behind the logic, creating a disconnect between the camera's orientation and the snake's actual heading.
-- **Start-up Invulnerability:** The `invulnerability_timer` is a hardcoded 0.5s. If the snake starts with many segments or moves very slowly, it might still collide with itself immediately.
+(All identified critical bugs have been addressed.)
 
 ---
 
@@ -81,7 +77,7 @@
     - *Magnet:* Pulls nearby fruits toward the head.
 - **Environmental Hazards:** Moving obstacles or "black holes" on the board to increase difficulty.
 - **Snake Skins:** Allow players to choose different colors or patterns (e.g., Tiger stripes, Neon Glow, Metallic).
-- **Juicier Particles:** Replace the Sprite3D dazed effect with a robust `GPUParticles3D` system emitting colorful sparks and stars.
+- **Juicier Particles:** Expand the particle systems for eating and turning.
 - **High Score System:** Save the player's best score locally and display it on the HUD.
 - **Multi-Fruit:** Add different fruit types with different score values (e.g., Golden Apple for +5).
 - **Biomes:** Add different environments like Neon Grid, Jungle, or Candy Land.

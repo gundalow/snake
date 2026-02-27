@@ -1,14 +1,14 @@
 extends Node3D
 
 @export var move_speed: float = 5.0
-@export var turn_interpolation_speed: float = 10.0 # 0.1s target
+@export var turn_interpolation_speed: float = 12.0 # Slightly faster than 0.1s target
 
 var current_direction: Vector3 = Vector3.FORWARD
 var next_direction: Vector3 = Vector3.FORWARD
 var target_rotation_y: float = 0.0
 var camera_tilt: float = 0.0
 var is_alive: bool = true
-var invulnerability_timer: float = 0.5 # Give segments time to spread
+var invulnerability_timer: float = 1.0 # Give segments time to spread
 var score: int = 0
 
 # --- Position History & Body Segments ---
@@ -17,6 +17,7 @@ var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
 var distance_traveled: float = 0.0
 @export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
+@export var dazed_particles_scene: PackedScene = preload("res://scenes/main/DazedParticles.tscn")
 # ----------------------------------------
 
 # Using an enum or constants for directions to prevent 180-degree turns
@@ -129,6 +130,11 @@ func die() -> void:
 	if not is_alive: return
 	is_alive = false
 	
+	# Show Game Over UI
+	var game_over_panel = get_node_or_null("/root/Main/HUD/GameOverPanel")
+	if game_over_panel:
+		game_over_panel.visible = true
+
 	# Rider Thrown Effect
 	var cam = rider_cam
 	var old_transform = cam.global_transform
@@ -164,22 +170,13 @@ func die() -> void:
 	cam.make_current()
 	
 	# Dazed effect for the head
-	var stars = Node3D.new()
-	add_child.call_deferred(stars)
-	(func(): 
-		stars.position = Vector3(0, 1.5, 0)
-		# Simple spinning stars using Sprite3D (placeholders for particles)
-		for i in range(2):
-			var star = Sprite3D.new()
-			star.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			star.modulate = Color(1, 1, 0, 1) # Yellow
-			stars.add_child(star)
-			star.position = Vector3(cos(i * PI), 0, sin(i * PI)) * 0.5
-		
-		var tween = create_tween()
-		tween.set_loops()
-		tween.tween_property(stars, "rotation:y", PI * 2.0, 1.0).as_relative()
-	).call_deferred()
+	if dazed_particles_scene:
+		var p = dazed_particles_scene.instantiate()
+		add_child.call_deferred(p)
+		(func():
+			p.position = Vector3(0, 1.0, 0)
+			p.emitting = true
+		).call_deferred()
 	
 	print("Snake Died!")
 
