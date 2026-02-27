@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://e5k8v8l8j8x7y"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_segment"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_segment"]
+albedo_color = Color(0.2, 0.8, 0.2, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_segment"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[node name="SnakeSegment" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_segment")
+surface_material_override/0 = SubResource("StandardMaterial3D_segment")
+
+[node name="SegmentArea" type="Area3D" parent="." groups=["body"]]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SegmentArea"]
+shape = SubResource("BoxShape_segment")
