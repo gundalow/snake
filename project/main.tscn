@@ -37,6 +37,15 @@ spring_length = 5.0
 [node name="LookAtTarget" type="Node3D" parent="SnakeHead"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
 
+[node name="HUD" type="HUD" parent="."]
+
+[node name="FPSLabel" type="Label" parent="HUD"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 33.0
+text = "FPS: 0"
+
 [node name="Ground" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_1")
 material_override = SubResource("StandardMaterial3D_ground")

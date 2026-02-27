@@ -13,11 +13,13 @@ import (
 func RegisterSnakeTypes() {
 	println("[GDExtension] RegisterSnakeTypes called - Scene level")
 	RegisterClassSnakeHead()
+	RegisterClassHUD()
 }
 
 func UnregisterSnakeTypes() {
 	println("[GDExtension] UnregisterSnakeTypes called")
 	UnregisterClassSnakeHead()
+	UnregisterClassHUD()
 }
 
 //export SnakeInit
