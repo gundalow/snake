@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8y8x8l8j8x7y"]
+
+[ext_resource type="Script" path="res://scripts/utils/FPSCounter.gd" id="1_fps_counter"]
+
+[node name="HUD" type="CanvasLayer"]
+
+[node name="FPSCounter" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 33.0
+text = "FPS: 0"
+script = ExtResource("1_fps_counter")
+
+[node name="ScoreLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -110.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 33.0
+grow_horizontal = 0
+text = "Score: 0"
+horizontal_alignment = 2

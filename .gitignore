@@ -1,0 +1,19 @@
+# Godot-specific ignores
+.godot/
+*.import
+export_presets.godot
+
+# Imported assets
+*.import
+
+# Mono/C# ignores
+.mono/
+bin/
+obj/
+
+# Build artifacts
+build/
+
+# System ignores
+.DS_Store
+Thumbs.db
