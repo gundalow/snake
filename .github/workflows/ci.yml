@@ -15,8 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Build Directory
-        run: mkdir -v -p build
+      - name: Setup Environment
+        run: |
+          apt-get update
+          apt-get install -y python3
+          mkdir -v -p build
 
       - name: Run Validation Script
         run: python3 validate.py
