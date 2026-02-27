@@ -10,3 +10,8 @@ obj/
 *.exe
 *.dll
 *.dylib
+*.h
+
+# Dependency test artifacts
+tools/dependency-test/go_test/libtest.so
+tools/dependency-test/go_test/libtest.h
