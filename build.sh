@@ -15,8 +15,9 @@ echo "Tidying Go modules..."
 go mod tidy
 
 echo "Compiling shared library for Linux x86_64..."
-# Using c-shared mode for GDExtension
-go build -buildmode=c-shared -v -o project/libsnake.so src/snake_head.go src/lib.go
+# Using c-shared mode for GDExtension.
+# Explicitly including all source files in src directory.
+go build -buildmode=c-shared -v -o project/libsnake.so src/*.go
 
 echo "Build successful! Artifact: project/libsnake.so"
 
@@ -25,5 +26,4 @@ echo ""
 echo "=== Running Instructions ==="
 echo "To run the game, use the Godot 4 executable on the 'project' folder:"
 echo "  godot --path project"
-echo "Or if you have godot4:"
-echo "  godot4 --path project"
+echo "Check the console output for [SnakeHead] and [GDExtension] logs."

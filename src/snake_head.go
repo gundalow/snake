@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	. "github.com/godot-go/godot-go/pkg/builtin"
 	. "github.com/godot-go/godot-go/pkg/core"
 	. "github.com/godot-go/godot-go/pkg/gdclassimpl"
@@ -11,6 +13,7 @@ type SnakeHead struct {
 	Speed      float64
 	TurnSpeed  float64
 	LeanAmount float64
+	frame      int
 }
 
 func (s *SnakeHead) GetClassName() string {
@@ -22,13 +25,15 @@ func (s *SnakeHead) GetParentClassName() string {
 }
 
 func (s *SnakeHead) V_Ready() {
-	println("SnakeHead is Ready!")
+	println("SnakeHead is Ready! Initialization started.")
 	s.Speed = 10.0
 	s.TurnSpeed = 3.0
 	s.LeanAmount = 0.2
+	s.frame = 0
 }
 
 func (s *SnakeHead) V_PhysicsProcess(delta float64) {
+	s.frame++
 	input := GetInputSingleton()
 
 	snakeLeft := NewStringNameWithUtf8Chars("snake_left")
@@ -39,6 +44,10 @@ func (s *SnakeHead) V_PhysicsProcess(delta float64) {
 	leftStrength := input.GetActionStrength(snakeLeft, false)
 	rightStrength := input.GetActionStrength(snakeRight, false)
 	turn := float32(leftStrength - rightStrength)
+
+	if s.frame%60 == 0 {
+		fmt.Printf("[SnakeHead] Process: Frame %d, Delta %.4f, Turn %.2f\n", s.frame, delta, turn)
+	}
 
 	// Rotate Head
 	rotation := s.GetRotation()
@@ -52,7 +61,12 @@ func (s *SnakeHead) V_PhysicsProcess(delta float64) {
 	zAxis := basis.MemberGetz()
 	forward := zAxis.Multiply_float(-1.0)
 	velocity := forward.Multiply_float(float32(s.Speed))
+
 	s.SetVelocity(velocity)
+
+	if s.frame%60 == 0 {
+		fmt.Printf("[SnakeHead] Velocity: (%.2f, %.2f, %.2f)\n", velocity.MemberGetx(), velocity.MemberGety(), velocity.MemberGetz())
+	}
 
 	s.MoveAndSlide()
 
@@ -71,6 +85,14 @@ func (s *SnakeHead) V_PhysicsProcess(delta float64) {
 			newLeanZ := currentRot.MemberGetz() + (targetLean-currentRot.MemberGetz())*float32(delta*5.0)
 			newRot := NewVector3WithFloat32Float32Float32(currentRot.MemberGetx(), currentRot.MemberGety(), newLeanZ)
 			springArm.SetRotation(newRot)
+		} else {
+			if s.frame%120 == 0 {
+				println("[SnakeHead] Error: SpringArm3D node found but cast failed.")
+			}
+		}
+	} else {
+		if s.frame%120 == 0 {
+			println("[SnakeHead] Warning: SpringArm3D node not found.")
 		}
 	}
 }
@@ -87,6 +109,7 @@ func RegisterClassSnakeHead() {
 		ClassDBBindMethodVirtual(t, "V_Ready", "_ready", nil, nil)
 		ClassDBBindMethodVirtual(t, "V_PhysicsProcess", "_physics_process", []string{"delta"}, nil)
 	})
+	println("SnakeHead class registration complete.")
 }
 
 func UnregisterClassSnakeHead() {

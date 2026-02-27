@@ -11,27 +11,31 @@ import (
 )
 
 func RegisterSnakeTypes() {
-	println("RegisterSnakeTypes called")
+	println("[GDExtension] RegisterSnakeTypes called - Scene level")
 	RegisterClassSnakeHead()
 }
 
 func UnregisterSnakeTypes() {
-	println("UnregisterSnakeTypes called")
+	println("[GDExtension] UnregisterSnakeTypes called")
 	UnregisterClassSnakeHead()
 }
 
 //export SnakeInit
 func SnakeInit(p_get_proc_address unsafe.Pointer, p_library unsafe.Pointer, r_initialization unsafe.Pointer) bool {
-	println("SnakeInit called")
+	println("[GDExtension] SnakeInit entry point called")
 	util.SetThreadName("snake-pilot")
 	initObj := NewInitObject(
 		(ffi.GDExtensionInterfaceGetProcAddress)(p_get_proc_address),
 		(ffi.GDExtensionClassLibraryPtr)(p_library),
 		(*ffi.GDExtensionInitialization)(r_initialization),
 	)
+
 	initObj.RegisterSceneInitializer(RegisterSnakeTypes)
 	initObj.RegisterSceneTerminator(UnregisterSnakeTypes)
-	return initObj.Init()
+
+	result := initObj.Init()
+	println("[GDExtension] initObj.Init completed with result:", result)
+	return result
 }
 
 func main() {
