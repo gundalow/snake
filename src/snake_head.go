@@ -22,6 +22,7 @@ func (s *SnakeHead) GetParentClassName() string {
 }
 
 func (s *SnakeHead) V_Ready() {
+	println("SnakeHead is Ready!")
 	s.Speed = 10.0
 	s.TurnSpeed = 3.0
 	s.LeanAmount = 0.2
@@ -65,10 +66,8 @@ func (s *SnakeHead) V_PhysicsProcess(delta float64) {
 	if node != nil {
 		springArm, ok := ObjectCastTo(node, "SpringArm3D").(SpringArm3D)
 		if ok {
-			// Programmatically rotate the SpringArm3D on its Z-axis based on turning
 			targetLean := turn * float32(s.LeanAmount)
 			currentRot := springArm.GetRotation()
-			// We interpolate the Z rotation for smoothness
 			newLeanZ := currentRot.MemberGetz() + (targetLean-currentRot.MemberGetz())*float32(delta*5.0)
 			newRot := NewVector3WithFloat32Float32Float32(currentRot.MemberGetx(), currentRot.MemberGety(), newLeanZ)
 			springArm.SetRotation(newRot)
@@ -83,6 +82,7 @@ func NewSnakeHeadFromOwnerObject(owner *GodotObject) GDClass {
 }
 
 func RegisterClassSnakeHead() {
+	println("Registering SnakeHead class...")
 	ClassDBRegisterClass(NewSnakeHeadFromOwnerObject, nil, nil, func(t *SnakeHead) {
 		ClassDBBindMethodVirtual(t, "V_Ready", "_ready", nil, nil)
 		ClassDBBindMethodVirtual(t, "V_PhysicsProcess", "_physics_process", []string{"delta"}, nil)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://c6j2k2k2k2k2k"]
+[gd_scene load_steps=8 format=3 uid="uid://c6j2k2k2k2k2k"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
 size = Vector3(1, 1, 1)
@@ -6,8 +6,22 @@ size = Vector3(1, 1, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
 size = Vector3(1, 1, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.1, 0.1, 0.1, 1)
+metallic = 0.5
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_1"]
 size = Vector2(100, 100)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_checker"]
+albedo_color = Color(0.3, 0.3, 0.3, 1)
+uv1_scale = Vector3(50, 50, 50)
+uv1_triplanar = true
+# We use a built-in noise to simulate checkers or just grid
+# Alternatively, use distinct colors for ground
+albedo_texture = SubResource("PlaceholderTexture2D_1")
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_1"]
 
 [node name="Main" type="Node3D"]
 
@@ -19,6 +33,7 @@ shape = SubResource("BoxShape3D_1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SnakeHead"]
 mesh = SubResource("BoxMesh_1")
+material_override = SubResource("StandardMaterial3D_1")
 
 [node name="SpringArm3D" type="SpringArm3D" parent="SnakeHead"]
 transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 1, 0)
@@ -31,6 +46,24 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
 
 [node name="Ground" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_1")
+
+[node name="Grid" type="Node3D" parent="."]
+
+[node name="Box1" type="MeshInstance3D" parent="Grid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 5)
+mesh = SubResource("BoxMesh_1")
+
+[node name="Box2" type="MeshInstance3D" parent="Grid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 5)
+mesh = SubResource("BoxMesh_1")
+
+[node name="Box3" type="MeshInstance3D" parent="Grid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, -5)
+mesh = SubResource("BoxMesh_1")
+
+[node name="Box4" type="MeshInstance3D" parent="Grid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -5)
+mesh = SubResource("BoxMesh_1")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 10, 0)

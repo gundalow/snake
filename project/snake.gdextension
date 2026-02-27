@@ -3,5 +3,6 @@ entry_symbol = "SnakeInit"
 compatibility_minimum = "4.3"
 
 [libraries]
+linux.x86_64 = "res://libsnake.so"
 linux.debug.x86_64 = "res://libsnake.so"
 linux.release.x86_64 = "res://libsnake.so"
