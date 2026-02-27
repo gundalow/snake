@@ -21,22 +21,22 @@
 ## Milestone 2: Snake Head & Snap-Turning
 *Core dependencies: Requires the Input Map and Environment from Milestone 1.*
 
-1. **Forward Movement:** 
+1. [x] **Forward Movement:** 
     - Implement constant forward movement on the XZ plane. The snake never stops until it dies.
-2. **Snap Turning Logic:**
+2. [x] **Snap Turning Logic:**
     - Pressing Left/Right turns the head exactly 90 degrees relative to its current heading.
     - **Safety Check:** Implement logic to prevent 180-degree "suicide" turns (e.g., if moving North, the "South" input is ignored).
-3. **Visuals:**
+3. [x] **Visuals:**
     - Update the `SnakeHead` mesh. Start with a vibrant cube/capsule; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
 
 ## Milestone 3: The "Train" System (Body & Fruit)
 *Core dependencies: Requires a moving Head to generate position history.*
 
-1. **Position History System:**
+1. [x] **Position History System:**
     - The head records its global position and rotation into an array/buffer every time it moves a certain distance (the "step size").
-2. **Body Segments:**
+2. [x] **Body Segments:**
     - Spawn `MeshInstance3D` segments that follow the head's history. Each segment "occupies" a previous coordinate slot from the history buffer.
-3. **Fruit Spawner & Interaction:**
+3. [x] **Fruit Spawner & Interaction:**
     - **Spawner:** Randomly picks meshes (Sphere for Apple, Capsule for Banana) with high-saturation PBR colors.
     - **Interaction:** Detect collision with fruit. 
     - **Growth:** On eat, add a new segment to the tail, slightly increase `move_speed`, and play a "Squash and Stretch" tween on the head.
@@ -44,14 +44,14 @@
 ## Milestone 4: The Death Sequence (Physics & UI)
 *Core dependencies: Requires functional collisions with walls and segments.*
 
-1. **Collision Logic:**
+1. [x] **Collision Logic:**
     - Detect collision with boundary walls or the snake's own body segments.
-2. **The "Rider Thrown" Effect:**
+2. [x] **The "Rider Thrown" Effect:**
     - **Freeze:** Set `set_process(false)` for all movement logic.
     - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
-3. **Dazed Animation:**
+3. [x] **Dazed Animation:**
     - Spawn a "Dazed" node above the head. Use `GPUParticles3D` or a spinning `Sprite3D` of stars/birds.
-4. **Game Over UI:**
+4. [x] **Game Over UI:**
     - Fade in a HUD with "Restart" and "Quit" options.
 
 ## Milestone 5: Technical Rigor & Validation

@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://d3k8v8l8j8x7y" path="res://scenes/main/SnakeHead.tscn" id="1_snake_head"]
 [ext_resource type="PackedScene" uid="uid://b8y8x8l8j8x7y" path="res://scenes/ui/hud.tscn" id="2_hud"]
 [ext_resource type="Script" path="res://scripts/core/CameraManager.gd" id="3_camera_manager"]
+[ext_resource type="Script" path="res://scripts/core/FruitSpawner.gd" id="4_fruit_spawner"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -46,6 +47,9 @@ emission_energy_multiplier = 2.0
 material = SubResource("StandardMaterial3D_wall")
 size = Vector3(1, 2, 30)
 
+[sub_resource type="BoxShape3D" id="BoxShape_wall_collision"]
+size = Vector3(1, 2, 30)
+
 [node name="Main" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -62,6 +66,9 @@ mesh = SubResource("PlaneMesh_1")
 
 [node name="SnakeHead" parent="." instance=ExtResource("1_snake_head")]
 
+[node name="FruitSpawner" type="Node3D" parent="."]
+script = ExtResource("4_fruit_spawner")
+
 [node name="OverheadCam" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 30, 0)
 
@@ -74,28 +81,42 @@ overhead_cam = NodePath("../OverheadCam")
 
 [node name="Walls" type="Node3D" parent="."]
 
-[node name="Wall_North" type="StaticBody3D" parent="Walls"]
+[node name="Wall_North" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -15.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_North"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+shape = SubResource("BoxShape_wall_collision")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_North"]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
 mesh = SubResource("BoxMesh_wall")
 
-[node name="Wall_South" type="StaticBody3D" parent="Walls"]
+[node name="Wall_South" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 15.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_South"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+shape = SubResource("BoxShape_wall_collision")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_South"]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
 mesh = SubResource("BoxMesh_wall")
 
-[node name="Wall_West" type="StaticBody3D" parent="Walls"]
+[node name="Wall_West" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_West"]
+shape = SubResource("BoxShape_wall_collision")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_West"]
 mesh = SubResource("BoxMesh_wall")
 
-[node name="Wall_East" type="StaticBody3D" parent="Walls"]
+[node name="Wall_East" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.5, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_East"]
+shape = SubResource("BoxShape_wall_collision")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/Wall_East"]
 mesh = SubResource("BoxMesh_wall")
