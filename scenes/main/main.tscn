@@ -1,0 +1,61 @@
+[gd_scene load_steps=10 format=3 uid="uid://c7k8v8l8j8x7y"]
+
+[ext_resource type="Script" path="res://scripts/core/Spinner.gd" id="1_spinner"]
+[ext_resource type="PackedScene" uid="uid://b8y8x8l8j8x7y" path="res://scenes/ui/hud.tscn" id="2_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.385, 0.454, 0.55, 1)
+sky_horizon_color = Color(0.646, 0.656, 0.67, 1)
+ground_bottom_color = Color(0.2, 0.169, 0.133, 1)
+ground_horizon_color = Color(0.646, 0.656, 0.67, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="Shader" id="Shader_checkered"]
+code = "shader_type spatial;
+
+void fragment() {
+    vec2 pos = floor(UV * 20.0);
+    float checker = mod(pos.x + pos.y, 2.0);
+    ALBEDO = mix(vec3(0.2), vec3(0.4), checker);
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_checkered"]
+render_priority = 0
+shader = SubResource("Shader_checkered")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
+material = SubResource("ShaderMaterial_checkered")
+size = Vector2(20, 20)
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.894427, 0.447214, 0, -0.447214, 0.894427, 0, 5, 10)
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("PlaneMesh_1")
+
+[node name="Spinner" type="CSGPolygon3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 1, 0)
+polygon = PackedVector2Array(1, 0, 0.3236, 0.2351, 0.309, 0.9511, -0.1236, 0.3804, -0.809, 0.5878, -0.4, 0, -0.809, -0.5878, -0.1236, -0.3804, 0.309, -0.9511, 0.3236, -0.2351)
+depth = 0.5
+script = ExtResource("1_spinner")
+
+[node name="HUD" parent="." instance=ExtResource("2_hud")]
