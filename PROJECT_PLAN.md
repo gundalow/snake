@@ -49,29 +49,45 @@
 2. [x] **The "Rider Thrown" Effect:**
     - **Freeze:** Set `set_process(false)` for all movement logic.
     - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
-3. [x] **Dazed Animation:**
-    - Spawn a "Dazed" node above the head. Use `GPUParticles3D` or a spinning `Sprite3D` of stars/birds.
-4. [x] **Game Over UI:**
-    - Fade in a HUD with "Restart" and "Quit" options.
+3. [/] **Dazed Animation:**
+    - Spawn a "Dazed" node above the head. Currently uses a spinning `Sprite3D` of stars; `GPUParticles3D` upgrade pending.
+4. [/] **Game Over UI:**
+    - Keyboard-based "Restart" (R) and "Quit" (Esc) logic implemented in `CameraManager.gd`. HUD visual buttons are yet to be added to `hud.tscn`.
 
 ## Milestone 5: Technical Rigor & Validation
-1. **Validation Script (`validate.py`):**
-    - Update to check for:
-        - Required Input Map actions.
-        - Existence of the "Dazed" particle resource.
-        - Proper collision layer/mask setup.
-2. **Performance Optimization:**
-    - Ensure the game maintains 60+ FPS on Fedora's Vulkan Forward+ renderer.
-    - Review `GPUParticles3D` impact on integrated graphics.
+1. [/] **Validation Script (`validate.py`):**
+    - Checks for required Input Map actions and critical files.
+    - Headless Godot validation depends on local environment setup.
+2. [x] **Performance Optimization:**
+    - Game maintains high FPS using Forward+ renderer.
+    - Simple meshes and materials used for efficiency.
+
+---
+
+## Potential Bugs
+- **Fruit Spawning:** Fruits can spawn inside the snake's body segments because the spawner uses simple random XZ coordinates without checking existing occupancy.
+- **Incomplete Game Over UI:** While the logic for restarting and quitting exists, there are no visible buttons or "Game Over" text on the screen when the snake dies, which might confuse new players.
+- **Camera Clipping:** The `RigidBody3D` camera during the "Rider Thrown" effect does not have extensive collision logic to prevent it from clipping through the boundary walls if it lands near the edge.
+- **Turning Speed:** If a player inputs multiple turns in very rapid succession, the interpolation might lag behind the logic, creating a disconnect between the camera's orientation and the snake's actual heading.
+- **Start-up Invulnerability:** The `invulnerability_timer` is a hardcoded 0.5s. If the snake starts with many segments or moves very slowly, it might still collide with itself immediately.
 
 ---
 
 ## Ideas for Future Enhancements
-- Power-ups (Speed boost, Slow motion).
-- Different biomes (Neon Grid, Jungle, Candy Land).
-- Jaw-moving animations synced with fruit consumption.
-- First-person vs. Third-person (Chase) camera toggle.
+- **Dynamic Music & Audio:** Implement a background track that increases in tempo as the snake grows longer and faster. Add "crunch" sounds for eating and a "thud" for crashes.
+- **Power-ups:**
+    - *Turbo Chili:* Temporary speed boost with fire particles.
+    - *Ice Cube:* Slows down movement for easier navigation.
+    - *Magnet:* Pulls nearby fruits toward the head.
+- **Environmental Hazards:** Moving obstacles or "black holes" on the board to increase difficulty.
+- **Snake Skins:** Allow players to choose different colors or patterns (e.g., Tiger stripes, Neon Glow, Metallic).
+- **Juicier Particles:** Replace the Sprite3D dazed effect with a robust `GPUParticles3D` system emitting colorful sparks and stars.
+- **High Score System:** Save the player's best score locally and display it on the HUD.
+- **Multi-Fruit:** Add different fruit types with different score values (e.g., Golden Apple for +5).
+- **Biomes:** Add different environments like Neon Grid, Jungle, or Candy Land.
+- **Animations:** Jaw-moving animations synced with fruit consumption.
 - **Camera Dynamics:** Add centrifugal force/inertia effects (e.g., subtle wobble or overshoot) during turns to simulate the "rollercoaster" feel more intensely.
+- **Chase Camera:** Add a third-person "Chase" camera mode.
 
 ---
 
