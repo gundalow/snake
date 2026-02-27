@@ -64,6 +64,24 @@
     - Ensure the game maintains 60+ FPS on Fedora's Vulkan Forward+ renderer.
     - Review `GPUParticles3D` impact on integrated graphics.
 
+## Milestone 6: Role: Godot Pipeline & Tooling Engineer
+**Task:** Set up a robust 3D asset import system for modular snake parts (Head, Body, Tail) in Godot 4.x.
+
+1. **Import Configuration (The "Suffix" System):**
+    - **Collisions:** Files ending in `-col` (e.g., `body_segment-col.glb`) should automatically generate a Simplified Convex Collision.
+    - **Markers:** Any Empty/Null object named `Socket_Front` or `Socket_Back` in the 3D model must be converted into a `Marker3D` node in Godot.
+2. **The "Segment Snapper" Tool (@tool):**
+    - Write a GDScript with the `@tool` annotation for "Visual Vibe Coding" in the editor.
+    - **Function:** When a "Body Segment" is instanced, it should look for a parent's `Socket_Back` Marker3D.
+    - **Logic:** `global_transform` of the new segment = `parent_socket.global_transform`.
+    - **Offset:** Ensure the mesh "tucks" into the previous segment by a 0.05m margin to prevent gaps during turns.
+3. **Automated Material Swapper:**
+    - Write a script that scans the `assets/textures/` folder and automatically applies a "Snake_Skin" `StandardMaterial3D` to any imported mesh that contains the word "Snake" in its name.
+4. **Fedora/Linux Check:**
+    - Update `validate.py` to:
+        - Verify all `.glb` files follow the naming convention.
+        - Check that all textures are imported as `CompressedTexture2D` (VRAM Compressed).
+
 ---
 
 ## Ideas for Future Enhancements
