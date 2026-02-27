@@ -5,6 +5,7 @@ import os
 import shutil
 
 def run_command(command, cwd=None):
+    print(f"[RUN] {' '.join(command) if isinstance(command, list) else command}")
     try:
         result = subprocess.run(command, capture_output=True, text=True, cwd=cwd, shell=isinstance(command, str))
         return result.returncode, result.stdout.strip(), result.stderr.strip()
@@ -104,10 +105,9 @@ def main():
     print_stage("Graphical Godot Test")
     if godot_cmd:
         godot_test_dir = os.path.join(os.path.dirname(__file__), "godot_test")
-        print("[INFO] Attempting to run Godot project (headless driver)...")
-        # We use headless display driver to ensure it works in CI/remote environments
-        # while still testing the Godot engine initialization and script execution.
-        rc, out, err = run_command([godot_cmd, "--path", godot_test_dir, "--display-driver", "headless", "--quit"], cwd=godot_test_dir)
+        print("[INFO] Attempting to run Godot project...")
+        # Run with default display driver to test graphical capabilities.
+        rc, out, err = run_command([godot_cmd, "--path", godot_test_dir, "--quit"], cwd=godot_test_dir)
         if rc == 0:
             print(f"[OK] Godot engine test finished (Return code 0)")
         else:
