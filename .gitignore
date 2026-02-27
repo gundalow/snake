@@ -1,0 +1,12 @@
+# Godot-specific ignores
+.godot/
+*.translation
+
+# Go-specific ignores
+bin/
+obj/
+*.so
+*.a
+*.exe
+*.dll
+*.dylib
