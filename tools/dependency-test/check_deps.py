@@ -47,18 +47,23 @@ def main():
 
     if not all_tools_ok:
         print("\nEssential tools missing. Please install them.")
-        # We continue as much as possible anyway
 
-    # Stage 2: Version checks
-    print_stage("Version Checks")
+    # Stage 2: Version and Env checks
+    print_stage("Version and Environment Checks")
     if shutil.which("go"):
         rc, out, err = run_command(["go", "version"])
         if rc == 0:
             print(f"[INFO] Go Version: {out}")
-            # Memory says Go 1.25+ is required (though current environment has 1.24)
-            # Let's just report and maybe warn if it's too old
         else:
             print(f"[FAIL] Failed to get Go version: {err}")
+
+        rc, out, err = run_command(["go", "env", "CGO_ENABLED"])
+        if rc == 0:
+            print(f"[INFO] CGO_ENABLED: {out}")
+            if out.strip() != "1":
+                print("[WARN] CGO_ENABLED is not 1. Shared library builds will fail.")
+        else:
+            print(f"[FAIL] Failed to get go env: {err}")
 
     if godot_cmd:
         rc, out, err = run_command([godot_cmd, "--version"])
@@ -78,10 +83,12 @@ def main():
 
     # Stage 4: CGO and Shared Library build test
     print_stage("CGO and Shared Library Build Test")
-    # This is crucial for GDExtension
     so_name = "libtest.so"
-    if os.path.exists(os.path.join(go_test_dir, so_name)):
-        os.remove(os.path.join(go_test_dir, so_name))
+    # Clean up artifacts before test
+    for artifact in [so_name, "libtest.h"]:
+        art_path = os.path.join(go_test_dir, artifact)
+        if os.path.exists(art_path):
+            os.remove(art_path)
 
     rc, out, err = run_command(["go", "build", "-buildmode=c-shared", "-o", so_name, "main.go"], cwd=go_test_dir)
     if rc == 0:
@@ -92,6 +99,22 @@ def main():
     else:
         print(f"[FAIL] Shared library build failed. Is CGO enabled and GCC/G++ working?")
         print(f"Error: {err}")
+
+    # Stage 5: Graphical Godot Test
+    print_stage("Graphical Godot Test")
+    if godot_cmd:
+        godot_test_dir = os.path.join(os.path.dirname(__file__), "godot_test")
+        print("[INFO] Attempting to run Godot project (headless driver)...")
+        # We use headless display driver to ensure it works in CI/remote environments
+        # while still testing the Godot engine initialization and script execution.
+        rc, out, err = run_command([godot_cmd, "--path", godot_test_dir, "--display-driver", "headless", "--quit"], cwd=godot_test_dir)
+        if rc == 0:
+            print(f"[OK] Godot engine test finished (Return code 0)")
+        else:
+            print(f"[WARN] Godot engine test returned non-zero code {rc}.")
+            print(f"Error: {err}")
+    else:
+        print("[SKIP] Godot not found, skipping graphical test.")
 
     print("\nDependency check complete.")
 
