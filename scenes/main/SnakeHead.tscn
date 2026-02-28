@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://d3k8v8l8j8x7y"]
+[gd_scene load_steps=6 format=3 uid="uid://d3k8v8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/core/SnakeHead.gd" id="1_snake_head"]
 
@@ -16,6 +16,9 @@ albedo_color = Color(0, 0, 0, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape_head"]
 size = Vector3(0.9, 0.9, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape_mouth"]
+size = Vector3(0.4, 0.4, 0.4)
 
 [node name="SnakeHead" type="Node3D"]
 script = ExtResource("1_snake_head")
@@ -40,13 +43,15 @@ current = true
 
 [node name="HeadArea" type="Area3D" parent="."]
 collision_layer = 1
-collision_mask = 14
+collision_mask = 6
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HeadArea"]
 shape = SubResource("BoxShape_head")
 
-[node name="FoodRayCast" type="RayCast3D" parent="."]
-target_position = Vector3(0, 0, -1)
+[node name="MouthArea" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+collision_layer = 0
 collision_mask = 8
-collide_with_areas = true
-collide_with_bodies = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MouthArea"]
+shape = SubResource("BoxShape_mouth")

@@ -28,7 +28,7 @@ var target_heading: Dir = Dir.NORTH
 
 @onready var rider_cam: Camera3D = $RiderCam
 @onready var head_area: Area3D = $HeadArea
-@onready var food_ray: RayCast3D = $FoodRayCast
+@onready var mouth_area: Area3D = $MouthArea
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
@@ -39,17 +39,14 @@ func _ready() -> void:
 	add_segment()
 	add_segment()
 	
-	# Connect collision
-	head_area.area_entered.connect(_on_area_entered)
+	# Connect collision signals
+	# HeadArea handles Walls and Body (Layers 3 and 2)
+	head_area.area_entered.connect(_on_head_area_entered)
+	# MouthArea handles Food (Layer 4)
+	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _process(delta: float) -> void:
 	if not is_alive: return
-
-	# Precise Food Collection via RayCast
-	if food_ray.is_colliding():
-		var collider = food_ray.get_collider()
-		if collider.is_in_group("foods"):
-			_eat_food(collider)
 
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
@@ -79,7 +76,6 @@ func queue_turn(direction_sign: float) -> void:
 		Dir.WEST:  new_heading = Dir.SOUTH if direction_sign > 0 else Dir.NORTH
 	
 	# Since it's a 90-degree turn, 180-degree "suicide" is naturally prevented
-	# as we only ever move 90 degrees from the current target.
 	target_heading = new_heading
 	target_rotation_y += direction_sign * PI / 2.0
 	camera_tilt = direction_sign * 0.1 # Slight tilt in radians
@@ -101,12 +97,11 @@ func move_forward(delta: float) -> void:
 		# If we have segments, position them according to history
 		update_segments()
 		
-		# Keep history from growing indefinitely; only need enough for all segments
+		# Keep history from growing indefinitely
 		if position_history.size() > segments.size() + 1:
 			position_history.resize(segments.size() + 1)
 
 func update_segments() -> void:
-	# Segment 0 follows the head's previous transform, Segment 1 follows Segment 0's previous, etc.
 	for i in range(segments.size()):
 		if i < position_history.size():
 			segments[i].global_transform = position_history[i]
@@ -115,13 +110,12 @@ func add_segment() -> void:
 	var new_segment = segment_scene.instantiate()
 	get_parent().add_child.call_deferred(new_segment)
 	
-	# Initial placement at the last recorded history point or head's current if none
 	if position_history.size() > 0:
 		new_segment.global_transform = position_history.back()
 	else:
 		new_segment.global_transform = global_transform
 		
-	# Temporary: disable collision of the new segment for a short time to avoid head collision
+	# Disable collision for a moment to prevent immediate death
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
@@ -129,18 +123,20 @@ func add_segment() -> void:
 		
 	segments.append(new_segment)
 
-func _on_area_entered(area: Area3D) -> void:
+func _on_head_area_entered(area: Area3D) -> void:
 	if not is_alive: return
 	
 	if area.is_in_group("walls"):
-		print("HIT WALL: ", area.name)
 		die("Wall: " + area.name)
 	elif area.is_in_group("body"):
 		if invulnerability_timer <= 0:
-			print("HIT BODY: ", area.get_parent().name)
 			die("Body Segment")
-		else:
-			print("Ignored body hit due to invulnerability")
+
+func _on_mouth_area_entered(area: Area3D) -> void:
+	if not is_alive: return
+	
+	if area.is_in_group("foods"):
+		_eat_food(area)
 
 func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
@@ -166,26 +162,20 @@ func die(reason: String = "Unknown") -> void:
 	var old_global_pos = cam.global_position
 	var old_global_rot = cam.global_rotation
 	
-	# Detach camera from head
 	remove_child(cam)
 	get_tree().root.add_child(cam)
 	cam.global_position = old_global_pos
 	cam.global_rotation = old_global_rot
 	
-	# Scripted Bounce
 	var bounce_tween = create_tween()
-	# Ensure starting height is initial_camera_height
 	var start_y = initial_camera_height
-	# Bounce Up
 	bounce_tween.tween_property(cam, "global_position:y", start_y + 3.0, 0.5)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	# Fall back to start_y
 	bounce_tween.tween_property(cam, "global_position:y", start_y, 0.6)\
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	
 	cam.make_current()
 	
-	# Dazed effect for the head
 	var dazed = dazed_scene.instantiate()
 	add_child.call_deferred(dazed)
 	(func(): 
@@ -194,17 +184,12 @@ func die(reason: String = "Unknown") -> void:
 	).call_deferred()
 
 func play_eat_juice() -> void:
-	# Squash and stretch tween
 	var tween = create_tween()
-	tween.set_trans(Tween.TRANS_ELASTIC)
-	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property($MeshInstance3D, "scale", Vector3(1.2, 0.8, 1.2), 0.1)
 	tween.tween_property($MeshInstance3D, "scale", Vector3(1.0, 1.0, 1.0), 0.2)
 
 func update_rotation(delta: float) -> void:
-	# Smoothly interpolate rotation.y to target_rotation_y
 	rotation.y = lerp_angle(rotation.y, target_rotation_y, turn_interpolation_speed * delta)
-	
-	# Smoothly return camera tilt to 0
 	camera_tilt = lerp(camera_tilt, 0.0, turn_interpolation_speed * delta)
 	rider_cam.rotation.z = camera_tilt
