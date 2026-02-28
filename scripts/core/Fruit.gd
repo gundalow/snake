@@ -14,8 +14,8 @@ func _ready() -> void:
 	# This fixes cases where the fruit mesh is far from its own scene origin
 	_reset_all_node_positions(model)
 
-	# Use a reasonable scale for gameplay
-	model.scale = Vector3(2.0, 2.0, 2.0)
+	# Use a reasonable scale for gameplay - set to 10x as requested
+	model.scale = Vector3(10.0, 10.0, 10.0)
 	
 	# Add a glowing light to ensure they are visible even in shadow
 	var light = OmniLight3D.new()
