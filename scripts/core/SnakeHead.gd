@@ -70,7 +70,7 @@ func _ready() -> void:
 		remote.remote_path = rider_cam.get_path()
 		# Offsets relative to the bone
 		remote.position = Vector3(0, 5, -2) 
-		remote.rotation_degrees = Vector3(0, 180, 0) # Flip to look forward
+		remote.rotation_degrees = Vector3(0, 0, 0) # Flip to look forward
 		attachment.add_child(remote)
 	
 	# Initial segments (Start with 2 as before)

@@ -1,7 +1,14 @@
 [gd_scene load_steps=5 format=3 uid="uid://e5k8v8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/core/SnakeSegment.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://i2pju2e2gftn" path="res://assets/models/snake/cobra_animation.glb" id="2_cobra_model"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_segment"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_segment"]
+albedo_color = Color(0, 0.5, 0, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape_segment"]
 size = Vector3(0.8, 0.8, 0.8)
@@ -9,7 +16,10 @@ size = Vector3(0.8, 0.8, 0.8)
 [node name="SnakeSegment" type="Node3D"]
 script = ExtResource("1_script")
 
-[node name="CobraModel" parent="." instance=ExtResource("2_cobra_model")]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_segment")
+surface_material_override/0 = SubResource("StandardMaterial3D_segment")
 
 [node name="SegmentArea" type="Area3D" parent="." groups=["body"]]
 collision_layer = 2
