@@ -10,6 +10,8 @@ var camera_tilt: float = 0.0
 var is_alive: bool = true
 var invulnerability_timer: float = 0.5 # Give segments time to spread
 var score: int = 0
+var front_ray: RayCast3D
+var initial_camera_height: float
 
 # --- Position History & Body Segments ---
 const STEP_DISTANCE: float = 1.0 # Distance between segments
@@ -31,6 +33,15 @@ var target_heading: Dir = Dir.NORTH
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
+	initial_camera_height = rider_cam.global_position.y
+
+	# Setup front ray for collision
+	front_ray = RayCast3D.new()
+	front_ray.target_position = Vector3(0, 0, -0.6) # Just past the front face
+	front_ray.enabled = true
+	front_ray.collide_with_areas = true # Walls, body segments, and fruits are Area3D
+	front_ray.collision_mask = 2 | 4 | 8 # Body (2), Walls (4), Fruits (8)
+	add_child(front_ray)
 	
 	# Initial segments
 	add_segment()
@@ -41,6 +52,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not is_alive: return
+
+	# Check for front-only collision
+	if front_ray.is_colliding():
+		var collider = front_ray.get_collider()
+		if collider.is_in_group("walls") or collider.is_in_group("body"):
+			die("Crashed into: " + collider.name)
+			return
+		elif collider.is_in_group("fruits"):
+			_on_area_entered(collider)
+
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
 	handle_input()
@@ -122,9 +143,7 @@ func add_segment() -> void:
 func _on_area_entered(area: Area3D) -> void:
 	if not is_alive: return
 	
-	print("Head collided with: ", area.name, " (", area.get_groups(), ")")
-	
-	if area.is_in_group("fruits"):
+	if area.is_in_group("fruits") and not area.is_queued_for_deletion():
 		print("EATING FRUIT!")
 		area.queue_free()
 		add_segment()
@@ -132,15 +151,6 @@ func _on_area_entered(area: Area3D) -> void:
 		score += 1
 		update_score_ui()
 		play_eat_juice()
-	elif area.is_in_group("walls"):
-		print("HIT WALL: ", area.name)
-		die("Wall: " + area.name)
-	elif area.is_in_group("body"):
-		if invulnerability_timer <= 0:
-			print("HIT BODY: ", area.get_parent().name)
-			die("Body Segment")
-		else:
-			print("Ignored body hit due to invulnerability")
 
 func update_score_ui() -> void:
 	var score_label = get_node_or_null("/root/Main/HUD/ScoreLabel")
@@ -152,38 +162,28 @@ func die(reason: String = "Unknown") -> void:
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
 	
-	# Rider Thrown Effect
+	# Camera Bounce Effect
 	var cam = rider_cam
-	var old_transform = cam.global_transform
+	var old_global_pos = cam.global_position
+	var old_global_rot = cam.global_rotation
 	
-	# Detach camera first
+	# Detach camera from head
 	remove_child(cam)
+	get_tree().root.add_child(cam)
+	cam.global_position = old_global_pos
+	cam.global_rotation = old_global_rot
 	
-	# Create RigidBody3D at the root
-	var rb = RigidBody3D.new()
-	var collision = CollisionShape3D.new()
-	var box = BoxShape3D.new()
-	box.size = Vector3(1, 1, 1)
-	collision.shape = box
+	# Scripted Bounce
+	var bounce_tween = create_tween()
+	# Ensure starting height is initial_camera_height
+	var start_y = initial_camera_height
+	# Bounce Up
+	bounce_tween.tween_property(cam, "global_position:y", start_y + 3.0, 0.5)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Fall back to start_y
+	bounce_tween.tween_property(cam, "global_position:y", start_y, 0.6)\
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	
-	rb.add_child(collision)
-	rb.add_child(cam)
-	
-	# Reset local camera transform so it stays inside the RB box
-	cam.transform = Transform3D.IDENTITY
-	
-	# Add RB to the scene and place it where the camera was
-	get_tree().root.add_child.call_deferred(rb)
-	
-	# We must use call_deferred to set global_transform after it's in the tree
-	(func(): 
-		rb.global_transform = old_transform
-		# Ensure we don't drop through floor by giving it an initial upward kick
-		rb.apply_central_impulse(Vector3(randf_range(-5, 5), 10.0, randf_range(-5, 5)))
-		rb.apply_torque_impulse(Vector3(randf(), randf(), randf()) * 10.0)
-	).call_deferred()
-	
-	# Ensure the camera is current after reparenting
 	cam.make_current()
 	
 	# Dazed effect for the head

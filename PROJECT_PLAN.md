@@ -26,7 +26,7 @@
 2. [x] **Snap Turning Logic:**
     - Pressing Left/Right turns the head exactly 90 degrees relative to its current heading.
     - **Safety Check:** Implement logic to prevent 180-degree "suicide" turns (e.g., if moving North, the "South" input is ignored).
-3. [x] **Visuals:**
+2. [ ] **Visuals:**
     - Update the `SnakeHead` mesh. Start with a vibrant cube; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
 
 ## Milestone 3: The "Train" System (Body & Fruit)
@@ -45,13 +45,13 @@
 *Core dependencies: Requires functional collisions with walls and segments.*
 
 1. [x] **Collision Logic:**
-    - Detect collision with boundary walls or the snake's own body segments.
+    - Detect collision with boundary walls or the snake's own body segments using a `RayCast3D` for precise front-only detection.
 2. [x] **The "Rider Thrown" Effect:**
-    - **Freeze:** Set `set_process(false)` for all movement logic.
-    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` (using a Box collision) and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
+    - **Freeze:** Set `is_alive = false` to stop all movement logic.
+    - **Camera Bounce:** Detach the Rider Camera from the Head (reparent to root). Use a scripted `Tween` to create an upward bounce animation that returns the camera to its starting height, ensuring it never drops below the floor. This replaces the previous physics-based tumble for better control.
 3. [x] **Dazed Animation:**
     - Spawn a "Dazed" node above the head. Use `GPUParticles3D` with box emission.
-4. [x] **Game Over UI:**
+4. [ ] **Game Over UI:**
     - Fade in a HUD with "Restart" and "Quit" options.
 
 ## Milestone 5: Technical Rigor & Validation
