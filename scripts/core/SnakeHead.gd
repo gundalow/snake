@@ -46,6 +46,12 @@ func _process(delta: float) -> void:
 	handle_input()
 	move_forward(delta)
 	update_rotation(delta)
+	
+	if Engine.get_frames_drawn() % 60 == 0:
+		print("Head Pos: ", global_position, " Score: ", score)
+		var fruits = get_tree().get_nodes_in_group("fruits")
+		for f in fruits:
+			print("  Fruit at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
@@ -105,11 +111,21 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 		
+	# Temporary: disable collision of the new segment for a short time to avoid head collision
+	var area = new_segment.get_node_or_null("SegmentArea")
+	if area:
+		area.monitorable = false
+		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
+		
 	segments.append(new_segment)
 
 func _on_area_entered(area: Area3D) -> void:
 	if not is_alive: return
+	
+	print("Head collided with: ", area.name, " (", area.get_groups(), ")")
+	
 	if area.is_in_group("fruits"):
+		print("EATING FRUIT!")
 		area.queue_free()
 		add_segment()
 		move_speed += 0.2
@@ -117,18 +133,24 @@ func _on_area_entered(area: Area3D) -> void:
 		update_score_ui()
 		play_eat_juice()
 	elif area.is_in_group("walls"):
-		die()
-	elif area.is_in_group("body") and invulnerability_timer <= 0:
-		die()
+		print("HIT WALL: ", area.name)
+		die("Wall: " + area.name)
+	elif area.is_in_group("body"):
+		if invulnerability_timer <= 0:
+			print("HIT BODY: ", area.get_parent().name)
+			die("Body Segment")
+		else:
+			print("Ignored body hit due to invulnerability")
 
 func update_score_ui() -> void:
 	var score_label = get_node_or_null("/root/Main/HUD/ScoreLabel")
 	if score_label:
 		score_label.text = "Score: %d" % score
 
-func die() -> void:
+func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
+	print("SNAKE DIED! Reason: ", reason)
 	
 	# Rider Thrown Effect
 	var cam = rider_cam
@@ -140,14 +162,14 @@ func die() -> void:
 	# Create RigidBody3D at the root
 	var rb = RigidBody3D.new()
 	var collision = CollisionShape3D.new()
-	var sphere = SphereShape3D.new()
-	sphere.radius = 0.5
-	collision.shape = sphere
+	var box = BoxShape3D.new()
+	box.size = Vector3(1, 1, 1)
+	collision.shape = box
 	
 	rb.add_child(collision)
 	rb.add_child(cam)
 	
-	# Reset local camera transform so it stays inside the RB sphere
+	# Reset local camera transform so it stays inside the RB box
 	cam.transform = Transform3D.IDENTITY
 	
 	# Add RB to the scene and place it where the camera was
@@ -171,8 +193,6 @@ func die() -> void:
 		dazed.position = Vector3(0, 1.5, 0)
 		dazed.emitting = true
 	).call_deferred()
-	
-	print("Snake Died!")
 
 func play_eat_juice() -> void:
 	# Squash and stretch tween

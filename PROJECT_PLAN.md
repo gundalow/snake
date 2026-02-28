@@ -27,7 +27,7 @@
     - Pressing Left/Right turns the head exactly 90 degrees relative to its current heading.
     - **Safety Check:** Implement logic to prevent 180-degree "suicide" turns (e.g., if moving North, the "South" input is ignored).
 3. [x] **Visuals:**
-    - Update the `SnakeHead` mesh. Start with a vibrant cube/capsule; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
+    - Update the `SnakeHead` mesh. Start with a vibrant cube; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
 
 ## Milestone 3: The "Train" System (Body & Fruit)
 *Core dependencies: Requires a moving Head to generate position history.*
@@ -37,9 +37,9 @@
 2. [x] **Body Segments:**
     - Spawn `MeshInstance3D` segments that follow the head's history. Each segment "occupies" a previous coordinate slot from the history buffer.
 3. [x] **Fruit Spawner & Interaction:**
-    - **Spawner:** Randomly picks meshes (Sphere for Apple, Capsule for Banana) with high-saturation PBR colors.
-    - **Interaction:** Detect collision with fruit. 
-    - **Growth:** On eat, add a new segment to the tail, slightly increase `move_speed`, and play a "Squash and Stretch" tween on the head.
+    - [x] **Spawner:** Randomly picks from high-quality realistic food models (Apple, Lychee, Sweet Potato).
+    - [x] **Interaction:** Detect collision with fruit. 
+    - [x] **Growth:** On eat, add a new segment to the tail, slightly increase `move_speed`, and play a "Squash and Stretch" tween on the head.
 
 ## Milestone 4: The Death Sequence (Physics & UI)
 *Core dependencies: Requires functional collisions with walls and segments.*
@@ -48,29 +48,40 @@
     - Detect collision with boundary walls or the snake's own body segments.
 2. [x] **The "Rider Thrown" Effect:**
     - **Freeze:** Set `set_process(false)` for all movement logic.
-    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
+    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` (using a Box collision) and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
 3. [x] **Dazed Animation:**
-    - Spawn a "Dazed" node above the head. Use `GPUParticles3D` or a spinning `Sprite3D` of stars/birds.
+    - Spawn a "Dazed" node above the head. Use `GPUParticles3D` with box emission.
 4. [x] **Game Over UI:**
     - Fade in a HUD with "Restart" and "Quit" options.
 
 ## Milestone 5: Technical Rigor & Validation
-1. **Validation Script (`validate.py`):**
-    - Update to check for:
+1. [x] **Validation Script (`validate.py`):**
+    - Checks for:
         - Required Input Map actions.
         - Existence of the "Dazed" particle resource.
         - Proper collision layer/mask setup.
-2. **Performance Optimization:**
-    - Ensure the game maintains 60+ FPS on Fedora's Vulkan Forward+ renderer.
-    - Review `GPUParticles3D` impact on integrated graphics.
+        - Headless execution for common GDScript errors.
+2. [x] **Performance Optimization:**
+    - Maintain 60+ FPS on Fedora's Vulkan Forward+ renderer.
+    - Optimized `GPUParticles3D` for integrated graphics.
+
+## Milestone 7: Realistic Graphics for Food
+1. [x] **Model Integration:**
+    - Replaced basic meshes in `Fruit.tscn` with high-quality 3D scans.
+    - Assets: Use photorealistic GLTF models for Apple, Lychee, and Sweet Potato.
+    - Automatic recursion logic to center meshes within their scene origin.
+2. [x] **Visual Polishing:**
+    - Apply PBR materials for vibrancy.
+    - Implemented glowing `OmniLight3D` on each food item to ensure visibility in all lighting conditions.
+    - Scale set to `10.0` for high-impact visual presence.
 
 ## Milestone 8: Realistic Garden Environment
-1. **Grass Floor:**
-    - Replace the checkered floor with a realistic grass texture or shader.
-    - Use noise-based color variations (greens and browns) to simulate natural terrain.
-2. **Garden Fence Walls:**
-    - Replace the glowing walls with a garden fence visual.
-    - Implement a wooden plank texture or shader for the boundaries.
+1. [x] **Grass Floor:**
+    - Replaced the checkered floor with a realistic grass shader.
+    - Uses noise-based color variations to simulate natural terrain.
+2. [x] **Garden Fence Walls:**
+    - Replaced glowing walls with a garden fence visual.
+    - Implemented a wooden plank shader for the boundaries.
 
 ---
 
@@ -88,7 +99,7 @@
 ### 1. Board & Space
 - **Board Size:** 30x30 units.
 - **Grid Unit:** 1.0 (Snake segments are placed 1 unit apart).
-- **Start Position:** Middle of the board `(0, 0, 0)`.
+- **Start Position:** Middle of the board `(0, 0.5, 0)`.
 - **Start Direction:** North (Negative Z axis).
 
 ### 2. Movement & Physics
@@ -102,6 +113,12 @@
 - **Game State:** `R` for Restart, `Esc` for Quit.
 
 ### 4. Visual Aesthetic
-- **Color Palette:** Specific high-saturation palette for a "young audience" vibe (e.g., Neon Green, Cyan, Magenta).
-- **Materials:** High-emission "glowing" textures for boundary walls.
+- **Color Palette:** High-saturation PBR textures for food; stylized shaders for environment.
 - **Cam:** Rider Cam (FPV) is the primary "hero" perspective.
+
+### 5. Asset Formats
+- **Models:** `.glb` or `.gltf` (Binary GLTF preferred).
+- **Pivot:** Origin `(0,0,0)` at the center of the mesh.
+- **Scale:** Standardized to ~1.0 unit in the source file (scaled in-engine as needed).
+- **Topology:** Photorealistic 3D scans preferred over basic primitives.
+- **Materials:** Standard PBR (Albedo, Normal, Roughness) for realistic interaction with the Forward+ renderer.

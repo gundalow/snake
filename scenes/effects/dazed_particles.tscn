@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://b6k8v8l8j8x7y"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dazed"]
-emission_shape = 1
-emission_sphere_radius = 0.5
+emission_shape = 3
+emission_box_extents = Vector3(0.5, 0.5, 0.5)
 gravity = Vector3(0, 0, 0)
 initial_velocity_min = 1.0
 initial_velocity_max = 2.0
