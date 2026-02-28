@@ -64,6 +64,14 @@
     - Ensure the game maintains 60+ FPS on Fedora's Vulkan Forward+ renderer.
     - Review `GPUParticles3D` impact on integrated graphics.
 
+## Milestone 8: Realistic Garden Environment
+1. **Grass Floor:**
+    - Replace the checkered floor with a realistic grass texture or shader.
+    - Use noise-based color variations (greens and browns) to simulate natural terrain.
+2. **Garden Fence Walls:**
+    - Replace the glowing walls with a garden fence visual.
+    - Implement a wooden plank texture or shader for the boundaries.
+
 ---
 
 ## Ideas for Future Enhancements
