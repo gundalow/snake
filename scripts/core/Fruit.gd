@@ -24,13 +24,18 @@ func _ready() -> void:
 		mesh_instance.visible = false
 		print("Placeholder mesh hidden")
 
-	# Adjust scale based on the fruit type
-	if random_key == "banana":
-		model.scale = Vector3(0.2, 0.2, 0.2)
-	else:
-		model.scale = Vector3(0.5, 0.5, 0.5)
+	# Adjust scale based on the fruit type - making them much larger for visibility
+	model.scale = Vector3(1.5, 1.5, 1.5)
 	
-	print("Model scale: ", model.scale)
+	# Add a glowing light to make it very obvious where the fruit is
+	var light = OmniLight3D.new()
+	light.light_color = Color(1.0, 1.0, 0.5) # Yellowish glow
+	light.omni_range = 5.0
+	light.light_energy = 2.0
+	add_child(light)
+	light.position = Vector3(0, 1.0, 0)
+	
+	print("Model scale: ", model.scale, " - Added light at: ", light.position)
 
 	# Apply a simple rotation - but keep it upright initially to see it better
 	model.rotation_degrees = Vector3(0, randf_range(0, 360), 0)

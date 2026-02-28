@@ -33,6 +33,6 @@ func spawn_fruit() -> void:
 		z = randf_range(-board_size / 2.0, board_size / 2.0)
 	
 	var fruit = fruit_scene.instantiate()
-	add_child.call_deferred(fruit)
-	# Wait for the next frame to ensure it's in the tree before setting global_position
-	(func(): fruit.global_position = Vector3(x, 0.5, z)).call_deferred()
+	fruit.position = Vector3(x, 0.5, z)
+	add_child(fruit)
+	print("Spawned fruit at: ", fruit.position)
