@@ -20,31 +20,66 @@ sky = SubResource("Sky_1")
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="Shader" id="Shader_checkered"]
+[sub_resource type="Shader" id="Shader_grass"]
+code = "shader_type spatial;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void fragment() {
+	vec2 uv = UV * 100.0;
+	vec2 id = floor(uv);
+	float h = hash(id);
+	vec3 green1 = vec3(0.1, 0.4, 0.1);
+	vec3 green2 = vec3(0.2, 0.5, 0.1);
+	vec3 color = mix(green1, green2, h);
+
+	// Add some patchy variation
+	float patch = hash(floor(UV * 5.0));
+	color = mix(color, vec3(0.15, 0.35, 0.1), patch * 0.3);
+
+	ALBEDO = color;
+	ROUGHNESS = 0.8;
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_grass"]
+render_priority = 0
+shader = SubResource("Shader_grass")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
+material = SubResource("ShaderMaterial_grass")
+size = Vector2(30, 30)
+
+[sub_resource type="Shader" id="Shader_fence"]
 code = "shader_type spatial;
 
 void fragment() {
-    vec2 pos = floor(UV * 30.0);
-    float checker = mod(pos.x + pos.y, 2.0);
-    ALBEDO = mix(vec3(0.2), vec3(0.4), checker);
+	vec2 uv = UV * vec2(30.0, 2.0);
+	vec2 id = floor(uv);
+
+	// Wooden plank color
+	vec3 wood1 = vec3(0.4, 0.25, 0.1);
+	vec3 wood2 = vec3(0.35, 0.2, 0.05);
+
+	// Create vertical planks
+	float f = step(0.1, fract(uv.x));
+	vec3 color = mix(vec3(0.1, 0.05, 0.0), mix(wood1, wood2, fract(sin(id.x * 123.456))), f);
+
+	// Add horizontal supports
+	float support = step(0.8, fract(uv.y * 2.0));
+	color = mix(color, wood2 * 0.8, support * f);
+
+	ALBEDO = color;
+	ROUGHNESS = 0.9;
 }"
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_checkered"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fence"]
 render_priority = 0
-shader = SubResource("Shader_checkered")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
-material = SubResource("ShaderMaterial_checkered")
-size = Vector2(30, 30)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
-albedo_color = Color(1, 0, 1, 1)
-emission_enabled = true
-emission = Color(1, 0, 1, 1)
-emission_energy_multiplier = 2.0
+shader = SubResource("Shader_fence")
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall"]
-material = SubResource("StandardMaterial3D_wall")
+material = SubResource("ShaderMaterial_fence")
 size = Vector3(1, 2, 30)
 
 [sub_resource type="BoxShape3D" id="BoxShape_wall_collision"]
