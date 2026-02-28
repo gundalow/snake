@@ -3,14 +3,15 @@ extends Node3D
 @export var move_speed: float = 5.0
 @export var turn_interpolation_speed: float = 10.0 # 0.1s target
 
-var current_direction: Vector3 = Vector3.FORWARD
-var next_direction: Vector3 = Vector3.FORWARD
 var target_rotation_y: float = 0.0
 var camera_tilt: float = 0.0
+var turn_queue: Array[float] = []
 var is_alive: bool = true
 var invulnerability_timer: float = 0.5 # Give segments time to spread
 var score: int = 0
 var initial_camera_height: float
+
+signal score_changed(new_score)
 
 # --- Position History & Body Segments ---
 const STEP_DISTANCE: float = 1.0 # Distance between segments
@@ -23,7 +24,6 @@ var distance_traveled: float = 0.0
 
 # Using an enum or constants for directions to prevent 180-degree turns
 enum Dir { NORTH, SOUTH, EAST, WEST }
-var heading: Dir = Dir.NORTH
 var target_heading: Dir = Dir.NORTH
 
 @onready var rider_cam: Camera3D = $RiderCam
@@ -71,11 +71,13 @@ func _process(delta: float) -> void:
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
-		queue_turn(1.0) # 90 degrees left
+		if turn_queue.size() < 2:
+			turn_queue.append(1.0) # 90 degrees left
 	elif Input.is_action_just_pressed("turn_right"):
-		queue_turn(-1.0) # 90 degrees right
+		if turn_queue.size() < 2:
+			turn_queue.append(-1.0) # 90 degrees right
 
-func queue_turn(direction_sign: float) -> void:
+func _apply_turn(direction_sign: float) -> void:
 	# Determine the new heading based on current target_heading and turn direction
 	var new_heading: Dir
 	match target_heading:
@@ -100,6 +102,11 @@ func move_forward(delta: float) -> void:
 	# Every time we travel STEP_DISTANCE, record the history and update segments
 	if distance_traveled >= STEP_DISTANCE:
 		distance_traveled -= STEP_DISTANCE
+
+		# Process pending turn if any
+		if not turn_queue.is_empty():
+			_apply_turn(turn_queue.pop_front())
+
 		# Store the current head transform as the "newest" history point
 		position_history.insert(0, global_transform)
 		
@@ -142,21 +149,25 @@ func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
 	area.queue_free()
 	
+	# Juice: Screen shake effect
+	var shake_tween = create_tween().set_parallel(true)
+	shake_tween.tween_property(rider_cam, "h_offset", randf_range(-0.2, 0.2), 0.05)
+	shake_tween.tween_property(rider_cam, "v_offset", randf_range(-0.2, 0.2), 0.05)
+	shake_tween.chain().tween_property(rider_cam, "h_offset", 0.0, 0.05)
+	shake_tween.tween_property(rider_cam, "v_offset", 0.0, 0.05)
+
 	# Spawn new food
-	var spawner = get_node_or_null("/root/Main/FoodSpawner")
-	if spawner:
-		spawner.spawn_food()
+	var main = get_tree().root.get_node_or_null("Main")
+	if main:
+		var spawner = main.get_node_or_null("FoodSpawner")
+		if spawner:
+			spawner.spawn_food()
 		
 	add_segment()
 	move_speed += 0.2
 	score += 1
-	update_score_ui()
+	score_changed.emit(score)
 	play_eat_juice()
-
-func update_score_ui() -> void:
-	var score_label = get_node_or_null("/root/Main/HUD/ScoreLabel")
-	if score_label:
-		score_label.text = "Score: %d" % score
 
 func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
@@ -173,11 +184,14 @@ func die(reason: String = "Unknown") -> void:
 	cam.global_position = old_global_pos
 	cam.global_rotation = old_global_rot
 	
-	var bounce_tween = create_tween()
+	var bounce_tween = create_tween().set_parallel(true)
 	var start_y = initial_camera_height
 	bounce_tween.tween_property(cam, "global_position:y", start_y + 3.0, 0.5)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	bounce_tween.tween_property(cam, "global_position:y", start_y, 0.6)\
+	# Add chaotic rotation
+	bounce_tween.tween_property(cam, "rotation:x", randf_range(-PI, PI), 0.5)
+	bounce_tween.tween_property(cam, "rotation:y", randf_range(-PI, PI), 0.5)
+	bounce_tween.chain().tween_property(cam, "global_position:y", start_y, 0.6)\
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	
 	cam.make_current()

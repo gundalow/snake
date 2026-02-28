@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://b8y8x8l8j8x7y" path="res://scenes/ui/hud.tscn" id="2_hud"]
 [ext_resource type="Script" path="res://scripts/core/CameraManager.gd" id="3_camera_manager"]
 [ext_resource type="Script" path="res://scripts/core/FoodSpawner.gd" id="4_food_spawner"]
+[ext_resource type="Script" path="res://scripts/core/Main.gd" id="5_main"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -86,6 +87,7 @@ size = Vector3(1, 2, 30)
 size = Vector3(1, 2, 30)
 
 [node name="Main" type="Node3D"]
+script = ExtResource("5_main")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
