@@ -143,6 +143,33 @@ def run_headless_syntax_check():
         print(f"Error during syntax check: {e}", file=sys.stderr)
         return False
 
+def run_gdlint():
+    """Runs gdlint on all .gd files if available."""
+    gdlint_path = shutil.which("gdlint")
+    if not gdlint_path:
+        print("Warning: 'gdlint' not found in system PATH. Skipping linting.")
+        return True
+
+    print("Running gdlint...")
+    try:
+        # Run gdlint on all .gd files recursively
+        result = subprocess.run(
+            ["gdlint", "scripts/"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print("Error: gdlint failed.", file=sys.stderr)
+            print(result.stdout, file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            return False
+
+        print("gdlint check successful!")
+        return True
+    except Exception as e:
+        print(f"Error during gdlint: {e}", file=sys.stderr)
+        return False
+
 def run_headless_execution():
     """Runs Godot in headless mode for a few frames and scans for errors."""
     print("Running Godot headless execution check...")
@@ -203,6 +230,7 @@ def main():
         success = False
 
     if not verify_files(): success = False
+    if not run_gdlint(): success = False
     if not check_input_map(): success = False
     if not check_physics_layers(): success = False
     if not check_missing_artefacts(): success = False

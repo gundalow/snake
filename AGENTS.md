@@ -5,6 +5,8 @@ This document provides essential instructions and guidelines for AI Agents (Goog
 ## 🎯 Target Audience
 This file is primarily for AI Agents to ensure efficient, consistent, and high-quality contributions to the codebase.
 
+**Target Operating Systems**: Linux (Fedora, Debian-based).
+
 ## 🚀 Efficient Development & Testing
 
 To minimize token usage and maximize speed, follow these testing procedures:
@@ -12,6 +14,7 @@ To minimize token usage and maximize speed, follow these testing procedures:
 ### 1. Local Validation (`validate.py`)
 Always run the validation script before submitting any changes. It performs headless checks for:
 - Required file existence.
+- **Linting** (via `gdlint` if available).
 - Input Map configurations.
 - Physics layer names.
 - Missing external resources in `.tscn` files.
