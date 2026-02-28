@@ -8,7 +8,7 @@ size = Vector3(0.8, 0.8, 0.8)
 [node name="SnakeSegment" type="Node3D"]
 
 [node name="CobraModel" parent="." instance=ExtResource("1_cobra_model")]
-transform = Transform3D(-0.01, 0, 8.74228e-10, 0, 0.01, 0, -8.74228e-10, 0, -0.01, 0, -0.5, 0.5)
+transform = Transform3D(-0.003, 0, 2.62268e-10, 0, 0.003, 0, -2.62268e-10, 0, -0.003, 0, -0.5, 0.15)
 
 [node name="SegmentArea" type="Area3D" parent="." groups=["body"]]
 collision_layer = 2

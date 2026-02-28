@@ -215,7 +215,7 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	var orig_scale = Vector3(-0.01, 0.01, -0.01)
+	var orig_scale = Vector3(-0.003, 0.003, -0.003)
 	tween.tween_property(cobra_model, "scale", orig_scale * 1.2, 0.1)
 	tween.tween_property(cobra_model, "scale", orig_scale, 0.2)
 
