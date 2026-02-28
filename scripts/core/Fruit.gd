@@ -1,20 +1,13 @@
 extends Area3D
 
-const MODELS = {
-	"apple": preload("res://assets/models/apple.glb"),
-	"banana": preload("res://assets/models/banana.glb"),
-	"orange": preload("res://assets/models/orange.glb")
-}
+# Hardcoded to only use the new apple model
+const APPLE_MODEL = preload("res://assets/models/food/apple/food_apple_01_4k.gltf")
 
 func _ready() -> void:
-	# Randomly select a fruit model
-	var keys = MODELS.keys()
-	var random_key = keys[randi() % keys.size()]
-	var model_scene = MODELS[random_key]
-	print("--- Spawning fruit: ", random_key, " ---")
+	print("--- Spawning hardcoded apple ---")
 
 	# Instantiate the model
-	var model = model_scene.instantiate()
+	var model = APPLE_MODEL.instantiate()
 	add_child(model)
 	
 	# Recursively reset all local positions in the imported scene to (0,0,0)
