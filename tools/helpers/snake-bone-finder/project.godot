@@ -1,0 +1,6 @@
+[application]
+config/name="Snake Rider"
+run/main_scene="res://bootstrap.tscn"
+
+[rendering]
+renderer/rendering_method="forward_plus"
