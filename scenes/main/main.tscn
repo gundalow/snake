@@ -83,6 +83,8 @@ overhead_cam = NodePath("../OverheadCam")
 
 [node name="Wall_North" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -15.5)
+collision_layer = 4
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_North"]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
@@ -94,6 +96,8 @@ mesh = SubResource("BoxMesh_wall")
 
 [node name="Wall_South" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 15.5)
+collision_layer = 4
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_South"]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
@@ -105,6 +109,8 @@ mesh = SubResource("BoxMesh_wall")
 
 [node name="Wall_West" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 1, 0)
+collision_layer = 4
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_West"]
 shape = SubResource("BoxShape_wall_collision")
@@ -114,6 +120,8 @@ mesh = SubResource("BoxMesh_wall")
 
 [node name="Wall_East" type="Area3D" parent="Walls" groups=["walls"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.5, 1, 0)
+collision_layer = 4
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/Wall_East"]
 shape = SubResource("BoxShape_wall_collision")

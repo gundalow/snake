@@ -1,0 +1,36 @@
+name: Project Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        godot_version: ["4.3"]
+    container:
+      image: barichello/godot-ci:${{ matrix.godot_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        run: |
+          apt-get update
+          apt-get install -y python3 wget unzip
+          mkdir -v -p build
+
+          # Install Godot Export Templates
+          VERSION=${{ matrix.godot_version }}
+          mkdir -v -p ~/.local/share/godot/export_templates/${VERSION}.stable
+          wget https://github.com/godotengine/godot/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_export_templates.tpz
+          unzip Godot_v${VERSION}-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/${VERSION}.stable/
+          rm -rf templates Godot_v${VERSION}-stable_export_templates.tpz
+
+      - name: Run Validation Script
+        run: python3 validate.py
