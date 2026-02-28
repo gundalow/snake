@@ -31,11 +31,16 @@ var target_heading: Dir = Dir.NORTH
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
 @onready var cobra_model: Node3D = $CobraModel
+@onready var anim_player: AnimationPlayer = $CobraModel/AnimationPlayer
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
 	initial_camera_height = rider_cam.global_position.y
+	
+	# Play snake animation
+	if anim_player:
+		anim_player.play("SANKE animations")
 	
 	# Initial segments
 	add_segment()
@@ -163,6 +168,10 @@ func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
+	
+	# Stop animation on death
+	if anim_player:
+		anim_player.stop()
 	
 	# Camera Bounce Effect
 	var cam = rider_cam
