@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/utils/FPSCounter.gd" id="1_fps_counter"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_large"]
-font_size = 120
+font_size = 60
 outline_size = 8
 outline_color = Color(0, 0, 0, 1)
 shadow_size = 10
@@ -15,7 +15,7 @@ shadow_color = Color(0, 0, 0, 0.5)
 offset_left = 20.0
 offset_top = 20.0
 offset_right = 420.0
-offset_bottom = 185.0
+offset_bottom = 100.0
 text = "FPS: 0"
 label_settings = SubResource("LabelSettings_large")
 script = ExtResource("1_fps_counter")
@@ -27,7 +27,7 @@ anchor_right = 1.0
 offset_left = -620.0
 offset_top = 20.0
 offset_right = -20.0
-offset_bottom = 185.0
+offset_bottom = 100.0
 grow_horizontal = 0
 text = "Score: 0"
 label_settings = SubResource("LabelSettings_large")
