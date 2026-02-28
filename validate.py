@@ -47,12 +47,12 @@ def verify_files():
         "scenes/main/main.tscn",
         "scenes/ui/hud.tscn",
         "scenes/main/SnakeHead.tscn",
-        "scenes/main/Fruit.tscn",
+        "scenes/main/Food.tscn",
         "scenes/main/SnakeSegment.tscn",
         "scenes/effects/dazed_particles.tscn",
         "scripts/core/SnakeHead.gd",
         "scripts/core/CameraManager.gd",
-        "scripts/core/FruitSpawner.gd",
+        "scripts/core/FoodSpawner.gd",
         "scripts/utils/FPSCounter.gd",
         "export_presets.cfg"
     ]
@@ -86,7 +86,7 @@ def check_input_map():
 
 def check_physics_layers():
     """Checks for required physics layer names in project.godot."""
-    required_layers = ["snake_head", "snake_body", "walls", "fruits"]
+    required_layers = ["snake_head", "snake_body", "walls", "foods"]
     try:
         project_file = Path("project.godot").read_text()
         all_found = True

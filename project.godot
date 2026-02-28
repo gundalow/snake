@@ -55,7 +55,7 @@ window/stretch/mode="canvas_items"
 layer_1="snake_head"
 layer_2="snake_body"
 layer_3="walls"
-layer_4="fruits"
+layer_4="foods"
 
 [rendering]
 

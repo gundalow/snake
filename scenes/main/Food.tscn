@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://c6k8v8l8j8x7y"]
+
+[ext_resource type="Script" path="res://scripts/core/Food.gd" id="1_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_food"]
+size = Vector3(1.0, 1.0, 1.0)
+
+[node name="Food" type="Area3D" groups=["foods"]]
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape_food")
