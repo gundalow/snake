@@ -43,14 +43,9 @@ func _ready() -> void:
 	target_rotation_y = rotation.y
 	initial_camera_height = rider_cam.global_position.y
 	
-	# Find internal nodes (Skeleton, AnimPlayer)
+	# Find internal nodes (Skeleton)
 	var skeleton = _find_node_by_class(cobra_model, "Skeleton3D")
-	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
 	
-	# Play snake animation
-	if anim_player:
-		anim_player.play("SANKE animations")
-		
 	# Dynamic Scaling
 	_fit_to_size(1.0)
 		
@@ -194,11 +189,6 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 		
-	# Offset animation for "slither" wave
-	if new_segment.has_method("set_animation_offset"):
-		# Each segment is 0.2s behind the one in front
-		new_segment.set_animation_offset(-0.2 * (segments.size() + 1))
-		
 	# Fix lambda capture bug
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
@@ -239,10 +229,6 @@ func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
-	
-	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
-	if anim_player:
-		anim_player.stop()
 	
 	var cam = rider_cam
 	var old_global_pos = cam.global_position

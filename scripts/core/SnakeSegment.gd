@@ -1,19 +1,9 @@
 extends Node3D
 
 @onready var cobra_model: Node3D = $CobraModel
-var anim_player: AnimationPlayer
 
 func _ready() -> void:
 	_fit_to_size(1.0)
-	anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
-	if anim_player:
-		anim_player.play("SANKE animations")
-
-func set_animation_offset(offset_seconds: float) -> void:
-	if not anim_player:
-		anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
-	if anim_player:
-		anim_player.advance(offset_seconds)
 
 func _fit_to_size(target_units: float) -> void:
 	var aabb = AABB()
