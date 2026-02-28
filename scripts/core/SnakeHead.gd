@@ -46,6 +46,12 @@ func _process(delta: float) -> void:
 	handle_input()
 	move_forward(delta)
 	update_rotation(delta)
+	
+	if Engine.get_frames_drawn() % 60 == 0:
+		print("Head Pos: ", global_position, " Cam Global Pos: ", rider_cam.global_position)
+		var fruits = get_tree().get_nodes_in_group("fruits")
+		for f in fruits:
+			print("  Fruit at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
