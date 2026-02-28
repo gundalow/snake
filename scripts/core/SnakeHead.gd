@@ -29,6 +29,7 @@ var target_heading: Dir = Dir.NORTH
 @onready var rider_cam: Camera3D = $RiderCam
 @onready var head_area: Area3D = $HeadArea
 @onready var mouth_area: Area3D = $MouthArea
+@onready var death_ray: RayCast3D = $DeathRay
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
@@ -40,13 +41,21 @@ func _ready() -> void:
 	add_segment()
 	
 	# Connect collision signals
-	# HeadArea handles Walls and Body (Layers 3 and 2)
-	head_area.area_entered.connect(_on_head_area_entered)
-	# MouthArea handles Food (Layer 4)
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _process(delta: float) -> void:
 	if not is_alive: return
+
+	# Lethal Collision Check via DeathRay
+	# This prevents "side-collision" death during 90-degree snap turns
+	if death_ray.is_colliding():
+		var collider = death_ray.get_collider()
+		if collider.is_in_group("walls"):
+			die("Wall: " + collider.name)
+			return
+		elif collider.is_in_group("body") and invulnerability_timer <= 0:
+			die("Body Segment")
+			return
 
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
@@ -122,15 +131,6 @@ func add_segment() -> void:
 		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
 		
 	segments.append(new_segment)
-
-func _on_head_area_entered(area: Area3D) -> void:
-	if not is_alive: return
-	
-	if area.is_in_group("walls"):
-		die("Wall: " + area.name)
-	elif area.is_in_group("body"):
-		if invulnerability_timer <= 0:
-			die("Body Segment")
 
 func _on_mouth_area_entered(area: Area3D) -> void:
 	if not is_alive: return

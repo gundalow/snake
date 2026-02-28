@@ -43,15 +43,21 @@ current = true
 
 [node name="HeadArea" type="Area3D" parent="."]
 collision_layer = 1
-collision_mask = 6
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HeadArea"]
 shape = SubResource("BoxShape_head")
 
 [node name="MouthArea" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
 collision_layer = 0
 collision_mask = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MouthArea"]
 shape = SubResource("BoxShape_mouth")
+
+[node name="DeathRay" type="RayCast3D" parent="."]
+target_position = Vector3(0, 0, -0.6)
+collision_mask = 6
+collide_with_areas = true
+collide_with_bodies = false
