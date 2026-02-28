@@ -1,10 +1,7 @@
 # Godot-specific ignores
 .godot/
-*.import
 export_presets.godot
 
-# Imported assets
-*.import
 
 # Mono/C# ignores
 .mono/

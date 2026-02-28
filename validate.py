@@ -87,6 +87,30 @@ def check_missing_artefacts():
                 all_ok = False
     return all_ok
 
+def run_headless_import():
+    """Runs Godot in headless mode with --editor --quit to trigger initial import."""
+    print("Running Godot headless import (editor mode)...")
+    try:
+        # Running the editor once triggers the import process for all assets
+        result = subprocess.run(
+            ["godot", "--headless", "--editor", "--quit"],
+            capture_output=True,
+            text=True,
+            timeout=120 # Initial import can take some time
+        )
+        if result.returncode != 0:
+            print("Warning: Godot headless import may have encountered issues.", file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            # We don't necessarily fail here because some warnings are expected
+        print("Import step completed.")
+        return True
+    except subprocess.TimeoutExpired:
+        print("Error: Godot headless import timed out.", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Error during Godot headless import: {e}", file=sys.stderr)
+        return False
+
 def run_headless_syntax_check():
     """Runs Godot in headless mode with --check-only to verify syntax."""
     print("Running Godot headless syntax check...")
@@ -205,6 +229,7 @@ def main():
     if not check_missing_artefacts(): success = False
     
     if godot_available:
+        if not run_headless_import(): success = False
         if not run_headless_syntax_check(): success = False
         # if not run_headless_build(): success = False
         if not run_headless_execution(): success = False
