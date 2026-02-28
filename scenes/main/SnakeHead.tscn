@@ -1,18 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://d3k8v8l8j8x7y"]
+[gd_scene load_steps=7 format=3 uid="uid://d3k8v8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/core/SnakeHead.gd" id="1_snake_head"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_head"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_head"]
-albedo_color = Color(0, 1, 0, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_eyes"]
-size = Vector3(0.2, 0.2, 0.2)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eyes"]
-albedo_color = Color(0, 0, 0, 1)
+[packed_scene href="res://assets/models/snake/cobra_animation.glb" id="2_cobra_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_head"]
 size = Vector3(0.9, 0.9, 0.9)
@@ -23,23 +12,20 @@ size = Vector3(0.4, 0.4, 0.4)
 [node name="SnakeHead" type="Node3D"]
 script = ExtResource("1_snake_head")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_head")
-surface_material_override/0 = SubResource("StandardMaterial3D_head")
+[node name="CobraModel" parent="." instance=ExtResource("2_cobra_model")]
+transform = Transform3D(-0.01, 0, 8.74228e-10, 0, 0.01, 0, -8.74228e-10, 0, -0.01, 0, -0.5, 0.5)
 
-[node name="EyeL" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.45)
-mesh = SubResource("BoxMesh_eyes")
-surface_material_override/0 = SubResource("StandardMaterial3D_eyes")
-
-[node name="EyeR" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.45)
-mesh = SubResource("BoxMesh_eyes")
-surface_material_override/0 = SubResource("StandardMaterial3D_eyes")
-
-[node name="RiderCam" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1, 1)
+[node name="RiderCam" type="Camera3D" parent="CobraModel/Skeleton3D" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)
 current = true
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="CobraModel/Skeleton3D" index="2"]
+bone_name = "joint47_036"
+bone_idx = 37
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="CobraModel/Skeleton3D/BoneAttachment3D"]
+transform = Transform3D(-100, 0, -1.50996e-05, 0, 100, 0, 1.50996e-05, 0, -100, 0, 10, -5)
+remote_path = NodePath("../../../RiderCam")
 
 [node name="HeadArea" type="Area3D" parent="."]
 collision_layer = 1

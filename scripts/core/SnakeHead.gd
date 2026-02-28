@@ -26,10 +26,11 @@ enum Dir { NORTH, SOUTH, EAST, WEST }
 var heading: Dir = Dir.NORTH
 var target_heading: Dir = Dir.NORTH
 
-@onready var rider_cam: Camera3D = $RiderCam
+@onready var rider_cam: Camera3D = $CobraModel/Skeleton3D/RiderCam
 @onready var head_area: Area3D = $HeadArea
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
+@onready var cobra_model: Node3D = $CobraModel
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
@@ -192,8 +193,10 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property($MeshInstance3D, "scale", Vector3(1.2, 0.8, 1.2), 0.1)
-	tween.tween_property($MeshInstance3D, "scale", Vector3(1.0, 1.0, 1.0), 0.2)
+	# Original scale for CobraModel is Vector3(-0.01, 0.01, -0.01)
+	var orig_scale = Vector3(-0.01, 0.01, -0.01)
+	tween.tween_property(cobra_model, "scale", orig_scale * 1.2, 0.1)
+	tween.tween_property(cobra_model, "scale", orig_scale, 0.2)
 
 func update_rotation(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, target_rotation_y, turn_interpolation_speed * delta)
