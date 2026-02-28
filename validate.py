@@ -10,10 +10,7 @@ def check_godot():
     """Checks if 'godot' is available in the system PATH."""
     godot_path = shutil.which("godot")
     if not godot_path:
-        if os.environ.get("GITHUB_ACTIONS") == "true":
-            print("Error: 'godot' not found in CI environment.", file=sys.stderr)
-            return False
-        print("Warning: 'godot' not found in system PATH. Skipping build/run checks.", file=sys.stderr)
+        print("Warning: 'godot' not found in system PATH. Skipping Godot-dependent checks.", file=sys.stderr)
         return False
     print(f"Found Godot at: {godot_path}")
     return True
@@ -197,7 +194,9 @@ def main():
     success = True
     
     godot_available = check_godot()
+    # If in CI and Godot is missing, fail the validation
     if os.environ.get("GITHUB_ACTIONS") == "true" and not godot_available:
+        print("Error: 'godot' must be available in CI environment.", file=sys.stderr)
         success = False
 
     if not verify_files(): success = False
