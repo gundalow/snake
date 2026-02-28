@@ -13,10 +13,13 @@ var score: int = 0
 var initial_camera_height: float
 
 # --- Position History & Body Segments ---
-const STEP_DISTANCE: float = 1.0 # Distance between segments
+# Higher resolution history for smoother tail following
+const HISTORY_RESOLUTION: float = 0.1 # Every 0.1 units
+const SEGMENT_SPACING: int = 10 # 10 * 0.1 = 1.0 unit spacing
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
-var distance_traveled: float = 0.0
+var distance_traveled_since_last_history: float = 0.0
+
 @export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
 @export var dazed_scene: PackedScene = preload("res://scenes/effects/dazed_particles.tscn")
 # ----------------------------------------
@@ -33,6 +36,7 @@ var target_heading: Dir = Dir.NORTH
 @onready var cobra_model: Node3D = $CobraModel
 
 var current_model_scale: Vector3 = Vector3.ONE
+var model_offset: Vector3 = Vector3.ZERO
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
@@ -43,7 +47,7 @@ func _ready() -> void:
 	var skeleton = _find_node_by_class(cobra_model, "Skeleton3D")
 	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
 	
-	# play snake animation
+	# Play snake animation
 	if anim_player:
 		anim_player.play("SANKE animations")
 		
@@ -64,7 +68,11 @@ func _ready() -> void:
 		remote.rotation_degrees = Vector3(-10, 0, 0) # Slight downward look
 		attachment.add_child(remote)
 	
-	# Initial segments (Start with 2 as before)
+	# Seed initial history with current position
+	for i in range(100):
+		position_history.push_back(global_transform)
+	
+	# Initial segments
 	add_segment()
 	add_segment()
 	
@@ -72,7 +80,6 @@ func _ready() -> void:
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _fit_to_size(target_units: float) -> void:
-	# Calculate current AABB of all meshes in model
 	var aabb = AABB()
 	var first = true
 	var meshes = _get_all_meshes(cobra_model)
@@ -86,29 +93,14 @@ func _fit_to_size(target_units: float) -> void:
 	
 	if aabb.size.z == 0: return
 	
-	# Calculate scale factor to make the Z-length match target_units
-	# The snake is naturally long on Z axis.
-	var scale_factor = target_units / aabb.size.z
-	
-	# We want to maintain original model's scale sign if it was mirrored
-	# but ensure it's uniform for the target size.
-	var s = scale_factor
+	var s = target_units / aabb.size.z
 	cobra_model.scale = Vector3(s, s, s)
 	current_model_scale = cobra_model.scale
 	
-	# Offset to sit on floor (Y=0.5)
-	# Model center is aabb.get_center(), we want min.y to be at local Y=0
-	# relative to the parent which is at Y=0.5 global.
-	cobra_model.position.y = -aabb.position.y * s
-	# Center on Z and offset so the "Head" (Z max) is at the node origin
-	# Our model length is target_units. aabb.end.z is the max Z.
-	cobra_model.position.z = -aabb.end.z * s
-	
-	print("--- Dynamic Scaling ---")
-	print("  Original Size: ", aabb.size)
-	print("  Scale Factor: ", s)
-	print("  Final Scale: ", cobra_model.scale)
-	print("  Local Y Offset: ", cobra_model.position.y)
+	# Model sits inside the node with these offsets
+	model_offset.y = -aabb.position.y * s
+	model_offset.z = -aabb.end.z * s
+	cobra_model.position = model_offset
 
 func _get_all_meshes(root: Node) -> Array[MeshInstance3D]:
 	var results: Array[MeshInstance3D] = []
@@ -142,17 +134,13 @@ func _process(delta: float) -> void:
 
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
+		
 	handle_input()
 	move_forward(delta)
 	update_rotation(delta)
 	
-	if Engine.get_frames_drawn() % 60 == 0:
-		print("--- HEAD DEBUG ---")
-		print("  Node3D Global Pos: ", global_position)
-		print("  Model Local Pos:  ", cobra_model.position)
-		print("  Model Global Pos: ", cobra_model.global_position)
-		print("  Model Scale:      ", cobra_model.scale)
-		print("  Score: ", score)
+	# Ensure the cobra model exactly follows the node
+	cobra_model.position = model_offset
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
@@ -177,30 +165,41 @@ func move_forward(delta: float) -> void:
 	var move_vec = forward * move_speed * delta
 	global_position += move_vec
 	
-	distance_traveled += move_vec.length()
+	distance_traveled_since_last_history += move_vec.length()
 	
-	if distance_traveled >= STEP_DISTANCE:
-		distance_traveled -= STEP_DISTANCE
+	if distance_traveled_since_last_history >= HISTORY_RESOLUTION:
+		distance_traveled_since_last_history -= HISTORY_RESOLUTION
 		position_history.insert(0, global_transform)
+		
+		# Keep history size matched to segments
+		var max_history = (segments.size() + 1) * SEGMENT_SPACING
+		if position_history.size() > max_history:
+			position_history.resize(max_history)
+		
 		update_segments()
-		if position_history.size() > segments.size() + 1:
-			position_history.resize(segments.size() + 1)
 
 func update_segments() -> void:
 	for i in range(segments.size()):
-		if i < position_history.size():
-			segments[i].global_transform = position_history[i]
+		var history_index = (i + 1) * SEGMENT_SPACING
+		if history_index < position_history.size():
+			segments[i].global_transform = position_history[history_index]
 
 func add_segment() -> void:
 	var new_segment = segment_scene.instantiate()
 	get_parent().add_child.call_deferred(new_segment)
 	
-	if position_history.size() > 0:
-		new_segment.global_transform = position_history.back()
+	var history_index = (segments.size() + 1) * SEGMENT_SPACING
+	if history_index < position_history.size():
+		new_segment.global_transform = position_history[history_index]
 	else:
 		new_segment.global_transform = global_transform
 		
-	# Fix lambda capture bug: Use a weak reference or check for validity
+	# Offset animation for "slither" wave
+	if new_segment.has_method("set_animation_offset"):
+		# Each segment is 0.2s behind the one in front
+		new_segment.set_animation_offset(-0.2 * (segments.size() + 1))
+		
+	# Fix lambda capture bug
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
