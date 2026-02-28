@@ -1,14 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://e5k8v8l8j8x7y"]
+[gd_scene load_steps=5 format=3 uid="uid://e5k8v8l8j8x7y"]
 
-[ext_resource type="PackedScene" uid="uid://i2pju2e2gftn" path="res://assets/models/snake/cobra_animation.glb" id="1_cobra_model"]
+[ext_resource type="Script" path="res://scripts/core/SnakeSegment.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://i2pju2e2gftn" path="res://assets/models/snake/cobra_animation.glb" id="2_cobra_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_segment"]
 size = Vector3(0.8, 0.8, 0.8)
 
 [node name="SnakeSegment" type="Node3D"]
+script = ExtResource("1_script")
 
-[node name="CobraModel" parent="." instance=ExtResource("1_cobra_model")]
-transform = Transform3D(-0.003, 0, 2.62268e-10, 0, 0.003, 0, -2.62268e-10, 0, -0.003, 0, -0.5, 0.15)
+[node name="CobraModel" parent="." instance=ExtResource("2_cobra_model")]
 
 [node name="SegmentArea" type="Area3D" parent="." groups=["body"]]
 collision_layer = 2

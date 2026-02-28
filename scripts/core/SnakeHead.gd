@@ -32,6 +32,8 @@ var target_heading: Dir = Dir.NORTH
 @onready var death_ray: RayCast3D = $DeathRay
 @onready var cobra_model: Node3D = $CobraModel
 
+var current_model_scale: Vector3 = Vector3.ONE
+
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
@@ -45,6 +47,9 @@ func _ready() -> void:
 	if anim_player:
 		anim_player.play("SANKE animations")
 		
+	# Dynamic Scaling
+	_fit_to_size(1.0)
+		
 	# Attach Camera to Bone 36
 	if skeleton:
 		var bone_name = "joint47_036" # Identified as Bone 36 in tool
@@ -54,18 +59,63 @@ func _ready() -> void:
 		
 		var remote = RemoteTransform3D.new()
 		remote.remote_path = rider_cam.get_path()
-		# Local offset above the head. 
-		# Scale in the model is tiny (0.01), so offsets are large (100.0 = 1.0 unit)
-		remote.position = Vector3(0, 10, -5) 
+		# Offsets relative to the bone
+		remote.position = Vector3(0, 5, -2) 
 		remote.rotation_degrees = Vector3(0, 180, 0) # Flip to look forward
 		attachment.add_child(remote)
 	
-	# Initial segments
+	# Initial segments (Start with 2 as before)
 	add_segment()
 	add_segment()
 	
 	# Connect collision signals
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
+
+func _fit_to_size(target_units: float) -> void:
+	# Calculate current AABB of all meshes in model
+	var aabb = AABB()
+	var first = true
+	var meshes = _get_all_meshes(cobra_model)
+	for m in meshes:
+		var m_aabb = m.get_aabb()
+		if first:
+			aabb = m_aabb
+			first = false
+		else:
+			aabb = aabb.merge(m_aabb)
+	
+	if aabb.size.z == 0: return
+	
+	# Calculate scale factor to make the Z-length match target_units
+	# The snake is naturally long on Z axis.
+	var scale_factor = target_units / aabb.size.z
+	
+	# We want to maintain original model's scale sign if it was mirrored
+	# but ensure it's uniform for the target size.
+	var s = scale_factor
+	cobra_model.scale = Vector3(s, s, s)
+	current_model_scale = cobra_model.scale
+	
+	# Offset to sit on floor (Y=0.5)
+	# Model center is aabb.get_center(), we want min.y to be at local Y=0
+	# relative to the parent which is at Y=0.5 global.
+	cobra_model.position.y = -aabb.position.y * s
+	# Center it on Z
+	cobra_model.position.z = -aabb.get_center().z * s
+	
+	print("--- Dynamic Scaling ---")
+	print("  Original Size: ", aabb.size)
+	print("  Scale Factor: ", s)
+	print("  Final Scale: ", cobra_model.scale)
+	print("  Local Y Offset: ", cobra_model.position.y)
+
+func _get_all_meshes(root: Node) -> Array[MeshInstance3D]:
+	var results: Array[MeshInstance3D] = []
+	if root is MeshInstance3D:
+		results.append(root)
+	for child in root.get_children():
+		results.append_array(_get_all_meshes(child))
+	return results
 
 func _find_node_by_class(root: Node, target_class: String) -> Node:
 	if root.is_class(target_class):
@@ -97,9 +147,6 @@ func _process(delta: float) -> void:
 	
 	if Engine.get_frames_drawn() % 60 == 0:
 		print("Head Pos: ", global_position, " Score: ", score)
-		var foods = get_tree().get_nodes_in_group("foods")
-		for f in foods:
-			print("  Food at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
@@ -147,10 +194,15 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 		
+	# Fix lambda capture bug: Use a weak reference or check for validity
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
-		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
+		var timer = get_tree().create_timer(1.0)
+		timer.timeout.connect(func():
+			if is_instance_valid(area):
+				area.monitorable = true
+		)
 		
 	segments.append(new_segment)
 
@@ -215,9 +267,8 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	var orig_scale = Vector3(-0.003, 0.003, -0.003)
-	tween.tween_property(cobra_model, "scale", orig_scale * 1.2, 0.1)
-	tween.tween_property(cobra_model, "scale", orig_scale, 0.2)
+	tween.tween_property(cobra_model, "scale", current_model_scale * 1.2, 0.1)
+	tween.tween_property(cobra_model, "scale", current_model_scale, 0.2)
 
 func update_rotation(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, target_rotation_y, turn_interpolation_speed * delta)
