@@ -16,6 +16,8 @@ mesh = SubResource("BoxMesh_segment")
 surface_material_override/0 = SubResource("StandardMaterial3D_segment")
 
 [node name="SegmentArea" type="Area3D" parent="." groups=["body"]]
+collision_layer = 2
+collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegmentArea"]
 shape = SubResource("BoxShape_segment")
