@@ -13,18 +13,24 @@ func _ready() -> void:
 	var keys = MODELS.keys()
 	var random_key = keys[randi() % keys.size()]
 	var model_scene = MODELS[random_key]
+	print("Spawning fruit: ", random_key)
 
 	# Instantiate the model
 	var model = model_scene.instantiate()
 	add_child(model)
 
-	# Hide the placeholder mesh if it exists
+	# Hide the placeholder mesh
 	if mesh_instance:
 		mesh_instance.visible = false
+		print("Placeholder mesh hidden")
 
-	# Adjust scale if necessary (assuming original models might be large)
-	# We want them to fit roughly in a 0.8x0.8x0.8 box
-	model.scale = Vector3(0.5, 0.5, 0.5) # Adjust based on actual model size if known
+	# Adjust scale based on the fruit type
+	if random_key == "banana":
+		model.scale = Vector3(0.2, 0.2, 0.2)
+	else:
+		model.scale = Vector3(0.5, 0.5, 0.5)
+	
+	print("Model scale: ", model.scale)
 
-	# Apply a simple rotation to make them look interesting
-	model.rotation_degrees = Vector3(randf_range(0, 360), randf_range(0, 360), randf_range(0, 360))
+	# Apply a simple rotation - but keep it upright initially to see it better
+	model.rotation_degrees = Vector3(0, randf_range(0, 360), 0)

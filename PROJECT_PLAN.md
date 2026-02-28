@@ -37,7 +37,7 @@
 2. [x] **Body Segments:**
     - Spawn `MeshInstance3D` segments that follow the head's history. Each segment "occupies" a previous coordinate slot from the history buffer.
 3. [x] **Fruit Spawner & Interaction:**
-    - **Spawner:** Randomly picks meshes (Sphere for Apple, Capsule for Banana) with high-saturation PBR colors.
+    - **Spawner:** Randomly picks from high-quality 3D fruit models (Apple, Banana, Orange).
     - **Interaction:** Detect collision with fruit. 
     - **Growth:** On eat, add a new segment to the tail, slightly increase `move_speed`, and play a "Squash and Stretch" tween on the head.
 
@@ -48,9 +48,9 @@
     - Detect collision with boundary walls or the snake's own body segments.
 2. [x] **The "Rider Thrown" Effect:**
     - **Freeze:** Set `set_process(false)` for all movement logic.
-    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
+    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` (using a Box collision) and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
 3. [x] **Dazed Animation:**
-    - Spawn a "Dazed" node above the head. Use `GPUParticles3D` or a spinning `Sprite3D` of stars/birds.
+    - Spawn a "Dazed" node above the head. Use `GPUParticles3D` with box emission.
 4. [x] **Game Over UI:**
     - Fade in a HUD with "Restart" and "Quit" options.
 
@@ -66,7 +66,7 @@
 
 ## Milestone 7: Realistic Graphics for Fruit
 1. **Model Integration:**
-    - Replace the basic `SphereMesh` and `CapsuleMesh` in `Fruit.tscn` with high-quality 3D models (GLB/GLTF).
+    - Replace the basic meshes in `Fruit.tscn` with high-quality 3D models (GLB/GLTF).
     - Assets: Use open-source, CC0-licensed models for Apples, Bananas, and Oranges.
 2. **Visual Polishing:**
     - Apply PBR materials to ensure models look vibrant under the game's lighting.

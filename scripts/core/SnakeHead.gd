@@ -140,14 +140,14 @@ func die() -> void:
 	# Create RigidBody3D at the root
 	var rb = RigidBody3D.new()
 	var collision = CollisionShape3D.new()
-	var sphere = SphereShape3D.new()
-	sphere.radius = 0.5
-	collision.shape = sphere
+	var box = BoxShape3D.new()
+	box.size = Vector3(1, 1, 1)
+	collision.shape = box
 	
 	rb.add_child(collision)
 	rb.add_child(cam)
 	
-	# Reset local camera transform so it stays inside the RB sphere
+	# Reset local camera transform so it stays inside the RB box
 	cam.transform = Transform3D.IDENTITY
 	
 	# Add RB to the scene and place it where the camera was
