@@ -10,7 +10,6 @@ var camera_tilt: float = 0.0
 var is_alive: bool = true
 var invulnerability_timer: float = 0.5 # Give segments time to spread
 var score: int = 0
-var front_ray: RayCast3D
 var initial_camera_height: float
 
 # --- Position History & Body Segments ---
@@ -29,19 +28,12 @@ var target_heading: Dir = Dir.NORTH
 
 @onready var rider_cam: Camera3D = $RiderCam
 @onready var head_area: Area3D = $HeadArea
+@onready var food_ray: RayCast3D = $FoodRayCast
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
 	initial_camera_height = rider_cam.global_position.y
-
-	# Setup front ray for collision
-	front_ray = RayCast3D.new()
-	front_ray.target_position = Vector3(0, 0, -0.6) # Just past the front face
-	front_ray.enabled = true
-	front_ray.collide_with_areas = true # Walls and body segments are Area3D
-	front_ray.collision_mask = 2 | 4 # Body (2) and Walls (4)
-	add_child(front_ray)
 	
 	# Initial segments
 	add_segment()
@@ -53,12 +45,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not is_alive: return
 
-	# Check for front-only collision
-	if front_ray.is_colliding():
-		var collider = front_ray.get_collider()
-		if collider.is_in_group("walls") or collider.is_in_group("body"):
-			die("Crashed into: " + collider.name)
-			return
+	# Precise Food Collection via RayCast
+	if food_ray.is_colliding():
+		var collider = food_ray.get_collider()
+		if collider.is_in_group("foods"):
+			_eat_food(collider)
 
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
@@ -68,9 +59,9 @@ func _process(delta: float) -> void:
 	
 	if Engine.get_frames_drawn() % 60 == 0:
 		print("Head Pos: ", global_position, " Score: ", score)
-		var fruits = get_tree().get_nodes_in_group("fruits")
-		for f in fruits:
-			print("  Fruit at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
+		var foods = get_tree().get_nodes_in_group("foods")
+		for f in foods:
+			print("  Food at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
@@ -141,16 +132,24 @@ func add_segment() -> void:
 func _on_area_entered(area: Area3D) -> void:
 	if not is_alive: return
 	
-	# print("Head collided with: ", area.name, " (", area.get_groups(), ")")
-	
-	if area.is_in_group("fruits"):
-		print("EATING FRUIT!")
-		area.queue_free()
-		add_segment()
-		move_speed += 0.2
-		score += 1
-		update_score_ui()
-		play_eat_juice()
+	if area.is_in_group("walls"):
+		print("HIT WALL: ", area.name)
+		die("Wall: " + area.name)
+	elif area.is_in_group("body"):
+		if invulnerability_timer <= 0:
+			print("HIT BODY: ", area.get_parent().name)
+			die("Body Segment")
+		else:
+			print("Ignored body hit due to invulnerability")
+
+func _eat_food(area: Area3D) -> void:
+	print("EATING FOOD!")
+	area.queue_free()
+	add_segment()
+	move_speed += 0.2
+	score += 1
+	update_score_ui()
+	play_eat_juice()
 
 func update_score_ui() -> void:
 	var score_label = get_node_or_null("/root/Main/HUD/ScoreLabel")

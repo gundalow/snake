@@ -44,3 +44,9 @@ collision_mask = 14
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HeadArea"]
 shape = SubResource("BoxShape_head")
+
+[node name="FoodRayCast" type="RayCast3D" parent="."]
+target_position = Vector3(0, 0, -1)
+collision_mask = 8
+collide_with_areas = true
+collide_with_bodies = false

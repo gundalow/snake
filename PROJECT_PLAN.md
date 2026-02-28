@@ -29,16 +29,16 @@
 3. [x] **Visuals:**
     - Update the `SnakeHead` mesh. Start with a vibrant cube; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
 
-## Milestone 3: The "Train" System (Body & Fruit)
+## Milestone 3: The "Train" System (Body & Food)
 *Core dependencies: Requires a moving Head to generate position history.*
 
 1. [x] **Position History System:**
     - The head records its global position and rotation into an array/buffer every time it moves a certain distance (the "step size").
 2. [x] **Body Segments:**
     - Spawn `MeshInstance3D` segments that follow the head's history. Each segment "occupies" a previous coordinate slot from the history buffer.
-3. [x] **Fruit Spawner & Interaction:**
+3. [x] **Food Spawner & Interaction:**
     - [x] **Spawner:** Randomly picks from high-quality realistic food models (Apple, Lychee, Sweet Potato).
-    - [x] **Interaction:** Detect collision with fruit. 
+    - [x] **Interaction:** Detect collision with food. 
     - [x] **Growth:** On eat, add a new segment to the tail, slightly increase `move_speed`, and play a "Squash and Stretch" tween on the head.
 
 ## Milestone 4: The Death Sequence (Physics & UI)
@@ -67,7 +67,7 @@
 
 ## Milestone 7: Realistic Graphics for Food
 1. [x] **Model Integration:**
-    - Replaced basic meshes in `Fruit.tscn` with high-quality 3D scans.
+    - Replaced basic meshes in `Food.tscn` with high-quality 3D scans.
     - Assets: Use photorealistic GLTF models for Apple, Lychee, and Sweet Potato.
     - Automatic recursion logic to center meshes within their scene origin.
 2. [x] **Visual Polishing:**
@@ -88,7 +88,7 @@
 ## Ideas for Future Enhancements
 - Power-ups (Speed boost, Slow motion).
 - Different biomes (Neon Grid, Jungle, Candy Land).
-- Jaw-moving animations synced with fruit consumption.
+- Jaw-moving animations synced with food consumption.
 - First-person vs. Third-person (Chase) camera toggle.
 - **Camera Dynamics:** Add centrifugal force/inertia effects (e.g., subtle wobble or overshoot) during turns to simulate the "rollercoaster" feel more intensely.
 

@@ -19,7 +19,7 @@ func _ready() -> void:
 	add_child(model)
 	
 	# Recursively reset all local positions in the imported scene to (0,0,0)
-	# This fixes cases where the fruit mesh is far from its own scene origin
+	# This fixes cases where the food mesh is far from its own scene origin
 	_reset_all_node_positions(model)
 
 	# Use 10.0 scale as requested
@@ -37,7 +37,7 @@ func _ready() -> void:
 	model.rotation_degrees = Vector3(0, randf_range(0, 360), 0)
 	
 	# Final check of positions
-	print("Fruit Node (Area3D) Global Pos: ", global_position)
+	print("Food Node (Area3D) Global Pos: ", global_position)
 	_print_mesh_positions(model, 0)
 
 # Recursively reset child positions to identity for imported scenes
