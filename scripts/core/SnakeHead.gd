@@ -47,15 +47,6 @@ func _ready() -> void:
 	if anim_player:
 		anim_player.play("SANKE animations")
 		
-	# DEBUG CUBE: Visualize the actual Node3D position
-	var debug_mesh = MeshInstance3D.new()
-	debug_mesh.mesh = BoxMesh.new()
-	debug_mesh.mesh.size = Vector3(0.5, 0.5, 0.5)
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(1, 0, 0, 0.5) # Semi-transparent red
-	debug_mesh.material_override = mat
-	add_child(debug_mesh)
-		
 	# Dynamic Scaling
 	_fit_to_size(1.0)
 		
@@ -69,8 +60,8 @@ func _ready() -> void:
 		var remote = RemoteTransform3D.new()
 		remote.remote_path = rider_cam.get_path()
 		# Offsets relative to the bone
-		remote.position = Vector3(0, 5, -2) 
-		remote.rotation_degrees = Vector3(0, 0, 0) # Flip to look forward
+		remote.position = Vector3(0, 2, 0) # Tighter to head
+		remote.rotation_degrees = Vector3(-10, 0, 0) # Slight downward look
 		attachment.add_child(remote)
 	
 	# Initial segments (Start with 2 as before)
@@ -109,8 +100,9 @@ func _fit_to_size(target_units: float) -> void:
 	# Model center is aabb.get_center(), we want min.y to be at local Y=0
 	# relative to the parent which is at Y=0.5 global.
 	cobra_model.position.y = -aabb.position.y * s
-	# Center it on Z
-	cobra_model.position.z = -aabb.get_center().z * s
+	# Center on Z and offset so the "Head" (Z max) is at the node origin
+	# Our model length is target_units. aabb.end.z is the max Z.
+	cobra_model.position.z = -aabb.end.z * s
 	
 	print("--- Dynamic Scaling ---")
 	print("  Original Size: ", aabb.size)
