@@ -1,20 +1,28 @@
 extends Area3D
 
-# Hardcoded to only use the new apple model
-const APPLE_MODEL = preload("res://assets/models/food/apple/food_apple_01_4k.gltf")
+# Realistic food models from assets/models/food/
+const MODELS = {
+	"apple": preload("res://assets/models/food/apple/food_apple_01_4k.gltf"),
+	"lychee": preload("res://assets/models/food/lychee/food_lychee_01_4k.gltf"),
+	"sweet_potato": preload("res://assets/models/food/sweet_potato/sweet_potato_4k.gltf")
+}
 
 func _ready() -> void:
-	print("--- Spawning hardcoded apple ---")
+	# Randomly pick one of the realistic food items
+	var keys = MODELS.keys()
+	var random_key = keys[randi() % keys.size()]
+	var model_scene = MODELS[random_key]
+	print("--- Spawning realistic food: ", random_key, " ---")
 
 	# Instantiate the model
-	var model = APPLE_MODEL.instantiate()
+	var model = model_scene.instantiate()
 	add_child(model)
 	
 	# Recursively reset all local positions in the imported scene to (0,0,0)
 	# This fixes cases where the fruit mesh is far from its own scene origin
 	_reset_all_node_positions(model)
 
-	# Use a reasonable scale for gameplay - set to 10x as requested
+	# Use 10.0 scale as requested
 	model.scale = Vector3(10.0, 10.0, 10.0)
 	
 	# Add a glowing light to ensure they are visible even in shadow
