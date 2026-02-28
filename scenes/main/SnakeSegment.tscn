@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://e5k8v8l8j8x7y"]
 
-[packed_scene href="res://assets/models/snake/cobra_animation.glb" id="1_cobra_model"]
+[ext_resource type="PackedScene" uid="uid://i2pju2e2gftn" path="res://assets/models/snake/cobra_animation.glb" id="1_cobra_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_segment"]
 size = Vector3(0.8, 0.8, 0.8)

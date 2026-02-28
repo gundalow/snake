@@ -26,21 +26,39 @@ enum Dir { NORTH, SOUTH, EAST, WEST }
 var heading: Dir = Dir.NORTH
 var target_heading: Dir = Dir.NORTH
 
-@onready var rider_cam: Camera3D = $CobraModel/Skeleton3D/RiderCam
+@onready var rider_cam: Camera3D = $RiderCam
 @onready var head_area: Area3D = $HeadArea
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
 @onready var cobra_model: Node3D = $CobraModel
-@onready var anim_player: AnimationPlayer = $CobraModel/AnimationPlayer
 
 func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
 	initial_camera_height = rider_cam.global_position.y
 	
+	# Find internal nodes (Skeleton, AnimPlayer)
+	var skeleton = _find_node_by_class(cobra_model, "Skeleton3D")
+	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
+	
 	# Play snake animation
 	if anim_player:
 		anim_player.play("SANKE animations")
+		
+	# Attach Camera to Bone 36
+	if skeleton:
+		var bone_name = "joint47_036" # Identified as Bone 36 in tool
+		var attachment = BoneAttachment3D.new()
+		attachment.bone_name = bone_name
+		skeleton.add_child(attachment)
+		
+		var remote = RemoteTransform3D.new()
+		remote.remote_path = rider_cam.get_path()
+		# Local offset above the head. 
+		# Scale in the model is tiny (0.01), so offsets are large (100.0 = 1.0 unit)
+		remote.position = Vector3(0, 10, -5) 
+		remote.rotation_degrees = Vector3(0, 180, 0) # Flip to look forward
+		attachment.add_child(remote)
 	
 	# Initial segments
 	add_segment()
@@ -49,11 +67,19 @@ func _ready() -> void:
 	# Connect collision signals
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
+func _find_node_by_class(root: Node, target_class: String) -> Node:
+	if root.is_class(target_class):
+		return root
+	for child in root.get_children():
+		var found = _find_node_by_class(child, target_class)
+		if found:
+			return found
+	return null
+
 func _process(delta: float) -> void:
 	if not is_alive: return
 
 	# Lethal Collision Check via DeathRay
-	# This prevents "side-collision" death during 90-degree snap turns
 	if death_ray.is_colliding():
 		var collider = death_ray.get_collider()
 		if collider.is_in_group("walls"):
@@ -82,7 +108,6 @@ func handle_input() -> void:
 		queue_turn(-1.0) # 90 degrees right
 
 func queue_turn(direction_sign: float) -> void:
-	# Determine the new heading based on current target_heading and turn direction
 	var new_heading: Dir
 	match target_heading:
 		Dir.NORTH: new_heading = Dir.WEST if direction_sign > 0 else Dir.EAST
@@ -90,29 +115,21 @@ func queue_turn(direction_sign: float) -> void:
 		Dir.EAST:  new_heading = Dir.NORTH if direction_sign > 0 else Dir.SOUTH
 		Dir.WEST:  new_heading = Dir.SOUTH if direction_sign > 0 else Dir.NORTH
 	
-	# Since it's a 90-degree turn, 180-degree "suicide" is naturally prevented
 	target_heading = new_heading
 	target_rotation_y += direction_sign * PI / 2.0
 	camera_tilt = direction_sign * 0.1 # Slight tilt in radians
 
 func move_forward(delta: float) -> void:
-	# We move in the direction the head is facing
 	var forward = -transform.basis.z
 	var move_vec = forward * move_speed * delta
 	global_position += move_vec
 	
 	distance_traveled += move_vec.length()
 	
-	# Every time we travel STEP_DISTANCE, record the history and update segments
 	if distance_traveled >= STEP_DISTANCE:
 		distance_traveled -= STEP_DISTANCE
-		# Store the current head transform as the "newest" history point
 		position_history.insert(0, global_transform)
-		
-		# If we have segments, position them according to history
 		update_segments()
-		
-		# Keep history from growing indefinitely
 		if position_history.size() > segments.size() + 1:
 			position_history.resize(segments.size() + 1)
 
@@ -130,7 +147,6 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 		
-	# Disable collision for a moment to prevent immediate death
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
@@ -140,7 +156,6 @@ func add_segment() -> void:
 
 func _on_mouth_area_entered(area: Area3D) -> void:
 	if not is_alive: return
-	
 	if area.is_in_group("foods"):
 		_eat_food(area)
 
@@ -148,7 +163,6 @@ func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
 	area.queue_free()
 	
-	# Spawn new food
 	var spawner = get_node_or_null("/root/Main/FoodSpawner")
 	if spawner:
 		spawner.spawn_food()
@@ -169,11 +183,10 @@ func die(reason: String = "Unknown") -> void:
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
 	
-	# Stop animation on death
+	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
 	if anim_player:
 		anim_player.stop()
 	
-	# Camera Bounce Effect
 	var cam = rider_cam
 	var old_global_pos = cam.global_position
 	var old_global_rot = cam.global_rotation
@@ -202,7 +215,6 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	# Original scale for CobraModel is Vector3(-0.01, 0.01, -0.01)
 	var orig_scale = Vector3(-0.01, 0.01, -0.01)
 	tween.tween_property(cobra_model, "scale", orig_scale * 1.2, 0.1)
 	tween.tween_property(cobra_model, "scale", orig_scale, 0.2)
