@@ -1,21 +1,13 @@
 extends Node3D
 
 @export var food_scene: PackedScene = preload("res://scenes/main/Food.tscn")
-@export var spawn_interval: float = 3.0
 @export var board_size: float = 28.0 # Slightly smaller than 30 to avoid walls
 
-var spawn_timer: float = 0.0
 var first_spawn: bool = true
 
 func _ready() -> void:
 	# Initial spawn
 	spawn_food()
-
-func _process(delta: float) -> void:
-	spawn_timer += delta
-	if spawn_timer >= spawn_interval:
-		spawn_timer = 0.0
-		spawn_food()
 
 func spawn_food() -> void:
 	var x: float

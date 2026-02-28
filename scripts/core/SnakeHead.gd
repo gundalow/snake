@@ -141,6 +141,12 @@ func _on_mouth_area_entered(area: Area3D) -> void:
 func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
 	area.queue_free()
+	
+	# Spawn new food
+	var spawner = get_node_or_null("/root/Main/FoodSpawner")
+	if spawner:
+		spawner.spawn_food()
+		
 	add_segment()
 	move_speed += 0.2
 	score += 1
