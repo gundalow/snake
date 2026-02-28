@@ -43,9 +43,18 @@ func _ready() -> void:
 	var skeleton = _find_node_by_class(cobra_model, "Skeleton3D")
 	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
 	
-	# Play snake animation
+	# play snake animation
 	if anim_player:
 		anim_player.play("SANKE animations")
+		
+	# DEBUG CUBE: Visualize the actual Node3D position
+	var debug_mesh = MeshInstance3D.new()
+	debug_mesh.mesh = BoxMesh.new()
+	debug_mesh.mesh.size = Vector3(0.5, 0.5, 0.5)
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(1, 0, 0, 0.5) # Semi-transparent red
+	debug_mesh.material_override = mat
+	add_child(debug_mesh)
 		
 	# Dynamic Scaling
 	_fit_to_size(1.0)
@@ -146,7 +155,12 @@ func _process(delta: float) -> void:
 	update_rotation(delta)
 	
 	if Engine.get_frames_drawn() % 60 == 0:
-		print("Head Pos: ", global_position, " Score: ", score)
+		print("--- HEAD DEBUG ---")
+		print("  Node3D Global Pos: ", global_position)
+		print("  Model Local Pos:  ", cobra_model.position)
+		print("  Model Global Pos: ", cobra_model.global_position)
+		print("  Model Scale:      ", cobra_model.scale)
+		print("  Score: ", score)
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):

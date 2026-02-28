@@ -5,6 +5,15 @@ extends Node3D
 func _ready() -> void:
 	_fit_to_size(1.0)
 	
+	# DEBUG CUBE: Visualize actual segment position
+	var debug_mesh = MeshInstance3D.new()
+	debug_mesh.mesh = BoxMesh.new()
+	debug_mesh.mesh.size = Vector3(0.4, 0.4, 0.4)
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0, 0, 1, 0.5) # Semi-transparent blue
+	debug_mesh.material_override = mat
+	add_child(debug_mesh)
+	
 	# Find and play animation if it exists
 	var anim_player = _find_node_by_class(cobra_model, "AnimationPlayer")
 	if anim_player:
