@@ -64,6 +64,14 @@
     - Ensure the game maintains 60+ FPS on Fedora's Vulkan Forward+ renderer.
     - Review `GPUParticles3D` impact on integrated graphics.
 
+## Milestone 7: Realistic Graphics for Fruit
+1. **Model Integration:**
+    - Replace the basic `SphereMesh` and `CapsuleMesh` in `Fruit.tscn` with high-quality 3D models (GLB/GLTF).
+    - Assets: Use open-source, CC0-licensed models for Apples, Bananas, and Oranges.
+2. **Visual Polishing:**
+    - Apply PBR materials to ensure models look vibrant under the game's lighting.
+    - Maintain the "juicy" feel with the existing "Squash and Stretch" animations.
+
 ---
 
 ## Ideas for Future Enhancements
