@@ -83,6 +83,17 @@
     - Replaced glowing walls with a garden fence visual.
     - Implemented a wooden plank shader for the boundaries.
 
+## Milestone 9: Snake Model & Animation
+1. [x] **Snake Model Integration:**
+    - Replaced primitive meshes with the high-quality Cobra model (`cobra_animation.glb`).
+    - Implemented robust script-based node discovery to locate the internal `Skeleton3D` and `AnimationPlayer`.
+2. [x] **First-Person Camera Attachment:**
+    - Programmatically attached the `RiderCam` to the snake's neck (Bone 36) using `BoneAttachment3D`.
+    - Integrated `RemoteTransform3D` for precise camera positioning relative to the animated skeleton.
+3. [x] **Animation Implementation:**
+    - Configured continuous looping of the "SANKE animations" track.
+    - Implemented logic to stop animations upon the snake's death.
+
 ---
 
 ## Ideas for Future Enhancements
