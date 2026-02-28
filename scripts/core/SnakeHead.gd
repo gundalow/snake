@@ -13,7 +13,6 @@ var score: int = 0
 var initial_camera_height: float
 
 # --- Position History & Body Segments ---
-# Higher resolution history for smoother tail following
 const HISTORY_RESOLUTION: float = 0.1 # Every 0.1 units
 const SEGMENT_SPACING: int = 10 # 10 * 0.1 = 1.0 unit spacing
 var position_history: Array[Transform3D] = []
@@ -46,8 +45,18 @@ func _ready() -> void:
 	# Find internal nodes (Skeleton)
 	var skeleton = _find_node_by_class(cobra_model, "Skeleton3D")
 	
-	# Dynamic Scaling
-	_fit_to_size(1.0)
+	# Dynamic Scaling - BIGGER FOR VISIBILITY
+	_fit_to_size(5.0)
+	
+	# VISIBILITY VERIFICATION: Add a bright green marker
+	var marker = MeshInstance3D.new()
+	marker.mesh = BoxMesh.new()
+	marker.mesh.size = Vector3(1, 1, 1)
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0, 1, 0, 1) # Full bright green
+	mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED # Glows in dark
+	marker.material_override = mat
+	add_child(marker)
 		
 	# Attach Camera to Bone 36
 	if skeleton:
@@ -58,12 +67,11 @@ func _ready() -> void:
 		
 		var remote = RemoteTransform3D.new()
 		remote.remote_path = rider_cam.get_path()
-		# Offsets relative to the bone
-		remote.position = Vector3(0, 2, 0) # Tighter to head
-		remote.rotation_degrees = Vector3(-10, 0, 0) # Slight downward look
+		remote.position = Vector3(0, 2, 0)
+		remote.rotation_degrees = Vector3(-10, 0, 0)
 		attachment.add_child(remote)
 	
-	# Seed initial history with current position
+	# Seed initial history
 	for i in range(100):
 		position_history.push_back(global_transform)
 	
@@ -71,7 +79,6 @@ func _ready() -> void:
 	add_segment()
 	add_segment()
 	
-	# Connect collision signals
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _fit_to_size(target_units: float) -> void:
@@ -92,7 +99,7 @@ func _fit_to_size(target_units: float) -> void:
 	cobra_model.scale = Vector3(s, s, s)
 	current_model_scale = cobra_model.scale
 	
-	# Model sits inside the node with these offsets
+	# Align so the "Head" (Z max) is at the node origin
 	model_offset.y = -aabb.position.y * s
 	model_offset.z = -aabb.end.z * s
 	cobra_model.position = model_offset
@@ -117,7 +124,6 @@ func _find_node_by_class(root: Node, target_class: String) -> Node:
 func _process(delta: float) -> void:
 	if not is_alive: return
 
-	# Lethal Collision Check via DeathRay
 	if death_ray.is_colliding():
 		var collider = death_ray.get_collider()
 		if collider.is_in_group("walls"):
@@ -134,14 +140,18 @@ func _process(delta: float) -> void:
 	move_forward(delta)
 	update_rotation(delta)
 	
-	# Ensure the cobra model exactly follows the node
 	cobra_model.position = model_offset
+
+	if Engine.get_frames_drawn() % 60 == 0:
+		print("--- SNAKE DEBUG ---")
+		print("  Head Node Global Pos: ", global_position)
+		print("  Head Model Global Pos: ", cobra_model.global_position)
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
-		queue_turn(1.0) # 90 degrees left
+		queue_turn(1.0)
 	elif Input.is_action_just_pressed("turn_right"):
-		queue_turn(-1.0) # 90 degrees right
+		queue_turn(-1.0)
 
 func queue_turn(direction_sign: float) -> void:
 	var new_heading: Dir
@@ -153,7 +163,7 @@ func queue_turn(direction_sign: float) -> void:
 	
 	target_heading = new_heading
 	target_rotation_y += direction_sign * PI / 2.0
-	camera_tilt = direction_sign * 0.1 # Slight tilt in radians
+	camera_tilt = direction_sign * 0.1
 
 func move_forward(delta: float) -> void:
 	var forward = -transform.basis.z
@@ -165,12 +175,9 @@ func move_forward(delta: float) -> void:
 	if distance_traveled_since_last_history >= HISTORY_RESOLUTION:
 		distance_traveled_since_last_history -= HISTORY_RESOLUTION
 		position_history.insert(0, global_transform)
-		
-		# Keep history size matched to segments
 		var max_history = (segments.size() + 1) * SEGMENT_SPACING
 		if position_history.size() > max_history:
 			position_history.resize(max_history)
-		
 		update_segments()
 
 func update_segments() -> void:
@@ -189,7 +196,6 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 		
-	# Fix lambda capture bug
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
@@ -209,11 +215,9 @@ func _on_mouth_area_entered(area: Area3D) -> void:
 func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
 	area.queue_free()
-	
 	var spawner = get_node_or_null("/root/Main/FoodSpawner")
 	if spawner:
 		spawner.spawn_food()
-		
 	add_segment()
 	move_speed += 0.2
 	score += 1
