@@ -12,7 +12,12 @@ def check_godot():
     if not godot_path:
         print("Warning: 'godot' not found in system PATH. Skipping Godot-dependent checks.", file=sys.stderr)
         return False
-    print(f"Found Godot at: {godot_path}")
+
+    try:
+        version = subprocess.check_output([godot_path, "--version"], text=True).strip()
+        print(f"Found Godot {version} at: {godot_path}")
+    except Exception:
+        print(f"Found Godot at: {godot_path}")
     return True
 
 def verify_files():
@@ -146,6 +151,7 @@ def run_headless_build():
 def run_headless_execution():
     """Runs Godot in headless mode for a few frames and scans for errors."""
     print("Running Godot headless execution check...")
+    output = ""
     try:
         # Run for 20 frames and then terminate. Using fewer frames to reduce wait time.
         process = subprocess.Popen(
@@ -154,41 +160,47 @@ def run_headless_execution():
             stderr=subprocess.PIPE,
             text=True
         )
-        stdout, stderr = process.communicate(timeout=15)
+        try:
+            stdout, stderr = process.communicate(timeout=30) # Increased timeout for CI
+            output = stdout + stderr
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout, stderr = process.communicate()
+            output = stdout + stderr
+            print("Error: Godot headless execution timed out.", file=sys.stderr)
+            # If it timed out, we check if there were errors captured before it hung
+            check_for_errors(output)
+            return False # Enforce no timeout in CI
 
-        output = stdout + stderr
-        error_patterns = [
-            r"SCRIPT ERROR",
-            r"ERROR:",
-            r"FATAL:",
-            r"invalid index",
-            r"Null instance"
-        ]
+        return check_for_errors(output) and process.returncode == 0
 
-        found_errors = False
-        for pattern in error_patterns:
-            if re.search(pattern, output, re.IGNORECASE):
-                print(f"Error: Detected pattern '{pattern}' in Godot output.", file=sys.stderr)
-                found_errors = True
-
-        if found_errors:
-            print("Full Output for Debugging:", file=sys.stderr)
-            print(output, file=sys.stderr)
-            return False
-
-        if process.returncode != 0:
-            print(f"Error: Godot headless execution failed with return code {process.returncode}.", file=sys.stderr)
-            print(stderr, file=sys.stderr)
-            return False
-
-        print("Execution check successful (no common error patterns detected)!")
-        return True
-    except subprocess.TimeoutExpired:
-        print("Execution timed out or --quit-after-frames not supported, but we assume it initialized if it didn't crash.")
-        return True
     except Exception as e:
         print(f"Error during execution check: {e}", file=sys.stderr)
         return False
+
+def check_for_errors(output):
+    """Scans output for common error patterns."""
+    error_patterns = [
+        r"SCRIPT ERROR",
+        r"ERROR:",
+        r"FATAL:",
+        r"invalid index",
+        r"Null instance"
+    ]
+
+    found_errors = False
+    for pattern in error_patterns:
+        if re.search(pattern, output, re.IGNORECASE):
+            print(f"Error: Detected pattern '{pattern}' in Godot output.", file=sys.stderr)
+            found_errors = True
+
+    if found_errors:
+        print("Full Output for Debugging:", file=sys.stderr)
+        print(output, file=sys.stderr)
+        return False
+
+    print("Execution check successful (no common error patterns detected)!")
+    return True
 
 def main():
     success = True
@@ -203,7 +215,7 @@ def main():
     if not check_input_map(): success = False
     if not check_physics_layers(): success = False
     if not check_missing_artefacts(): success = False
-    
+
     if godot_available:
         if not run_headless_syntax_check(): success = False
         if not run_headless_build(): success = False
