@@ -138,16 +138,16 @@
 *   **AI Vibe Codeable?** Yes, simple orbital math and an `AudioStreamPlayer3D`.
 
 ### Distinct Eating Audio (Munch vs. Crunch)
-*   **Details:** Different foods have unique sounds. Apples = "Crunch", Lychees = "Slurp/Gulp", Sweet Potato = "Munch".
-*   **Why it's fun:** Adds sensory variety and rewards the player for collecting different items.
-*   **Questions:** Do we need a pitch-shifter to make them sound different every time?
-*   **AI Vibe Codeable?** Yes, just a `match` statement in `SnakeHead._eat_food()`.
+*   **Details:** Different foods have unique sounds. Apples = "Crunch", Lychees = "Slurp/Gulp", Sweet Potato = "Munch". For "yucky" foods like Broccoli or Sprouts, the snake makes "Urgh!", "Disgusting!", or even a hilarious "Vomit/Gag" sound.
+*   **Why it's fun:** Adds sensory variety and hilarious "gross-out" humor that kids love.
+*   **Questions:** Should we have a "Yuck" meter?
+*   **AI Vibe Codeable?** Yes.
 
 ### The "Ouch!" Wall Collision
-*   **Details:** A loud, cartoonish "Thud!" or "Bonk!" sound when the head hits a wall, accompanied by a quick camera shake.
-*   **Why it's fun:** It gives the impact a physical weight.
-*   **Questions:** Should the pitch vary based on the snake's speed at the time of impact?
-*   **AI Vibe Codeable?** Yes, trivial.
+*   **Details:** A loud, cartoonish "Thud!" or "Bonk!" sound when the head hits a wall, accompanied by a quick camera shake and a "Cracked Glass" overlay effect on the screen (making it look like the snake hit the camera lens).
+*   **Why it's fun:** It gives the impact physical weight and a funny visual consequence.
+*   **Questions:** Should different walls have different crack patterns?
+*   **AI Vibe Codeable?** Yes, a simple texture overlay and shake.
 
 ### Golden Apple Power-Up
 *   **Details:** A rare 5% chance to spawn a glowing Golden Apple that gives +5 points and makes the snake glow rainbow for 5 seconds.
@@ -403,11 +403,12 @@
 *   **Questions:** Is it too hard to see where the tail is? (Add a faint particle "ghost" trail).
 *   **AI Vibe Codeable?** Yes, toggling \`visible\` property.
 
-#### 12. The Mega-Melon (Giant Food)
-*   **Details:** A "Watermelon" that is 5x the size of normal food. It takes 3 "bites" (passes) to fully eat it, giving 5 segments.
-*   **Why it's fun:** Giant things are inherently exciting to kids.
-*   **Questions:** Does the snake slow down while eating something so big?
-*   **AI Vibe Codeable?** Yes, decrementing a \`health\`-like counter on the food.
+### The Mega-Melon (Giant Food)
+*   **Details:** A "Watermelon" that is 5x the size of normal food. It takes 3 "bites" (passes) to fully eat it, giving 5 segments. After the final bite, there is a 1-second silence, followed by a massive, earth-shaking "BURP!" sound.
+*   **Why it's fun:** Giant things and burps are a guaranteed win for 10-year-olds.
+*   **Questions:** Does the burp push nearby food away?
+*   **AI Vibe Codeable?** Yes.
+
 
 #### 13. Confusion Carrot (Reverse Controls)
 *   **Details:** Eating a "Purple Carrot" reverses your controls (Left becomes Right, etc.) for 5 seconds.
@@ -416,9 +417,9 @@
 *   **AI Vibe Codeable?** Yes, simple input logic flip.
 
 #### 14. Tectonic Tussle (Earthquake)
-*   **Details:** Every 30 seconds, the board shakes and all food items "jump" to new random locations.
-*   **Why it's fun:** Keeps the player from getting too comfortable with a specific route.
-*   **Questions:** Does it play a "rumble" sound? (A must for immersion).
+*   **Details:** Every 30 seconds, a giant "World-Stomper" foot appears in the background (outside the fence) and stomps, or giant mole hills pop up, causing the board to shake. All food items "jump" to new random locations due to the impact.
+*   **Why it's fun:** It gives a reason for the randomness and makes the world feel larger and more dangerous.
+*   **Questions:** Can the stomper foot hit the snake? (Probably too hard for now).
 *   **AI Vibe Codeable?** Yes, timer + \`spawn_food()\` calls.
 
 #### 15. The Mimic Menace (Clone Snake)
