@@ -15,6 +15,24 @@ def check_godot():
     print(f"Found Godot at: {godot_path}")
     return True
 
+def fix_whitespace():
+    """Automatically removes trailing whitespace from all .gd files."""
+    print("Fixing trailing whitespace in GDScript files...")
+    for gd_file in Path("scripts").rglob("*.gd"):
+        try:
+            content = gd_file.read_text()
+            # Remove trailing whitespace from each line
+            new_content = "\n".join([line.rstrip() for line in content.splitlines()])
+            # Ensure the file ends with a single newline if it wasn't empty
+            if new_content and not new_content.endswith("\n"):
+                new_content += "\n"
+            
+            if content != new_content:
+                gd_file.write_text(new_content)
+                print(f"  Fixed: {gd_file}")
+        except Exception as e:
+            print(f"  Error fixing {gd_file}: {e}", file=sys.stderr)
+
 def run_headless_import():
     """Runs Godot in headless mode with --editor --quit to trigger initial import of assets."""
     print("Running Godot headless import (editor mode)...")
@@ -224,6 +242,9 @@ def run_headless_execution():
 
 def main():
     success = True
+    
+    # Auto-fix whitespace first to prevent common linting failures
+    fix_whitespace()
     
     godot_available = check_godot()
     # If in CI and Godot is missing, fail the validation
