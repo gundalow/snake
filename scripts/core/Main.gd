@@ -28,6 +28,7 @@ var snake_puns = [
 
 @onready var snake_head = $SnakeHead
 @onready var hud = $HUD
+@onready var status_label = $HUD/StatusLabel
 @onready var food_spawner = $FoodSpawner
 @onready var world_stomper = $WorldStomper
 @onready var camera = $OverheadCam
@@ -35,19 +36,27 @@ var snake_puns = [
 func _ready() -> void:
 	if snake_head:
 		snake_head.score_changed.connect(_on_score_changed)
-		snake_head.food_eaten.connect(_on_food_eaten)
+		snake_head.status_message.connect(_on_status_message)
+		# We'll stop connecting food_eaten to spawn_food,
+		# instead let the FoodSpawner manage its own next-spawn logic
+		# based on the Food's fully_eaten signal.
+		# However, SnakeHead still needs to tell Main/HUD about score etc.
 
 	if world_stomper:
 		world_stomper.stomped.connect(_on_world_stomped)
 
 func _on_score_changed(new_score: int) -> void:
-	if hud:
+	if hud and hud.has_method("update_score"):
 		hud.update_score(new_score)
+	elif hud and hud.has_node("ScoreLabel"):
+		hud.get_node("ScoreLabel").text = "Score: %d" % new_score
+
+func _on_status_message(text: String) -> void:
+	if status_label:
+		status_label.text = text
 
 func _on_food_eaten(type: String, score: int, food_counts: Dictionary) -> void:
-	if food_spawner:
-		food_spawner.spawn_food()
-
+	# FoodSpawner now spawns its own food via signal from Food.gd
 	_check_achievements(type, score, food_counts)
 
 func _check_achievements(type: String, score: int, food_counts: Dictionary) -> void:
