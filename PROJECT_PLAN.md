@@ -83,6 +83,21 @@
     - Replaced glowing walls with a garden fence visual.
     - Implemented a wooden plank shader for the boundaries.
 
+## Milestone 9: Position History & Tail Following
+*Core dependencies: Requires the body segment system from Milestone 3.*
+
+1. [x] **High-Resolution History Buffer:**
+    - Replaced the coarse 1.0-unit step distance with a `HISTORY_RESOLUTION` of `0.1` units, recording transforms 10x more frequently.
+    - `SEGMENT_SPACING = 10` slots places segments 1.0 units apart (10 * 0.1).
+2. [x] **Curved Path Following:**
+    - Segments now follow the exact path taken by the head, including smooth curves around 90-degree turns.
+    - Eliminates "corner-cutting" where segments would skip diagonally between two discrete points.
+3. [x] **History Buffer Initialization:**
+    - Buffer is seeded at startup with positions projected behind the head, preventing segments from spawning at `(0,0,0)`.
+    - New segments are placed at the correct history index based on `SEGMENT_SPACING`.
+4. [x] **Buffer Management:**
+    - History is capped at `segments.size() * SEGMENT_SPACING + 1` entries to prevent unbounded growth.
+
 ---
 
 ## Ideas for Future Enhancements
