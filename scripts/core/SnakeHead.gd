@@ -1,130 +1,139 @@
 extends Node3D
 
-@export var move_speed: float = 5.0
-@export var turn_interpolation_speed: float = 10.0 # 0.1s target
+signal score_changed(new_score)
+signal food_eaten
 
-var current_direction: Vector3 = Vector3.FORWARD
-var next_direction: Vector3 = Vector3.FORWARD
-var target_rotation_y: float = 0.0
-var camera_tilt: float = 0.0
+enum Dir { NORTH, SOUTH, EAST, WEST }
+
+@export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
+@export var dazed_scene: PackedScene = preload("res://scenes/effects/dazed_particles.tscn")
+
 var is_alive: bool = true
-var invulnerability_timer: float = 0.5 # Give segments time to spread
+var invulnerability_timer: float = GameConstants.INVULNERABILITY_TIME
 var score: int = 0
-var initial_camera_height: float
-
-# --- Position History & Body Segments ---
-const HISTORY_RESOLUTION: float = 0.1
-const SEGMENT_SPACING: int = 10
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
 var distance_traveled: float = 0.0
-@export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
-@export var dazed_scene: PackedScene = preload("res://scenes/effects/dazed_particles.tscn")
-# ----------------------------------------
-
-# Using an enum or constants for directions to prevent 180-degree turns
-enum Dir { NORTH, SOUTH, EAST, WEST }
+var grid_distance: float = 0.0
 var heading: Dir = Dir.NORTH
-var target_heading: Dir = Dir.NORTH
+var next_heading: Dir = Dir.NORTH
+var move_speed: float = GameConstants.INITIAL_MOVE_SPEED
 
-@onready var rider_cam: Camera3D = $RiderCam
-@onready var head_area: Area3D = $HeadArea
+@onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
 
 func _ready() -> void:
-	# Initialize rotation based on start direction (North = -Z)
-	target_rotation_y = rotation.y
-	initial_camera_height = rider_cam.global_position.y
-
-	# Seed history buffer before spawning segments
 	_initialize_history()
-
-	# Initial segments
 	add_segment()
 	add_segment()
-
-	# Connect collision signals
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _initialize_history() -> void:
-	var needed = 2 * SEGMENT_SPACING + 1
+	var needed = 2 * GameConstants.SEGMENT_SPACING + 1
 	var behind = transform.basis.z.normalized()
 	for i in range(needed):
 		var t = global_transform
-		t.origin += behind * HISTORY_RESOLUTION * i
+		t.origin += behind * GameConstants.HISTORY_RESOLUTION * i
 		position_history.append(t)
 
 func _process(delta: float) -> void:
 	if not is_alive: return
 
-	# Lethal Collision Check via DeathRay
-	# This prevents "side-collision" death during 90-degree snap turns
 	if death_ray.is_colliding():
 		var collider = death_ray.get_collider()
 		if collider.is_in_group("walls"):
 			die("Wall: " + collider.name)
 			return
-		elif collider.is_in_group("body") and invulnerability_timer <= 0:
+		if collider.is_in_group("body") and invulnerability_timer <= 0:
 			die("Body Segment")
 			return
 
 	if invulnerability_timer > 0:
 		invulnerability_timer -= delta
+
 	handle_input()
 	move_forward(delta)
 	update_rotation(delta)
 
-	if Engine.get_frames_drawn() % 60 == 0:
-		print("Head Pos: ", global_position, " Score: ", score)
-		var foods = get_tree().get_nodes_in_group("foods")
-		for f in foods:
-			var dist = global_position.distance_to(f.global_position)
-			print("  Food at: ", f.global_position, " Dist: ", dist)
-
 func handle_input() -> void:
-	if Input.is_action_just_pressed("turn_left"):
-		queue_turn(1.0) # 90 degrees left
-	elif Input.is_action_just_pressed("turn_right"):
-		queue_turn(-1.0) # 90 degrees right
+	var requested := heading
+	var has_input := false
 
-func queue_turn(direction_sign: float) -> void:
-	# Determine the new heading based on current target_heading and turn direction
-	var new_heading: Dir
-	match target_heading:
-		Dir.NORTH: new_heading = Dir.WEST if direction_sign > 0 else Dir.EAST
-		Dir.SOUTH: new_heading = Dir.EAST if direction_sign > 0 else Dir.WEST
-		Dir.EAST:  new_heading = Dir.NORTH if direction_sign > 0 else Dir.SOUTH
-		Dir.WEST:  new_heading = Dir.SOUTH if direction_sign > 0 else Dir.NORTH
+	if Input.is_action_just_pressed("move_up"):
+		requested = Dir.NORTH
+		has_input = true
+	elif Input.is_action_just_pressed("move_down"):
+		requested = Dir.SOUTH
+		has_input = true
+	elif Input.is_action_just_pressed("move_left"):
+		requested = Dir.WEST
+		has_input = true
+	elif Input.is_action_just_pressed("move_right"):
+		requested = Dir.EAST
+		has_input = true
 
-	# Since it's a 90-degree turn, 180-degree "suicide" is naturally prevented
-	target_heading = new_heading
-	target_rotation_y += direction_sign * PI / 2.0
-	camera_tilt = direction_sign * 0.1 # Slight tilt in radians
+	if has_input and requested != _opposite(heading):
+		next_heading = requested
+
+func _opposite(dir: Dir) -> Dir:
+	match dir:
+		Dir.NORTH: return Dir.SOUTH
+		Dir.SOUTH: return Dir.NORTH
+		Dir.EAST: return Dir.WEST
+		Dir.WEST: return Dir.EAST
+	return dir
+
+func _rotation_for_heading(dir: Dir) -> float:
+	match dir:
+		Dir.NORTH: return 0.0
+		Dir.SOUTH: return PI
+		Dir.EAST: return -PI / 2.0
+		Dir.WEST: return PI / 2.0
+	return 0.0
 
 func move_forward(delta: float) -> void:
-	# We move in the direction the head is facing
-	var forward = -transform.basis.z
+	var forward = Vector3.ZERO
+	match heading:
+		Dir.NORTH: forward = Vector3(0, 0, -1)
+		Dir.SOUTH: forward = Vector3(0, 0, 1)
+		Dir.EAST:  forward = Vector3(1, 0, 0)
+		Dir.WEST:  forward = Vector3(-1, 0, 0)
+
 	var move_vec = forward * move_speed * delta
 	global_position += move_vec
 
-	distance_traveled += move_vec.length()
+	var step = move_vec.length()
+	distance_traveled += step
+	grid_distance += step
 
-	# Record a history entry every HISTORY_RESOLUTION units of travel
-	if distance_traveled >= HISTORY_RESOLUTION:
-		distance_traveled -= HISTORY_RESOLUTION
-		position_history.insert(0, global_transform)
+	if grid_distance >= GameConstants.GRID_SIZE:
+		grid_distance -= GameConstants.GRID_SIZE
+		global_position.x = snapped(global_position.x, GameConstants.GRID_SIZE)
+		global_position.z = snapped(global_position.z, GameConstants.GRID_SIZE)
 
+		if next_heading != heading:
+			var old_rot = _rotation_for_heading(heading)
+			var new_rot = _rotation_for_heading(next_heading)
+			var diff = wrapf(new_rot - old_rot, -PI, PI)
+			mesh.rotation.y -= diff
+			heading = next_heading
+			rotation.y = _rotation_for_heading(heading)
+
+	if distance_traveled >= GameConstants.HISTORY_RESOLUTION:
+		distance_traveled -= GameConstants.HISTORY_RESOLUTION
+		var visual_transform = global_transform
+		visual_transform.basis = mesh.global_transform.basis
+		position_history.insert(0, visual_transform)
 		update_segments()
 
-		# Cap the buffer to what the current segment count requires
-		var max_history = segments.size() * SEGMENT_SPACING + 1
+		var max_history = segments.size() * GameConstants.SEGMENT_SPACING + 1
 		if position_history.size() > max_history:
 			position_history.resize(max_history)
 
 func update_segments() -> void:
 	for i in range(segments.size()):
-		var history_index = i * SEGMENT_SPACING
+		var history_index = i * GameConstants.SEGMENT_SPACING
 		if history_index < position_history.size():
 			segments[i].global_transform = position_history[history_index]
 
@@ -132,7 +141,7 @@ func add_segment() -> void:
 	var new_segment = segment_scene.instantiate()
 	get_parent().add_child.call_deferred(new_segment)
 
-	var target_index = segments.size() * SEGMENT_SPACING
+	var target_index = segments.size() * GameConstants.SEGMENT_SPACING
 	if target_index < position_history.size():
 		new_segment.global_transform = position_history[target_index]
 	elif position_history.size() > 0:
@@ -140,7 +149,6 @@ func add_segment() -> void:
 	else:
 		new_segment.global_transform = global_transform
 
-	# Disable collision for a moment to prevent immediate death
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
@@ -149,54 +157,22 @@ func add_segment() -> void:
 	segments.append(new_segment)
 
 func _on_mouth_area_entered(area: Area3D) -> void:
-	if not is_alive: return
-
-	if area.is_in_group("foods"):
+	if is_alive and area.is_in_group("foods"):
 		_eat_food(area)
 
 func _eat_food(area: Area3D) -> void:
-	print("EATING FOOD!")
 	area.queue_free()
-
-	# Spawn new food
-	var spawner = get_node_or_null("/root/Main/FoodSpawner")
-	if spawner:
-		spawner.spawn_food()
-
+	food_eaten.emit()
 	add_segment()
-	move_speed += 0.2
+	move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
-	update_score_ui()
+	score_changed.emit(score)
 	play_eat_juice()
-
-func update_score_ui() -> void:
-	var score_label = get_node_or_null("/root/Main/HUD/ScoreLabel")
-	if score_label:
-		score_label.text = "Score: %d" % score
 
 func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
-
-	# Camera Bounce Effect
-	var cam = rider_cam
-	var old_global_pos = cam.global_position
-	var old_global_rot = cam.global_rotation
-
-	remove_child(cam)
-	get_tree().root.add_child(cam)
-	cam.global_position = old_global_pos
-	cam.global_rotation = old_global_rot
-
-	var bounce_tween = create_tween()
-	var start_y = initial_camera_height
-	bounce_tween.tween_property(cam, "global_position:y", start_y + 3.0, 0.5)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	bounce_tween.tween_property(cam, "global_position:y", start_y, 0.6)\
-		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-
-	cam.make_current()
 
 	var dazed = dazed_scene.instantiate()
 	add_child.call_deferred(dazed)
@@ -208,10 +184,9 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property($MeshInstance3D, "scale", Vector3(1.2, 0.8, 1.2), 0.1)
-	tween.tween_property($MeshInstance3D, "scale", Vector3(1.0, 1.0, 1.0), 0.2)
+	tween.tween_property(mesh, "scale", Vector3(1.2, 0.8, 1.2), 0.1)
+	tween.tween_property(mesh, "scale", Vector3(1.0, 1.0, 1.0), 0.2)
 
 func update_rotation(delta: float) -> void:
-	rotation.y = lerp_angle(rotation.y, target_rotation_y, turn_interpolation_speed * delta)
-	camera_tilt = lerp(camera_tilt, 0.0, turn_interpolation_speed * delta)
-	rider_cam.rotation.z = camera_tilt
+	var rot_speed = GameConstants.TURN_INTERPOLATION_SPEED * delta
+	mesh.rotation.y = lerp_angle(mesh.rotation.y, 0.0, rot_speed)
