@@ -17,7 +17,8 @@ var distance_traveled: float = 0.0
 var grid_distance: float = 0.0
 var heading: Dir = Dir.NORTH
 var next_heading: Dir = Dir.NORTH
-var move_speed: float = GameConstants.INITIAL_MOVE_SPEED
+var base_move_speed: float = GameConstants.INITIAL_MOVE_SPEED
+var speed_multiplier: float = 1.0
 
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var mouth_area: Area3D = $MouthArea
@@ -100,6 +101,7 @@ func move_forward(delta: float) -> void:
 		Dir.EAST:  forward = Vector3(1, 0, 0)
 		Dir.WEST:  forward = Vector3(-1, 0, 0)
 
+	var move_speed = base_move_speed * speed_multiplier
 	var move_vec = forward * move_speed * delta
 	global_position += move_vec
 
@@ -161,13 +163,28 @@ func _on_mouth_area_entered(area: Area3D) -> void:
 		_eat_food(area)
 
 func _eat_food(area: Area3D) -> void:
-	area.queue_free()
-	food_eaten.emit()
+	var is_fully_eaten = true
+	if area.has_method("take_bite"):
+		is_fully_eaten = area.take_bite()
+		if area.food_type == area.Type.MEGA:
+			speed_multiplier = GameConstants.MEGA_FOOD_SPEED_MULTIPLIER
+			if is_fully_eaten:
+				if not area.fully_eaten.is_connected(_on_mega_food_fully_eaten):
+					area.fully_eaten.connect(_on_mega_food_fully_eaten)
+
+	# EVERY bite adds a segment and increases score
 	add_segment()
-	move_speed += GameConstants.SPEED_INCREMENT
+	base_move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
 	score_changed.emit(score)
+
+	if is_fully_eaten:
+		food_eaten.emit()
+
 	play_eat_juice()
+
+func _on_mega_food_fully_eaten() -> void:
+	speed_multiplier = 1.0
 
 func die(reason: String = "Unknown") -> void:
 	if not is_alive: return

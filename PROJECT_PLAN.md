@@ -404,9 +404,9 @@
 *   **AI Vibe Codeable?** Yes, toggling \`visible\` property.
 
 ### The Mega-Melon (Giant Food)
-*   **Details:** A "Watermelon" that is 5x the size of normal food. It takes 3 "bites" (passes) to fully eat it, giving 5 segments. After the final bite, there is a 1-second silence, followed by a massive, earth-shaking "BURP!" sound.
-*   **Why it's fun:** Giant things and burps are a guaranteed win for 10-year-olds.
-*   **Questions:** Does the burp push nearby food away?
+*   **Details:** A giant food item that appears every 5th spawn. It requires 3 bites to fully consume. Its size decreases with each bite (6x, then 4x, then 2x). While eating a mega food (from first to last bite), the snake moves at half speed. After the final bite, there is a 0.5s pause followed by a massive "BURP!" sound, after which the snake's speed returns to normal.
+*   **Why it's fun:** Giant things and gross-out sounds are a guaranteed win for 10-year-olds. The speed change adds a tactical challenge.
+*   **Questions:** Should we have more mega food types? (Yes, added random selection).
 *   **AI Vibe Codeable?** Yes.
 
 
