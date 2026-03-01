@@ -47,7 +47,7 @@ Use `run.sh` to refresh the Godot cache and launch the game for manual verificat
 | `scenes/ui/` | UI-related scenes: `hud.tscn`. |
 | `scenes/effects/` | Visual effects: `dazed_particles.tscn`. |
 | `scripts/` | GDScript source files. |
-| `scripts/core/` | Principal game logic: `SnakeHead.gd`, `FoodSpawner.gd`, `CameraManager.gd`. |
+| `scripts/core/` | Principal game logic: `SnakeHead.gd`, `Main.gd`, `FoodSpawner.gd`, `CameraManager.gd`. |
 | `scripts/utils/` | Utility scripts: `FPSCounter.gd`. |
 | `tools/` | **Subdirectory for AI Tools**: Store task-specific debug or helper scripts here. Use one subdirectory per task (e.g., `tools/mesh_fixer/`). |
 | `project.godot` | Main Godot project configuration. |

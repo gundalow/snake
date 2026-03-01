@@ -51,7 +51,7 @@ def verify_files():
         "scenes/main/SnakeSegment.tscn",
         "scenes/effects/dazed_particles.tscn",
         "scripts/core/SnakeHead.gd",
-        "scripts/core/CameraManager.gd",
+        "scripts/core/InputHandler.gd",
         "scripts/core/FoodSpawner.gd",
         "scripts/utils/FPSCounter.gd",
         "export_presets.cfg"
@@ -66,9 +66,11 @@ def verify_files():
 def check_input_map():
     """Checks for required input map actions in project.godot."""
     required_actions = [
-        "turn_left",
-        "turn_right",
-        "toggle_camera",
+        "move_up",
+        "move_down",
+        "move_left",
+        "move_right",
+        
         "restart",
         "quit"
     ]

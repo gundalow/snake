@@ -1,22 +1,20 @@
 # 3D Snake GDScript Project Plan
 
 ## Overview
-**Objective:** A "Snake Riding" first-person prototype with high-engagement visuals, vibrant colors, and juicy animations for a young audience.
+**Objective:** A high-engagement 3D Snake prototype with vibrant colors, juicy animations, and photorealistic food assets.
 
 ---
 
-## Milestone 1: The Foundation (Inputs & Dual-Camera)
-*Core dependencies: Input mapping must exist before movement/toggling can be implemented.*
+## Milestone 1: The Foundation (Inputs & Overhead View)
+*Core dependencies: Input mapping must exist before movement can be implemented.*
 
 1. [x] **Input Map Configuration:**
-    - Define actions in `project.godot`: `turn_left`, `turn_right`, `toggle_camera` (C), `restart` (R), and `quit` (Esc).
-2. [x] **Dual-Camera System:**
-    - **Rider Cam (Default):** A `Camera3D` attached to the Snake Head. Positioned slightly behind/above the eyes for a "rollercoaster" feel. Implement a slight "tilt/lean" effect when turning to enhance the sense of speed.
-3. [x] **Toggle Logic:**
-    - Use `make_current()` to switch between cameras. The switch should feel snappy but can be smoothed later with tweens.
-4. [x] **Initial Environment:**
+    - Define actions in `project.godot`: `move_up` (W/Up), `move_down` (S/Down), `move_left` (A/Left), `move_right` (D/Right), `restart` (R), and `quit` (Esc).
+2. [x] **Overhead Camera System:**
+    - **Overhead Cam (Default):** A `Camera3D` providing a clear view of the entire 30x30 play area.
+3. [x] **Initial Environment:**
     - Replace the temporary floor with a larger board.
-    - **Glowing Walls:** Thick, colorful barriers using a `StandardMaterial3D` with high `emission_energy` to define the play area. Use `WorldBoundaryShape3D` or `BoxShape3D` for collision.
+    - **Glowing Walls:** Thick, colorful barriers using a `StandardMaterial3D` with high `emission_energy` to define the play area. Use `BoxShape3D` for collision.
 
 ## Milestone 2: Snake Head & Snap-Turning
 *Core dependencies: Requires the Input Map and Environment from Milestone 1.*
@@ -24,8 +22,8 @@
 1. [x] **Forward Movement:** 
     - Implement constant forward movement on the XZ plane. The snake never stops until it dies.
 2. [x] **Snap Turning Logic:**
-    - Pressing Left/Right turns the head exactly 90 degrees relative to its current heading.
-    - **Safety Check:** Implement logic to prevent 180-degree "suicide" turns (e.g., if moving North, the "South" input is ignored).
+    - Classic screen-relative controls: WASD / Arrow Keys set absolute NSEW direction.
+    - **Safety Check:** 180-degree reversals are rejected (e.g., if heading North, pressing Down/S is ignored).
 3. [x] **Visuals:**
     - Update the `SnakeHead` mesh. Start with a vibrant cube; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
 
@@ -46,12 +44,9 @@
 
 1. [x] **Collision Logic:**
     - Detect collision with boundary walls or the snake's own body segments.
-2. [x] **The "Rider Thrown" Effect:**
-    - **Freeze:** Set `set_process(false)` for all movement logic.
-    - **Camera Tumble:** Detach the Rider Camera from the Head (reparent to root). Attach it to a `RigidBody3D` (using a Box collision) and apply a random `angular_velocity` and upward `impulse`. This creates a chaotic, funny "crash" effect as the camera tumbles across the floor.
-3. [x] **Dazed Animation:**
+2. [x] **Dazed Animation:**
     - Spawn a "Dazed" node above the head. Use `GPUParticles3D` with box emission.
-4. [x] **Game Over UI:**
+3. [x] **Game Over UI:**
     - Fade in a HUD with "Restart" and "Quit" options.
 
 ## Milestone 5: Technical Rigor & Validation
@@ -98,14 +93,45 @@
 4. [x] **Buffer Management:**
     - History is capped at `segments.size() * SEGMENT_SPACING + 1` entries to prevent unbounded growth.
 
+## Milestone 10: Juice, Bug Fixes & Decoupling
+*Core dependencies: Requires Milestones 3 and 4.*
+
+1. [x] **Classic Screen-Relative Controls:**
+    - Replaced head-relative left/right turning with absolute NSEW directional input (WASD + Arrow Keys).
+    - Direction changes are applied at grid boundaries (every 1.0 unit via `grid_distance` tracker).
+    - 180-degree reversals are rejected at input time.
+2. [x] **Food Spawn Overlap Prevention:**
+    - Food spawner checks distance to snake head (2.0 units) and all body segments (1.0 units).
+    - Retries up to 50 times; warns and uses last attempted position on exhaustion.
+3. [x] **Signal Decoupling:**
+    - `SnakeHead` emits `score_changed` and `food_eaten` signals instead of using hardcoded node paths.
+    - `Main.gd` orchestrates connections between `SnakeHead`, `HUD`, and `FoodSpawner`.
+4. [x] **Unused Variable Cleanup:**
+    - Removed `current_direction` and `next_direction` from `SnakeHead.gd`.
+
+## Milestone 11: Grid Alignment & Refactoring
+1. [x] **Logical Movement Decoupling:**
+    - Separated logical movement (strict axis-aligned) from visual rotation (smoothly lerped).
+    - Ensures 100% precision in grid alignment for food collection.
+2. [x] **Centralized Constants:**
+    - Created `GameConstants.gd` Autoload for global tuning (speed, grid size, resolutions).
+3. [x] **Camera Consolidation:**
+    - Removed Rider Camera and associated FPV effects (tilt, shake, death tumble).
+    - Standardized on a single Overhead Camera.
+4. [x] **Code Cleanup:**
+    - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
+
 ---
 
 ## Ideas for Future Enhancements
+
 - Power-ups (Speed boost, Slow motion).
 - Different biomes (Neon Grid, Jungle, Candy Land).
 - Jaw-moving animations synced with food consumption.
 - First-person vs. Third-person (Chase) camera toggle.
-- **Camera Dynamics:** Add centrifugal force/inertia effects (e.g., subtle wobble or overshoot) during turns to simulate the "rollercoaster" feel more intensely.
+- **"Fever Mode"**: Neon snake with rainbow trail after rapid food collection.
+- **"Fruit Explosion"**: Colorful particle bursts when food is consumed.
+- **"High-Five" Pop-ups**: Floating text labels ("AWESOME!", "JUICY!") on eat.
 
 ---
 
@@ -119,17 +145,16 @@
 
 ### 2. Movement & Physics
 - **Initial Speed:** 5.0 units per second (5 grid units/sec).
-- **Snap Turning:** Instant 90-degree logic for the snake body, with a **0.1s interpolation** for the camera lean to smooth the visual transition.
+- **Snap Turning:** Instant 90-degree logic for the snake body.
 - **Collision Strategy:** Use `Area3D` for detection (Eating/Death) to ensure clean, non-physics-based logic for the core movement.
 
 ### 3. Controls & Inputs
-- **Turning:** Mapped to `WASD` (A/D) and `Arrow Keys` (Left/Right).
-- **Camera Toggle:** Mapped to `C`.
+- **Direction:** Classic screen-relative. `W`/Up = North, `S`/Down = South, `A`/Left = West, `D`/Right = East. 180-degree reversals are rejected.
 - **Game State:** `R` for Restart, `Esc` for Quit.
 
 ### 4. Visual Aesthetic
 - **Color Palette:** High-saturation PBR textures for food; stylized shaders for environment.
-- **Cam:** Rider Cam (FPV) is the primary "hero" perspective.
+- **Cam:** Overhead perspective.
 
 ### 5. Asset Formats
 - **Models:** `.glb` or `.gltf` (Binary GLTF preferred).
