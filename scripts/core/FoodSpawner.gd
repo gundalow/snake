@@ -46,4 +46,6 @@ func spawn_food() -> void:
 	var food = food_scene.instantiate()
 	food.position = Vector3(x, 0.5, z)
 	add_child(food)
-	print("Spawned food at: ", food.position, " after ", attempts, " attempts")
+
+	if attempts > 5:
+		print("Spawned food at: ", food.position, " after ", attempts, " attempts")
