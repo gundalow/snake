@@ -1,7 +1,7 @@
 # Godot-specific ignores
 .godot/
 export_presets.godot
-
+*.uid
 
 # Mono/C# ignores
 .mono/
