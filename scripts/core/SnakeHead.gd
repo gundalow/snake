@@ -13,7 +13,8 @@ var score: int = 0
 var initial_camera_height: float
 
 # --- Position History & Body Segments ---
-const STEP_DISTANCE: float = 1.0 # Distance between segments
+const HISTORY_RESOLUTION: float = 0.1
+const SEGMENT_SPACING: int = 10
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
 var distance_traveled: float = 0.0
@@ -35,13 +36,24 @@ func _ready() -> void:
 	# Initialize rotation based on start direction (North = -Z)
 	target_rotation_y = rotation.y
 	initial_camera_height = rider_cam.global_position.y
-	
+
+	# Seed history buffer before spawning segments
+	_initialize_history()
+
 	# Initial segments
 	add_segment()
 	add_segment()
-	
+
 	# Connect collision signals
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
+
+func _initialize_history() -> void:
+	var needed = 2 * SEGMENT_SPACING + 1
+	var behind = transform.basis.z.normalized()
+	for i in range(needed):
+		var t = global_transform
+		t.origin += behind * HISTORY_RESOLUTION * i
+		position_history.append(t)
 
 func _process(delta: float) -> void:
 	if not is_alive: return
@@ -62,12 +74,13 @@ func _process(delta: float) -> void:
 	handle_input()
 	move_forward(delta)
 	update_rotation(delta)
-	
+
 	if Engine.get_frames_drawn() % 60 == 0:
 		print("Head Pos: ", global_position, " Score: ", score)
 		var foods = get_tree().get_nodes_in_group("foods")
 		for f in foods:
-			print("  Food at: ", f.global_position, " Dist: ", global_position.distance_to(f.global_position))
+			var dist = global_position.distance_to(f.global_position)
+			print("  Food at: ", f.global_position, " Dist: ", dist)
 
 func handle_input() -> void:
 	if Input.is_action_just_pressed("turn_left"):
@@ -83,7 +96,7 @@ func queue_turn(direction_sign: float) -> void:
 		Dir.SOUTH: new_heading = Dir.EAST if direction_sign > 0 else Dir.WEST
 		Dir.EAST:  new_heading = Dir.NORTH if direction_sign > 0 else Dir.SOUTH
 		Dir.WEST:  new_heading = Dir.SOUTH if direction_sign > 0 else Dir.NORTH
-	
+
 	# Since it's a 90-degree turn, 180-degree "suicide" is naturally prevented
 	target_heading = new_heading
 	target_rotation_y += direction_sign * PI / 2.0
@@ -94,59 +107,62 @@ func move_forward(delta: float) -> void:
 	var forward = -transform.basis.z
 	var move_vec = forward * move_speed * delta
 	global_position += move_vec
-	
+
 	distance_traveled += move_vec.length()
-	
-	# Every time we travel STEP_DISTANCE, record the history and update segments
-	if distance_traveled >= STEP_DISTANCE:
-		distance_traveled -= STEP_DISTANCE
-		# Store the current head transform as the "newest" history point
+
+	# Record a history entry every HISTORY_RESOLUTION units of travel
+	if distance_traveled >= HISTORY_RESOLUTION:
+		distance_traveled -= HISTORY_RESOLUTION
 		position_history.insert(0, global_transform)
-		
-		# If we have segments, position them according to history
+
 		update_segments()
-		
-		# Keep history from growing indefinitely
-		if position_history.size() > segments.size() + 1:
-			position_history.resize(segments.size() + 1)
+
+		# Cap the buffer to what the current segment count requires
+		var max_history = segments.size() * SEGMENT_SPACING + 1
+		if position_history.size() > max_history:
+			position_history.resize(max_history)
 
 func update_segments() -> void:
 	for i in range(segments.size()):
-		if i < position_history.size():
-			segments[i].global_transform = position_history[i]
+		var history_index = i * SEGMENT_SPACING
+		if history_index < position_history.size():
+			segments[i].global_transform = position_history[history_index]
 
 func add_segment() -> void:
 	var new_segment = segment_scene.instantiate()
 	get_parent().add_child.call_deferred(new_segment)
-	
-	if position_history.size() > 0:
+
+	var target_index = segments.size() * SEGMENT_SPACING
+	if target_index < position_history.size():
+		new_segment.global_transform = position_history[target_index]
+	elif position_history.size() > 0:
 		new_segment.global_transform = position_history.back()
 	else:
 		new_segment.global_transform = global_transform
-		
+
 	# Disable collision for a moment to prevent immediate death
 	var area = new_segment.get_node_or_null("SegmentArea")
 	if area:
 		area.monitorable = false
 		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
-		
+
 	segments.append(new_segment)
 
 func _on_mouth_area_entered(area: Area3D) -> void:
 	if not is_alive: return
-	
+
 	if area.is_in_group("foods"):
 		_eat_food(area)
 
 func _eat_food(area: Area3D) -> void:
 	print("EATING FOOD!")
 	area.queue_free()
-	
+
 	# Spawn new food
 	var spawner = get_node_or_null("/root/Main/FoodSpawner")
 	if spawner:
 		spawner.spawn_food()
-		
+
 	add_segment()
 	move_speed += 0.2
 	score += 1
@@ -162,29 +178,29 @@ func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
-	
+
 	# Camera Bounce Effect
 	var cam = rider_cam
 	var old_global_pos = cam.global_position
 	var old_global_rot = cam.global_rotation
-	
+
 	remove_child(cam)
 	get_tree().root.add_child(cam)
 	cam.global_position = old_global_pos
 	cam.global_rotation = old_global_rot
-	
+
 	var bounce_tween = create_tween()
 	var start_y = initial_camera_height
 	bounce_tween.tween_property(cam, "global_position:y", start_y + 3.0, 0.5)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	bounce_tween.tween_property(cam, "global_position:y", start_y, 0.6)\
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	
+
 	cam.make_current()
-	
+
 	var dazed = dazed_scene.instantiate()
 	add_child.call_deferred(dazed)
-	(func(): 
+	(func():
 		dazed.position = Vector3(0, 1.5, 0)
 		dazed.emitting = true
 	).call_deferred()
