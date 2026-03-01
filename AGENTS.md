@@ -69,7 +69,7 @@ Use `run.sh` to refresh the Godot cache and launch the game for manual verificat
 
 ### Performance
 - **Asset Preloading**: Always use `preload()` for models (`.gltf`, `.tscn`) and audio files (`.mp3`, `.ogg`, `.wav`) at the top of scripts or in a central Autoload (e.g., `GameConstants.gd`). Avoid using `load()` during gameplay (e.g., inside `_on_area_entered`), as it causes noticeable frame stutters.
-- **Signal Emission**: For signals that trigger heavy logic (like `spawn_food()`), use `emit_deferred()` to ensure the current frame logic completes without synchronous blocking.
+- **Signal Emission**: For signals that trigger heavy logic (like `spawn_food()`), use `emit.call_deferred()` to ensure the current frame logic completes without synchronous blocking.
 - **Particles**: For visual effects, use `GPUParticles3D` for better performance on modern hardware.
 - **Forward Plus**: Use the `Forward Plus` renderer for high-quality visuals on supported hardware.
 
