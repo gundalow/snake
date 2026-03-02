@@ -130,6 +130,17 @@
     - Implemented milestones for score (every 10 points) and apple consumption (10, 20, 30, 50).
     - Included a library of snake and fruit puns for celebrations.
 
+## Milestone 13: Tectonic Tussle (Earthquake)
+1. [x] **World-Stomper System:**
+    - Added a giant foot ("World-Stomper") that appears outside the fence every 30 seconds.
+    - Features a shadow that appears before the stomp and a rapid descent/ascent animation.
+2. [x] **Environmental Impact:**
+    - Implemented screen shake on impact via `CameraShake.gd`.
+    - All active food items "jump" to new random valid locations on the grid due to the impact.
+3. [x] **Visual Juice:**
+    - Added parabolic jump animations and scale "pops" for food relocation.
+    - Added gentle bobbing animation to food for better visibility.
+
 ---
 
 ## Ideas for Future Enhancements
