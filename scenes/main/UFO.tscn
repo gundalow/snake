@@ -1,5 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://ufo_scene_placeholder"]
 
+[ext_resource type="Script" path="res://scripts/core/UFO.gd" id="1_ufo_script"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ufo"]
 albedo_color = Color(0.7, 0.7, 0.8, 1)
 metallic = 1.0
@@ -24,8 +26,6 @@ emission_energy_multiplier = 1.0
 top_radius = 0.5
 bottom_radius = 1.5
 height = 5.0
-
-[ext_resource type="Script" path="res://scripts/core/UFO.gd" id="1_ufo_script"]
 
 [node name="UFO" type="Node3D"]
 script = ExtResource("1_ufo_script")
