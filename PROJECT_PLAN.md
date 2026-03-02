@@ -426,13 +426,7 @@
 *   **Questions:** Should the UI also flip upside down? (That might be too much!).
 *   **AI Vibe Codeable?** Yes, simple input logic flip.
 
-#### 14. Tectonic Tussle (Earthquake)
-*   **Details:** Every 30 seconds, a giant "World-Stomper" foot appears in the background (outside the fence) and stomps, or giant mole hills pop up, causing the board to shake. All food items "jump" to new random locations due to the impact.
-*   **Why it's fun:** It gives a reason for the randomness and makes the world feel larger and more dangerous.
-*   **Questions:** Can the stomper foot hit the snake? (Probably too hard for now).
-*   **AI Vibe Codeable?** Yes, timer + \`spawn_food()\` calls.
-
-#### 15. The Mimic Menace (Clone Snake)
+#### 14. The Mimic Menace (Clone Snake)
 *   **Details:** A "Mirror" item spawns a ghost snake that exactly replicates your movements 2 seconds later. If you hit the ghost, you die.
 *   **Why it's fun:** You are literally playing against your own past self.
 *   **Questions:** Does the ghost disappear after a while?
