@@ -5,7 +5,8 @@ extends Node3D
 var first_spawn: bool = true
 
 func _ready() -> void:
-	spawn_food()
+	# Don't spawn here, let Main handle it if needed or just rely on the first call
+	pass
 
 func spawn_food() -> void:
 	var x: float = 0.0

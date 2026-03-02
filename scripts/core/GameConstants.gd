@@ -17,3 +17,9 @@ const WALL_DISTANCE: float = 15.5
 # Visuals
 const TURN_INTERPOLATION_SPEED: float = 10.0
 const FOOD_VISUAL_SCALE: float = 10.0
+
+# UFO
+const UFO_SPAWN_INTERVAL: float = 30.0
+const UFO_SPEED: float = 10.0
+const UFO_FLIGHT_HEIGHT: float = 5.0
+const UFO_SCORE_PENALTY: int = 5

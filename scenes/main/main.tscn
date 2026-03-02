@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/core/InputHandler.gd" id="3_input_handler"]
 [ext_resource type="Script" path="res://scripts/core/FoodSpawner.gd" id="4_food_spawner"]
 [ext_resource type="Script" path="res://scripts/core/Main.gd" id="5_main"]
+[ext_resource type="Script" path="res://scripts/core/UFOManager.gd" id="6_ufo_manager"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -106,6 +107,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 
 [node name="FoodSpawner" type="Node3D" parent="."]
 script = ExtResource("4_food_spawner")
+
+[node name="UFOManager" type="Node" parent="."]
+script = ExtResource("6_ufo_manager")
 
 [node name="OverheadCam" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 30, 0)
