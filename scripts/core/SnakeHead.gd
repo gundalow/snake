@@ -1,7 +1,7 @@
 extends Node3D
 
 signal score_changed(new_score)
-signal food_eaten(type, total_score, total_apples)
+signal food_eaten(type, total_score, food_counts)
 
 enum Dir { NORTH, SOUTH, EAST, WEST }
 
@@ -11,7 +11,7 @@ enum Dir { NORTH, SOUTH, EAST, WEST }
 var is_alive: bool = true
 var invulnerability_timer: float = GameConstants.INVULNERABILITY_TIME
 var score: int = 0
-var apples_eaten: int = 0
+var food_counts: Dictionary = {}
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
 var distance_traveled: float = 0.0
@@ -166,15 +166,15 @@ func _eat_food(area: Area3D) -> void:
 	if area.has_method("get") or "food_type" in area:
 		type = area.food_type
 
-	if type == "apple":
-		apples_eaten += 1
+	if type != "":
+		food_counts[type] = food_counts.get(type, 0) + 1
 
 	area.queue_free()
 	add_segment()
 	move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
 
-	food_eaten.emit(type, score, apples_eaten)
+	food_eaten.emit(type, score, food_counts)
 	score_changed.emit(score)
 	play_eat_juice()
 

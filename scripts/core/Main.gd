@@ -39,14 +39,16 @@ func _on_score_changed(new_score: int) -> void:
 	if hud:
 		hud.update_score(new_score)
 
-func _on_food_eaten(type: String, score: int, apples: int) -> void:
+func _on_food_eaten(type: String, score: int, food_counts: Dictionary) -> void:
 	if food_spawner:
 		food_spawner.spawn_food()
 
-	_check_achievements(type, score, apples)
+	_check_achievements(type, score, food_counts)
 
-func _check_achievements(type: String, score: int, apples: int) -> void:
+func _check_achievements(type: String, score: int, food_counts: Dictionary) -> void:
 	if not hud: return
+
+	var apples = food_counts.get("apple", 0)
 
 	# Apple achievements
 	if type == "apple":

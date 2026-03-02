@@ -121,7 +121,7 @@
 4. [x] **Code Cleanup:**
     - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
 
-## Milestone 12: Juice & Achievements
+## Milestone 12: Per-game Achievements
 1. [x] **Score "Pop" Animation:**
     - Implemented a `Tween`-based animation that scales the score and turns it neon green for 0.2s on every point.
 2. [x] **Achievement System:**
