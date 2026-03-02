@@ -19,6 +19,10 @@
 ## Milestone 2: Snake Head & Snap-Turning
 *Core dependencies: Requires the Input Map and Environment from Milestone 1.*
 
+1. [x] **Galactic Greed (UFO Abduction):**
+    - UFO randomly appears every 30 seconds and tries to tractor-beam a fruit.
+    - If UFO gets the food, score decreases by 5 and HUD flashes red.
+    - Animation includes tractor beam and food rising into UFO.
 1. [x] **Forward Movement:** 
     - Implement constant forward movement on the XZ plane. The snake never stops until it dies.
 2. [x] **Snap Turning Logic:**
