@@ -121,15 +121,19 @@
 4. [x] **Code Cleanup:**
     - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
 
+## Milestone 12: Persistent Leaderboard
+1. [x] **Name Selection UI:**
+    - Prompt the player for a name via a simple UI popup on startup.
+    - Allows entering a new name or using arrow keys to select from previous names.
+2. [x] **Persistent Storage:**
+    - Save scores and player names locally in `user://highscores.json`.
+3. [x] **HUD Integration:**
+    - Display the current player's name and a "Top 10" leaderboard.
+    - Celebrate new high scores with a "NEW HIGH SCORE!" label, confetti, and a sound placeholder.
+
 ---
 
 ## Ideas for Future Enhancements
-
-### Persistent Leaderboard
-*   **Details:** On game startup, prompt the player for a name via a simple UI popup. Save scores (name + score) locally in `user://highscores.json`. If they beat a high score, celebrate it on the HUD!
-*   **Why it's fun:** 10-year-olds love competing with friends or siblings to see their name at the top of a list.
-*   **Questions:** How many scores should we keep? (Top 5? Top 10?)
-*   **AI Vibe Codeable?** Yes, very easy with JSON storage and Godot's `FileAccess`.
 
 ### Circling Birdies & Daze Effect
 *   **Details:** When the snake hits a wall, spawn 3D "birdie" or "star" icons that rotate in a circle above the head with a "chirp" sound.

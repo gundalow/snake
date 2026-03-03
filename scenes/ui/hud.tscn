@@ -1,5 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://b8y8x8l8j8x7y"]
+[gd_scene load_steps=6 format=3 uid="uid://b8y8x8l8j8x7y"]
 
+[ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="1_hud_script"]
 [ext_resource type="Script" path="res://scripts/utils/FPSCounter.gd" id="1_fps_counter"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_large"]
@@ -9,7 +10,21 @@ outline_color = Color(0, 0, 0, 1)
 shadow_size = 10
 shadow_color = Color(0, 0, 0, 0.5)
 
+[sub_resource type="LabelSettings" id="LabelSettings_medium"]
+font_size = 32
+outline_size = 6
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_celebrate"]
+font_size = 80
+font_color = Color(1, 0.9, 0, 1)
+outline_size = 12
+outline_color = Color(1, 0.4, 0, 1)
+shadow_size = 15
+shadow_color = Color(0, 0, 0, 0.5)
+
 [node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud_script")
 
 [node name="FPSCounter" type="Label" parent="."]
 offset_left = 20.0
@@ -32,3 +47,66 @@ grow_horizontal = 0
 text = "Score: 0"
 label_settings = SubResource("LabelSettings_large")
 horizontal_alignment = 2
+
+[node name="PlayerNameLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -620.0
+offset_top = 100.0
+offset_right = -20.0
+offset_bottom = 150.0
+grow_horizontal = 0
+text = "Player: "
+label_settings = SubResource("LabelSettings_medium")
+horizontal_alignment = 2
+
+[node name="Leaderboard" type="VBoxContainer" parent="."]
+offset_left = 20.0
+offset_top = 150.0
+offset_right = 320.0
+offset_bottom = 650.0
+
+[node name="Title" type="Label" parent="Leaderboard"]
+layout_mode = 2
+text = "Top 10"
+label_settings = SubResource("LabelSettings_medium")
+
+[node name="ScoresList" type="VBoxContainer" parent="Leaderboard"]
+layout_mode = 2
+
+[node name="CelebrateLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -60.0
+offset_right = 400.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "NEW HIGH SCORE!"
+label_settings = SubResource("LabelSettings_celebrate")
+horizontal_alignment = 1
+
+[node name="CelebrateSound" type="AudioStreamPlayer" parent="."]
+
+[node name="Confetti" type="CPUParticles2D" parent="."]
+position = Vector2(640, 360)
+emitting = false
+amount = 100
+one_shot = true
+explosiveness = 0.8
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 500)
+initial_velocity_min = 300.0
+initial_velocity_max = 600.0
+scale_amount_min = 10.0
+scale_amount_max = 20.0
+color = Color(1, 0, 0.983333, 1)
+hue_variation_min = -1.0
+hue_variation_max = 1.0
