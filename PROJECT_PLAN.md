@@ -141,6 +141,13 @@
     - Added parabolic jump animations and scale "pops" for food relocation.
     - Added gentle bobbing animation to food for better visibility.
 
+## Milestone 14: Juicy Feedback & Animations
+1. [x] **Food Growth Spawn:**
+    - Implemented "elastic" bounce animation for food spawning.
+    - Scales from 0.0 to 1.0 (visual scale 10.0) over 0.75 seconds.
+    - Tandem light animation for energy and range.
+    - Added "whoosh" sound effect on spawn.
+
 ---
 
 ## Ideas for Future Enhancements
@@ -308,12 +315,6 @@
 *   **Why it's fun:** Gives a sense of technical progression.
 *   **Questions:** Analog or digital style?
 *   **AI Vibe Codeable?** Yes, rotating a UI sprite based on a variable.
-
-### Food Growth Spawn
-*   **Details:** When a new food item spawns, it scales up from 0 to 1.0 with an "elastic" bounce.
-*   **Why it's fun:** Much better than just "appearing" instantly.
-*   **Questions:** Use a 0.2s tween?
-*   **AI Vibe Codeable?** Yes, trivial.
 
 ### Blob Shadows
 *   **Details:** A simple, dark circle sprite on the ground below the head and segments.
