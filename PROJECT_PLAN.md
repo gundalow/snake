@@ -19,10 +19,6 @@
 ## Milestone 2: Snake Head & Snap-Turning
 *Core dependencies: Requires the Input Map and Environment from Milestone 1.*
 
-1. [x] **Galactic Greed (UFO Abduction):**
-    - UFO randomly appears every 30 seconds and tries to tractor-beam a fruit.
-    - If UFO gets the food, score decreases by 5 and HUD flashes red.
-    - Animation includes tractor beam and food rising into UFO.
 1. [x] **Forward Movement:** 
     - Implement constant forward movement on the XZ plane. The snake never stops until it dies.
 2. [x] **Snap Turning Logic:**
@@ -163,15 +159,25 @@
     - Tandem light animation for energy and range.
     - Added "whoosh" sound effect on spawn.
 
+## Milestone 16: Galactic Greed (UFO Abduction)
+1. [x] **UFO Interaction:**
+    - UFO randomly appears every 30 seconds and tries to tractor-beam a fruit.
+    - If UFO gets the food, score decreases by 5 and HUD flashes red.
+    - Animation includes tractor beam and food rising into UFO.
+
+## Milestone 17: Persistent Leaderboard
+1. [x] **Name Selection UI:**
+    - Prompt the player for a name via a simple UI popup on startup.
+    - Allows entering a new name or using arrow keys to select from previous names.
+2. [x] **Persistent Storage:**
+    - Save scores and player names locally in `user://highscores.json`.
+3. [x] **HUD Integration:**
+    - Display the current player's name and a "Top 10" leaderboard.
+    - Celebrate new high scores with a "NEW HIGH SCORE!" label, confetti, and a sound placeholder.
+
 ---
 
 ## Ideas for Future Enhancements
-
-### Persistent Leaderboard
-*   **Details:** On game startup, prompt the player for a name via a simple UI popup. Save scores (name + score) locally in `user://highscores.json`. If they beat a high score, celebrate it on the HUD!
-*   **Why it's fun:** 10-year-olds love competing with friends or siblings to see their name at the top of a list.
-*   **Questions:** How many scores should we keep? (Top 5? Top 10?)
-*   **AI Vibe Codeable?** Yes, very easy with JSON storage and Godot's `FileAccess`.
 
 ### Circling Birdies & Daze Effect
 *   **Details:** When the snake hits a wall, spawn 3D "birdie" or "star" icons that rotate in a circle above the head with a "chirp" sound.
@@ -261,7 +267,7 @@
 ### Tail Rattling Sound
 *   **Details:** A subtle "rattlesnake" sound that gets louder as the snake gets longer.
 *   **Why it's fun:** Adds a thematic, slightly spooky vibe for a long snake.
-*   **Questions:** Should it only play when moving?
+*   **Questions:** Should it play when moving?
 *   **AI Vibe Codeable?** Yes, simple volume mapping.
 
 ### Victory Lap Slow-Mo

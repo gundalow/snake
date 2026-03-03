@@ -54,6 +54,7 @@ quit={
 [autoload]
 
 GameConstants="*res://scripts/core/GameConstants.gd"
+ScoreManager="*res://scripts/core/ScoreManager.gd"
 
 [display]
 

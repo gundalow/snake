@@ -35,15 +35,14 @@ var snake_puns = [
 @onready var camera = $OverheadCam
 @onready var ufo_manager = $UFOManager
 
+var name_prompt_scene = preload("res://scenes/ui/NamePrompt.tscn")
+
 func _ready() -> void:
 	if snake_head:
 		snake_head.score_changed.connect(_on_score_changed)
 		snake_head.food_eaten.connect(_on_food_eaten)
 		snake_head.status_message.connect(_on_status_message)
-		# We'll stop connecting food_eaten to spawn_food,
-		# instead let the FoodSpawner manage its own next-spawn logic
-		# based on the Food's fully_eaten signal.
-		# However, SnakeHead still needs to tell Main/HUD about score etc.
+		snake_head.game_over.connect(_on_game_over)
 
 	if world_stomper:
 		world_stomper.stomped.connect(_on_world_stomped)
@@ -56,6 +55,20 @@ func _ready() -> void:
 		var initial_food = food_spawner.get_child(food_spawner.get_child_count() - 1)
 		if ufo_manager:
 			ufo_manager.on_food_spawned(initial_food)
+
+	# Show name prompt on startup
+	get_tree().paused = true
+	var name_prompt = name_prompt_scene.instantiate()
+	if hud:
+		hud.add_child(name_prompt)
+	else:
+		add_child(name_prompt)
+	name_prompt.name_selected.connect(_on_name_selected)
+
+func _on_name_selected(player_name: String) -> void:
+	get_tree().paused = false
+	if hud:
+		hud.update_player_name(player_name)
 
 func _on_score_changed(new_score: int) -> void:
 	if hud and hud.has_method("update_score"):
@@ -121,3 +134,8 @@ func _flash_score_red() -> void:
 		tween.tween_property(score_label, "modulate", Color.RED, 0.1)
 		tween.tween_property(score_label, "modulate", Color.WHITE, 0.1)
 		tween.set_loops(3)
+
+func _on_game_over(final_score: int) -> void:
+	ScoreManager.submit_score(final_score)
+	if hud:
+		hud.update_leaderboard()
