@@ -90,6 +90,7 @@ def check_input_map():
         "move_right",
         
         "restart",
+        "pause",
         "quit"
     ]
     try:
