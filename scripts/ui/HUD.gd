@@ -14,6 +14,7 @@ var has_celebrated = false
 @onready var celebrate_label = $CelebrateLabel
 @onready var celebrate_sound = $CelebrateSound
 @onready var confetti = $Confetti
+@onready var pause_label = $PauseLabel
 
 func _ready() -> void:
 	original_score_scale = score_label.scale
@@ -124,3 +125,7 @@ func _on_high_score_beaten():
 	tween.tween_interval(2.0)
 	tween.tween_property(celebrate_label, "modulate:a", 0.0, 1.0)
 	tween.tween_callback(func(): celebrate_label.visible = false)
+
+func show_pause(is_visible: bool) -> void:
+	if pause_label:
+		pause_label.visible = is_visible
