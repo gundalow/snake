@@ -121,7 +121,18 @@
 4. [x] **Code Cleanup:**
     - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
 
-## Milestone 12: Per-game Achievements
+## Milestone 12: The Mega-Melon (Giant Food)
+1. [x] **Mega Food Implementation:**
+    - Added a giant food item that appears every 5th spawn.
+    - Requires 3 "bites" to fully consume, with the model scaling down after each bite (24x, 16x, 8x).
+2. [x] **Gameplay Mechanics:**
+    - **Speed Reduction:** While consuming Mega Food (from the first to the last bite), the snake's movement speed is reduced by 50%.
+    - **Burp Delay:** After the final bite, there is a 0.5s pause followed by a massive "BURP!" sound before the speed returns to normal and new food spawns.
+3. [x] **Visuals & Audio:**
+    - Integrated custom GLTF model for Mega Melon.
+    - Added unique "chew" and "burp" audio feedback.
+
+## Milestone 13: Per-game Achievements
 1. [x] **Score "Pop" Animation:**
     - Implemented a `Tween`-based animation that scales the score and turns it neon green for 0.2s on every point.
 2. [x] **Achievement System:**
@@ -130,7 +141,7 @@
     - Implemented milestones for score (every 10 points) and apple consumption (10, 20, 30, 50).
     - Included a library of snake and fruit puns for celebrations.
 
-## Milestone 13: Tectonic Tussle (Earthquake)
+## Milestone 14: Tectonic Tussle (Earthquake)
 1. [x] **World-Stomper System:**
     - Added a giant foot ("World-Stomper") that appears outside the fence every 30 seconds.
     - Features a shadow that appears before the stomp and a rapid descent/ascent animation.
@@ -141,7 +152,7 @@
     - Added parabolic jump animations and scale "pops" for food relocation.
     - Added gentle bobbing animation to food for better visibility.
 
-## Milestone 14: Juicy Feedback & Animations
+## Milestone 15: Juicy Feedback & Animations
 1. [x] **Food Growth Spawn:**
     - Implemented "elastic" bounce animation for food spawning.
     - Scales from 0.0 to 1.0 (visual scale 10.0) over 0.75 seconds.
@@ -413,12 +424,6 @@
 *   **Why it's fun:** It feels "sneaky" and mysterious.
 *   **Questions:** Is it too hard to see where the tail is? (Add a faint particle "ghost" trail).
 *   **AI Vibe Codeable?** Yes, toggling \`visible\` property.
-
-### The Mega-Melon (Giant Food)
-*   **Details:** A "Watermelon" that is 5x the size of normal food. It takes 3 "bites" (passes) to fully eat it, giving 5 segments. After the final bite, there is a 1-second silence, followed by a massive, earth-shaking "BURP!" sound.
-*   **Why it's fun:** Giant things and burps are a guaranteed win for 10-year-olds.
-*   **Questions:** Does the burp push nearby food away?
-*   **AI Vibe Codeable?** Yes.
 
 
 #### 13. Confusion Carrot (Reverse Controls)
