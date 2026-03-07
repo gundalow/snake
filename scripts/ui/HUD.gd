@@ -95,10 +95,16 @@ func update_leaderboard():
 		child.queue_free()
 
 	var top_scores = ScoreManager.get_top_scores()
+	var medium_settings = LabelSettings.new()
+	medium_settings.font_size = 64
+	medium_settings.outline_size = 6
+	medium_settings.outline_color = Color.BLACK
+
 	for i in range(top_scores.size()):
 		var entry = top_scores[i]
 		var label = Label.new()
 		label.text = "%d. %s: %d" % [i + 1, entry["name"], entry["score"]]
+		label.label_settings = medium_settings
 		scores_list.add_child(label)
 
 func _on_high_score_beaten():

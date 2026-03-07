@@ -26,6 +26,8 @@ var snake_puns = [
 	"Totally hiss-tastic!"
 ]
 
+var name_prompt_scene = preload("res://scenes/ui/NamePrompt.tscn")
+
 @onready var snake_head = $SnakeHead
 @onready var hud = $HUD
 @onready var status_label = $HUD/StatusLabel
@@ -35,9 +37,8 @@ var snake_puns = [
 @onready var camera = $OverheadCam
 @onready var ufo_manager = $UFOManager
 
-var name_prompt_scene = preload("res://scenes/ui/NamePrompt.tscn")
-
 func _ready() -> void:
+	ScoreManager.load_scores()
 	if snake_head:
 		snake_head.score_changed.connect(_on_score_changed)
 		snake_head.food_eaten.connect(_on_food_eaten)

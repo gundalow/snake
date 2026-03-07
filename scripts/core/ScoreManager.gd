@@ -1,5 +1,7 @@
 extends Node
 
+signal high_score_beaten
+
 const HIGHSCORES_PATH = "user://highscores.json"
 const MAX_SAVED_NAMES = 10
 const MAX_LEADERBOARD_ENTRIES = 10
@@ -9,12 +11,13 @@ var current_score: int = 0
 var high_scores: Array = [] # Array of dictionaries: {"name": String, "score": int}
 var unique_names: Array = [] # To keep track of previous names for the prompt
 
-signal high_score_beaten
-
 func _ready():
 	load_scores()
 
 func load_scores():
+	var abs_path = ProjectSettings.globalize_path(HIGHSCORES_PATH)
+	print("Loading highscores from: ", abs_path)
+
 	if not FileAccess.file_exists(HIGHSCORES_PATH):
 		high_scores = []
 		unique_names = []
@@ -71,9 +74,16 @@ func submit_score(score: int):
 	save_scores()
 
 func is_new_high_score(score: int) -> bool:
-	if high_scores.size() < MAX_LEADERBOARD_ENTRIES:
-		return score > 0
-	return score > high_scores[MAX_LEADERBOARD_ENTRIES - 1]["score"]
+	if score <= 0:
+		return false
+
+	var personal_best = 0
+	for entry in high_scores:
+		if entry["name"] == current_player_name:
+			if entry["score"] > personal_best:
+				personal_best = entry["score"]
+
+	return score > personal_best
 
 func get_top_scores() -> Array:
 	var top_10 = high_scores.slice(0, MAX_LEADERBOARD_ENTRIES)

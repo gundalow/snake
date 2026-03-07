@@ -2,11 +2,11 @@ extends Control
 
 signal name_selected(player_name)
 
-@onready var name_list = $Panel/VBoxContainer/NameList
-@onready var new_name_input = $Panel/VBoxContainer/NewNameInput
-
 var previous_names: Array = []
 var selected_index: int = -1
+
+@onready var name_list = $Panel/VBoxContainer/NameList
+@onready var new_name_input = $Panel/VBoxContainer/NewNameInput
 
 func _ready():
 	previous_names = ScoreManager.get_previous_names()
@@ -17,10 +17,16 @@ func refresh_list():
 	for child in name_list.get_children():
 		child.queue_free()
 
+	var medium_settings = LabelSettings.new()
+	medium_settings.font_size = 64
+	medium_settings.outline_size = 4
+	medium_settings.outline_color = Color.BLACK
+
 	for i in range(previous_names.size()):
 		var label = Label.new()
 		label.text = previous_names[i]
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.label_settings = medium_settings
 		name_list.add_child(label)
 
 	update_selection()
