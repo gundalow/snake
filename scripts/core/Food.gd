@@ -6,10 +6,15 @@ enum Type { NORMAL, MEGA }
 
 const MEGA_AUDIO = {
 	"mega_melon": {
-		"chew": preload("res://assets/sounds/foods/mega_melon/chew.mp3"),
-		"burp": preload("res://assets/sounds/foods/mega_melon/burp.mp3")
+		"chew": preload("res://assets/sounds/foods/mega_melon/chew.mp3")
 	}
 }
+
+const BURP_SOUNDS = [
+	preload("res://assets/sounds/foods/mega_burps/burp1_alex_jauk-funny-burp-sound-effect-440267.mp3"),
+	preload("res://assets/sounds/foods/mega_burps/burp2.mp3"),
+	preload("res://assets/sounds/foods/mega_burps/burp3_freesound_community-big-burp-36175.mp3")
+]
 
 var food_type: Type = Type.NORMAL
 var food_name: String = ""
@@ -58,14 +63,17 @@ func _ready() -> void:
 	model.rotation_degrees = Vector3(0, randf_range(0, 360), 0)
 
 func _setup_audio() -> void:
-	if MEGA_AUDIO.has(food_name):
-		audio_chew = AudioStreamPlayer3D.new()
-		audio_chew.stream = MEGA_AUDIO[food_name]["chew"]
-		add_child(audio_chew)
-
+	if food_type == Type.MEGA:
+		# Shared random burp for all mega foods
 		audio_burp = AudioStreamPlayer3D.new()
-		audio_burp.stream = MEGA_AUDIO[food_name]["burp"]
+		audio_burp.stream = BURP_SOUNDS[randi() % BURP_SOUNDS.size()]
 		add_child(audio_burp)
+
+		# Specific chew if available
+		if MEGA_AUDIO.has(food_name) and MEGA_AUDIO[food_name].has("chew"):
+			audio_chew = AudioStreamPlayer3D.new()
+			audio_chew.stream = MEGA_AUDIO[food_name]["chew"]
+			add_child(audio_chew)
 
 func _update_visuals() -> void:
 	if food_type == Type.MEGA:
