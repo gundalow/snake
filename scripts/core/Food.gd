@@ -8,9 +8,12 @@ const MODELS = {
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
+var food_type: String = ""
+
 func _ready() -> void:
 	var keys = MODELS.keys()
 	var random_key = keys[randi() % keys.size()]
+	food_type = random_key
 	var model_scene = MODELS[random_key]
 
 	var model = model_scene.instantiate()

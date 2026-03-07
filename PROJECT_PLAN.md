@@ -121,6 +121,15 @@
 4. [x] **Code Cleanup:**
     - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
 
+## Milestone 12: Per-game Achievements
+1. [x] **Score "Pop" Animation:**
+    - Implemented a `Tween`-based animation that scales the score and turns it neon green for 0.2s on every point.
+2. [x] **Achievement System:**
+    - Created a fun, bouncy achievement pop-up system.
+    - Added a queue to handle multiple achievements appearing at once.
+    - Implemented milestones for score (every 10 points) and apple consumption (10, 20, 30, 50).
+    - Included a library of snake and fruit puns for celebrations.
+
 ---
 
 ## Ideas for Future Enhancements
@@ -209,11 +218,6 @@
 *   **Questions:** Should obstacles move?
 *   **AI Vibe Codeable?** Yes, similar to food spawning but with collision.
 
-### Achievement Pop-ups
-*   **Details:** "Snaaake Master!" (Reach 20 points), "Speed Demon" (Reach max speed), "Apple Eater" (Eat 10 apples).
-*   **Why it's fun:** Gives short-term goals to strive for.
-*   **Questions:** Should these be stored permanently or just per-session?
-*   **AI Vibe Codeable?** Yes, simple boolean checks in a manager script.
 
 ### Hinged Jaw Animation
 *   **Details:** The snake head mesh has a "mouth" that opens wide when it gets within 1.5 units of a food item.
@@ -233,11 +237,6 @@
 *   **Questions:** Will this interfere with the restart button?
 *   **AI Vibe Codeable?** Yes, \`Engine.time_scale\`.
 
-### Score "Pop" UI Animation
-*   **Details:** The score number on the HUD grows and turns green for 0.2 seconds every time it increases.
-*   **Why it's fun:** Makes every point feel impactful.
-*   **Questions:** Use a \`Tween\` or an \`AnimationPlayer\`? (Tween is easier).
-*   **AI Vibe Codeable?** Yes, trivial.
 
 ### Voice Lines ("Oops!", "Whoa!")
 *   **Details:** Cute, high-pitched voice clips that play on eat or hit.
