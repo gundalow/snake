@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c7k8v8l8j8x7y"]
+[gd_scene load_steps=13 format=3 uid="uid://c7k8v8l8j8x7y"]
 
 [ext_resource type="PackedScene" uid="uid://d3k8v8l8j8x7y" path="res://scenes/main/SnakeHead.tscn" id="1_snake_head"]
 [ext_resource type="PackedScene" uid="uid://b8y8x8l8j8x7y" path="res://scenes/ui/hud.tscn" id="2_hud"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/core/Main.gd" id="5_main"]
 [ext_resource type="PackedScene" uid="uid://b9x8y8l8j8x7y" path="res://scenes/effects/WorldStomper.tscn" id="6_stomper"]
 [ext_resource type="Script" path="res://scripts/effects/CameraShake.gd" id="7_camera_shake"]
+[ext_resource type="Script" path="res://scripts/core/UFOManager.gd" id="8_ufo_manager"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -108,6 +109,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 
 [node name="FoodSpawner" type="Node3D" parent="."]
 script = ExtResource("4_food_spawner")
+
+[node name="UFOManager" type="Node" parent="."]
+script = ExtResource("8_ufo_manager")
 
 [node name="OverheadCam" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 30, 0)

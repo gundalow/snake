@@ -34,3 +34,9 @@ const FOOD_MODELS = {
 const MEGA_FOOD_MODELS = {
 	"mega_melon": preload("res://assets/models/food/mega_melon/scene.gltf")
 }
+
+# UFO
+const UFO_SPAWN_INTERVAL: float = 30.0
+const UFO_SPEED: float = 10.0
+const UFO_FLIGHT_HEIGHT: float = 5.0
+const UFO_SCORE_PENALTY: int = 5

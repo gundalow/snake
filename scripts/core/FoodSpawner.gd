@@ -6,7 +6,8 @@ var first_spawn: bool = true
 var spawn_count: int = 0
 
 func _ready() -> void:
-	spawn_food()
+	# Don't spawn here, let Main handle it if needed or just rely on the first call
+	pass
 
 func spawn_food() -> void:
 	if not is_inside_tree():
