@@ -1,31 +1,27 @@
-extends Node
+extends SpecialEvent
 
 signal food_stolen
 
 @export var ufo_scene: PackedScene = preload("res://scenes/main/UFO.tscn")
-@export var spawn_interval: float = GameConstants.UFO_SPAWN_INTERVAL
 
-var spawn_timer: float = 0.0
-var can_spawn: bool = true
+func start_event() -> void:
+	var foods = get_tree().get_nodes_in_group("foods")
 
-func _process(delta: float) -> void:
-	if not can_spawn:
-		spawn_timer += delta
-		if spawn_timer >= spawn_interval:
-			can_spawn = true
-			spawn_timer = 0.0
+	while foods.is_empty():
+		# If no food, wait a second then retry
+		await get_tree().create_timer(1.0).timeout
+		foods = get_tree().get_nodes_in_group("foods")
 
-func on_food_spawned(food: Node3D) -> void:
-	if can_spawn:
-		# Wait 0.5s after food appears
-		await get_tree().create_timer(0.5).timeout
-		if is_instance_valid(food):
-			spawn_ufo(food)
+	var target_food = foods.pick_random()
+	if is_instance_valid(target_food):
+		spawn_ufo(target_food)
+	else:
+		start_event()
 
 func spawn_ufo(food: Node3D) -> void:
-	can_spawn = false
 	var ufo = ufo_scene.instantiate()
 	ufo.food_stolen.connect(_on_ufo_food_stolen)
+	ufo.tree_exited.connect(_on_ufo_exited)
 	# Spawn far away
 	var board_size = GameConstants.BOARD_SIZE
 	ufo.position = Vector3(board_size * 1.5, 5.0, board_size * 1.5)
@@ -37,3 +33,6 @@ func spawn_ufo(food: Node3D) -> void:
 
 func _on_ufo_food_stolen() -> void:
 	food_stolen.emit()
+
+func _on_ufo_exited() -> void:
+	event_finished.emit()
