@@ -169,7 +169,7 @@ func _eat_food(area: Area3D) -> void:
 		is_fully_eaten = area.take_bite()
 		if area.food_type == area.Type.MEGA:
 			speed_multiplier = GameConstants.MEGA_FOOD_SPEED_MULTIPLIER
-			var msg = "You've eaten too much and have slowed down"
+			var msg = "You've eaten too much\nand have slowed down"
 			status_message.emit.call_deferred(msg)
 			if is_fully_eaten:
 				if not area.fully_eaten.is_connected(_on_mega_food_fully_eaten):
