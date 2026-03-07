@@ -1,6 +1,6 @@
-# Code Review and Bug Report - Three-D Snake
+# Code Review and Bug Report - 3D Snake
 
-This document outlines identified bugs, potential issues, false assumptions, and recommended improvements for the Three-D Snake project.
+This document outlines identified bugs, potential issues, false assumptions, and recommended improvements for the 3D Snake project.
 
 ## Potential Bugs
 
