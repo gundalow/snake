@@ -121,6 +121,17 @@
 4. [x] **Code Cleanup:**
     - Refactored project to remove legacy scripts (`CameraManager.gd`) and update validation logic.
 
+## Milestone 12: The Mega-Melon (Giant Food)
+1. [x] **Mega Food Implementation:**
+    - Added a giant food item that appears every 5th spawn.
+    - Requires 3 "bites" to fully consume, with the model scaling down after each bite (6x, 4x, 2x).
+2. [x] **Gameplay Mechanics:**
+    - **Speed Reduction:** While consuming Mega Food (from the first to the last bite), the snake's movement speed is reduced by 50%.
+    - **Burp Delay:** After the final bite, there is a 0.5s pause followed by a massive "BURP!" sound before the speed returns to normal and new food spawns.
+3. [x] **Visuals & Audio:**
+    - Integrated custom GLTF model for Mega Melon.
+    - Added unique "chew" and "burp" audio feedback.
+
 ---
 
 ## Ideas for Future Enhancements
@@ -402,12 +413,6 @@
 *   **Why it's fun:** It feels "sneaky" and mysterious.
 *   **Questions:** Is it too hard to see where the tail is? (Add a faint particle "ghost" trail).
 *   **AI Vibe Codeable?** Yes, toggling \`visible\` property.
-
-### The Mega-Melon (Giant Food)
-*   **Details:** A giant food item that appears every 5th spawn. It requires 3 bites to fully consume. Its size decreases with each bite (6x, then 4x, then 2x). While eating a mega food (from first to last bite), the snake moves at half speed. After the final bite, there is a 0.5s pause followed by a massive "BURP!" sound, after which the snake's speed returns to normal.
-*   **Why it's fun:** Giant things and gross-out sounds are a guaranteed win for 10-year-olds. The speed change adds a tactical challenge.
-*   **Questions:** Should we have more mega food types? (Yes, added random selection).
-*   **AI Vibe Codeable?** Yes.
 
 
 #### 13. Confusion Carrot (Reverse Controls)

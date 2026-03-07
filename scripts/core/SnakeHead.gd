@@ -2,6 +2,7 @@ extends Node3D
 
 signal score_changed(new_score)
 signal food_eaten
+signal status_message(text)
 
 enum Dir { NORTH, SOUTH, EAST, WEST }
 
@@ -168,6 +169,8 @@ func _eat_food(area: Area3D) -> void:
 		is_fully_eaten = area.take_bite()
 		if area.food_type == area.Type.MEGA:
 			speed_multiplier = GameConstants.MEGA_FOOD_SPEED_MULTIPLIER
+			var msg = "You've eaten too much and have slowed down"
+			status_message.emit.call_deferred(msg)
 			if is_fully_eaten:
 				if not area.fully_eaten.is_connected(_on_mega_food_fully_eaten):
 					area.fully_eaten.connect(_on_mega_food_fully_eaten)
@@ -176,16 +179,16 @@ func _eat_food(area: Area3D) -> void:
 	add_segment()
 	base_move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
-	score_changed.emit(score)
+	score_changed.emit.call_deferred(score)
 
 	if is_fully_eaten:
-		food_eaten.emit()
+		food_eaten.emit.call_deferred()
 
 	play_eat_juice()
 
 func _on_mega_food_fully_eaten() -> void:
 	speed_multiplier = 1.0
-
+	status_message.emit.call_deferred("") # Clear message
 func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
