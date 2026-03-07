@@ -102,12 +102,14 @@ func _setup_audio() -> void:
 		# Shared random burp for all mega foods
 		audio_burp = AudioStreamPlayer3D.new()
 		audio_burp.stream = BURP_SOUNDS[randi() % BURP_SOUNDS.size()]
+		audio_burp.bus = &"SFX"
 		add_child(audio_burp)
 
 		# Specific chew if available
 		if MEGA_AUDIO.has(food_name) and MEGA_AUDIO[food_name].has("chew"):
 			audio_chew = AudioStreamPlayer3D.new()
 			audio_chew.stream = MEGA_AUDIO[food_name]["chew"]
+			audio_chew.bus = &"SFX"
 			add_child(audio_chew)
 
 func start_bobbing() -> void:

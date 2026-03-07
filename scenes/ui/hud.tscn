@@ -134,6 +134,7 @@ label_settings = SubResource("LabelSettings_celebrate")
 horizontal_alignment = 1
 
 [node name="CelebrateSound" type="AudioStreamPlayer" parent="."]
+bus = &"SFX"
 
 [node name="PauseLabel" type="Label" parent="."]
 visible = false
