@@ -1,13 +1,13 @@
 extends CanvasLayer
 
-@onready var score_label = $ScoreLabel
-@onready var achievement_label = $AchievementLabel
-
 var original_score_scale: Vector2
 var score_tween: Tween
 var achievement_tween: Tween
 var achievement_queue: Array[String] = []
 var is_showing_achievement: bool = false
+
+@onready var score_label = $ScoreLabel
+@onready var achievement_label = $AchievementLabel
 
 func _ready() -> void:
 	original_score_scale = score_label.scale

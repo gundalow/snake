@@ -5,6 +5,8 @@
 [ext_resource type="Script" path="res://scripts/core/InputHandler.gd" id="3_input_handler"]
 [ext_resource type="Script" path="res://scripts/core/FoodSpawner.gd" id="4_food_spawner"]
 [ext_resource type="Script" path="res://scripts/core/Main.gd" id="5_main"]
+[ext_resource type="PackedScene" uid="uid://b9x8y8l8j8x7y" path="res://scenes/effects/WorldStomper.tscn" id="6_stomper"]
+[ext_resource type="Script" path="res://scripts/effects/CameraShake.gd" id="7_camera_shake"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.385, 0.454, 0.55, 1)
@@ -110,11 +112,14 @@ script = ExtResource("4_food_spawner")
 [node name="OverheadCam" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 30, 0)
 current = true
+script = ExtResource("7_camera_shake")
 
 [node name="InputHandler" type="Node" parent="."]
 script = ExtResource("3_input_handler")
 
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
+
+[node name="WorldStomper" parent="." instance=ExtResource("6_stomper")]
 
 [node name="Walls" type="Node3D" parent="."]
 

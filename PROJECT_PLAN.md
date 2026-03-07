@@ -130,6 +130,17 @@
     - Implemented milestones for score (every 10 points) and apple consumption (10, 20, 30, 50).
     - Included a library of snake and fruit puns for celebrations.
 
+## Milestone 13: Tectonic Tussle (Earthquake)
+1. [x] **World-Stomper System:**
+    - Added a giant foot ("World-Stomper") that appears outside the fence every 30 seconds.
+    - Features a shadow that appears before the stomp and a rapid descent/ascent animation.
+2. [x] **Environmental Impact:**
+    - Implemented screen shake on impact via `CameraShake.gd`.
+    - All active food items "jump" to new random valid locations on the grid due to the impact.
+3. [x] **Visual Juice:**
+    - Added parabolic jump animations and scale "pops" for food relocation.
+    - Added gentle bobbing animation to food for better visibility.
+
 ---
 
 ## Ideas for Future Enhancements
@@ -415,13 +426,7 @@
 *   **Questions:** Should the UI also flip upside down? (That might be too much!).
 *   **AI Vibe Codeable?** Yes, simple input logic flip.
 
-#### 14. Tectonic Tussle (Earthquake)
-*   **Details:** Every 30 seconds, a giant "World-Stomper" foot appears in the background (outside the fence) and stomps, or giant mole hills pop up, causing the board to shake. All food items "jump" to new random locations due to the impact.
-*   **Why it's fun:** It gives a reason for the randomness and makes the world feel larger and more dangerous.
-*   **Questions:** Can the stomper foot hit the snake? (Probably too hard for now).
-*   **AI Vibe Codeable?** Yes, timer + \`spawn_food()\` calls.
-
-#### 15. The Mimic Menace (Clone Snake)
+#### 14. The Mimic Menace (Clone Snake)
 *   **Details:** A "Mirror" item spawns a ghost snake that exactly replicates your movements 2 seconds later. If you hit the ghost, you die.
 *   **Why it's fun:** You are literally playing against your own past self.
 *   **Questions:** Does the ghost disappear after a while?

@@ -49,3 +49,34 @@ func spawn_food() -> void:
 
 	if attempts > 5:
 		print("Spawned food at: ", food.position, " after ", attempts, " attempts")
+
+func relocate_all_food() -> void:
+	var board_size = GameConstants.BOARD_SIZE
+	var snake_head = get_node_or_null("../SnakeHead")
+
+	for food in get_children():
+		if food is Area3D: # Assuming all children are food
+			var valid_pos = false
+			var attempts = 0
+			var new_x = 0.0
+			var new_z = 0.0
+
+			while not valid_pos and attempts < 50:
+				attempts += 1
+				new_x = snapped(randf_range(-board_size / 2.0, board_size / 2.0), 1.0)
+				new_z = snapped(randf_range(-board_size / 2.0, board_size / 2.0), 1.0)
+
+				valid_pos = true
+				if snake_head:
+					var head_pos = Vector2(snake_head.global_position.x, snake_head.global_position.z)
+					if Vector2(new_x, new_z).distance_to(head_pos) < 2.0:
+						valid_pos = false
+						continue
+
+					for segment in snake_head.segments:
+						var seg_pos = Vector2(segment.global_position.x, segment.global_position.z)
+						if Vector2(new_x, new_z).distance_to(seg_pos) < 1.0:
+							valid_pos = false
+							break
+
+			food.jump_to(Vector3(new_x, 0.5, new_z))
