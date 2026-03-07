@@ -51,6 +51,10 @@ quit={
 ]
 }
 
+[audio]
+
+buses/default_bus_layout="res://default_bus_layout.tres"
+
 [autoload]
 
 GameConstants="*res://scripts/core/GameConstants.gd"
