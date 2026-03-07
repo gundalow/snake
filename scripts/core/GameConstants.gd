@@ -19,9 +19,9 @@ const TURN_INTERPOLATION_SPEED: float = 10.0
 const FOOD_VISUAL_SCALE: float = 10.0
 
 # Mega Food
-const MEGA_FOOD_INITIAL_SCALE: float = 60.0
-const MEGA_FOOD_MID_SCALE: float = 40.0
-const MEGA_FOOD_MIN_SCALE: float = 20.0
+const MEGA_FOOD_INITIAL_SCALE: float = 24.0
+const MEGA_FOOD_MID_SCALE: float = 16.0
+const MEGA_FOOD_MIN_SCALE: float = 8.0
 const MEGA_FOOD_BITES_TO_FINISH: int = 3
 const MEGA_FOOD_SPEED_MULTIPLIER: float = 0.5
 

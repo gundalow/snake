@@ -124,11 +124,7 @@
 ## Milestone 12: The Mega-Melon (Giant Food)
 1. [x] **Mega Food Implementation:**
     - Added a giant food item that appears every 5th spawn.
-<<<<<<< HEAD
     - Requires 3 "bites" to fully consume, with the model scaling down after each bite (24x, 16x, 8x).
-=======
-    - Requires 3 "bites" to fully consume, with the model scaling down after each bite (60x, 40x, 20x).
->>>>>>> edbaf7a (Increase Mega Food scale to 10x larger)
 2. [x] **Gameplay Mechanics:**
     - **Speed Reduction:** While consuming Mega Food (from the first to the last bite), the snake's movement speed is reduced by 50%.
     - **Burp Delay:** After the final bite, there is a 0.5s pause followed by a massive "BURP!" sound before the speed returns to normal and new food spawns.
