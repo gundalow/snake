@@ -1,11 +1,5 @@
 extends Node3D
 
-@onready var snake_head = $SnakeHead
-@onready var hud = $HUD
-@onready var food_spawner = $FoodSpawner
-@onready var world_stomper = $WorldStomper
-@onready var camera = $OverheadCam
-
 var fruit_puns = [
 	"Orange you glad you're playing?",
 	"You're one in a melon!",
@@ -31,6 +25,12 @@ var snake_puns = [
 	"You're a total rattle-star!",
 	"Totally hiss-tastic!"
 ]
+
+@onready var snake_head = $SnakeHead
+@onready var hud = $HUD
+@onready var food_spawner = $FoodSpawner
+@onready var world_stomper = $WorldStomper
+@onready var camera = $OverheadCam
 
 func _ready() -> void:
 	if snake_head:

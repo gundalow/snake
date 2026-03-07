@@ -2,10 +2,10 @@ extends Node3D
 
 signal stomped
 
+const SPAWN_DISTANCE = 18.0
+
 @onready var animation_player = $AnimationPlayer
 @onready var timer = $Timer
-
-const SPAWN_DISTANCE = 18.0
 
 func _ready() -> void:
 	timer.wait_time = 30.0

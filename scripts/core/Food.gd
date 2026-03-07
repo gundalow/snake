@@ -6,10 +6,10 @@ const MODELS = {
 	"sweet_potato": preload("res://assets/models/food/sweet_potato/sweet_potato_4k.gltf")
 }
 
-@onready var collision_shape: CollisionShape3D = $CollisionShape3D
-
 var food_type: String = ""
 var bob_tween: Tween
+
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
 func _ready() -> void:
 	var keys = MODELS.keys()
@@ -54,13 +54,21 @@ func jump_to(new_pos: Vector3) -> void:
 	var mid_pos = (global_position + new_pos) / 2.0
 	mid_pos.y = 5.0 # Jump height
 
-	tween.tween_property(self, "global_position", mid_pos, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "global_position", new_pos, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "global_position", mid_pos, 0.25)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "global_position", new_pos, 0.25)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_IN)
 
 	# Add a little scale pop
 	var original_scale = scale
-	tween.parallel().tween_property(self, "scale", original_scale * 1.5, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", original_scale, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(self, "scale", original_scale * 1.5, 0.25)\
+		.set_trans(Tween.TRANS_BACK)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", original_scale, 0.25)\
+		.set_trans(Tween.TRANS_BACK)\
+		.set_ease(Tween.EASE_IN)
 
 	tween.finished.connect(start_bobbing)
 

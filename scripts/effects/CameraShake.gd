@@ -3,7 +3,7 @@ extends Camera3D
 var shake_intensity = 0.0
 var shake_decay = 0.9
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if shake_intensity > 0.01:
 		var offset = Vector3(
 			randf_range(-shake_intensity, shake_intensity),
