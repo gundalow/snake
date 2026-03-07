@@ -27,6 +27,9 @@ if [ "$CLEAN" = true ]; then
     # Trigger a headless import to regenerate UIDs and imports
     echo "Regenerating UIDs and imports (headless)..."
     timeout 15 godot --headless --editor --quit || echo "Note: Headless import timed out or finished."
+    
+    echo "--- Clean complete. Skipping game execution. ---"
+    exit 0
 fi
 
 # Run the game

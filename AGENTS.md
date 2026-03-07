@@ -36,6 +36,12 @@ Use `run.sh` to refresh the Godot cache and launch the game for manual verificat
 ./run.sh
 ```
 
+**IMPORTANT**: After renaming files or directories, you MUST run the clean command to prevent UID cache synchronization issues:
+```bash
+./run.sh --clean
+```
+This command removes stale `.uid` files and triggers a headless import to ensure all internal references are correctly updated.
+
 ## 📂 Directory Structure
 
 | Path | Description |
