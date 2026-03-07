@@ -1,109 +1,106 @@
-# Code Review & Bug Report - 3D Snake
+# Code Review and Bug Report - Three-D Snake
 
-This document outlines identified bugs, potential issues, false assumptions, and recommended improvements for the 3D Snake project.
+This document outlines identified bugs, potential issues, false assumptions, and recommended improvements for the Three-D Snake project.
 
-## 1. Potential Bugs
+## Potential Bugs
 
-### 1.1. Input Overwriting (Input Lag)
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The `handle_input` function updates `next_heading` every time an action is pressed. If a player presses "Left" and then "Up" very quickly before the snake reaches the next grid boundary, the "Left" turn is completely lost.
-- **Impact:** Controls feel unresponsive or "slippery" during fast gameplay.
+### Input Overwriting (Input Lag)
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** The handle input function updates the next heading every time an action is pressed. If a player presses Left and then Up extremely quickly before the snake reaches the next grid boundary, the Left turn is completely lost.
+- **Impact:** Controls feel unresponsive or slippery during fast gameplay.
 - **Recommendation:** Implement an input queue to store pending turns and process them sequentially at each grid boundary.
 
-### 1.2. 180-Degree Turn Bug
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The check `requested != _opposite(heading)` prevents turning directly backward relative to the *current* heading. However, if a turn is already pending in `next_heading`, the player can currently input a direction that is the opposite of `next_heading` (but not the opposite of `heading`).
-- **Example:** Snake is heading NORTH. Player presses EAST (`next_heading` becomes EAST). Before reaching the grid boundary, player presses WEST. Since WEST is not the opposite of NORTH, `next_heading` becomes WEST. The snake effectively stays on its original line but the intended EAST turn is lost, or worse, if timing is frame-perfect, it might allow a 180-degree reversal depending on when the boundary is hit.
+### One-Hundred-And-Eighty Degree Turn Bug
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** The check to prevent opposite directions only accounts for the current heading. If a turn is already pending, the player can currently input a direction that is the opposite of that pending turn.
+- **Example:** Snake is heading NORTH. Player presses EAST. Before reaching the grid boundary, player presses WEST. Since WEST is not the opposite of NORTH, the pending turn becomes WEST. The intended EAST turn is lost, and depending on timing, it might allow a full reversal.
 
-### 1.3. UFO / Mega Food Race Condition
-- **Files:** `scripts/core/UFO.gd`, `scripts/core/SnakeHead.gd`
-- **Issue:** If the SnakeHead eats a Mega Food while it is being abducted by the UFO, multiple issues occur:
-    - The UFO's abduction tween might continue moving a food item that is being eaten.
-    - If the snake takes the final bite while the UFO is abducting, `queue_free()` might be called multiple times.
-    - The snake's `speed_multiplier` is set to `0.5` when biting Mega Food. If the UFO steals the food midway, the snake might stay slowed down forever because the `fully_eaten` signal (which resets speed) is never emitted by the food (it's called by the UFO instead).
+### UFO and Mega Food Race Condition
+- **Files:** scripts/core/UFO.gd and scripts/core/SnakeHead.gd
+- **Issue:** If the snake eats a Mega Food while it is being abducted by the UFO, several issues occur. The abduction animation might continue on a food item that is being eaten, and if the snake takes the final bite while the UFO is abducting, the node might be freed multiple times. Additionally, the snake might stay slowed down forever if the UFO steals the food midway, as the signal to reset speed is never emitted.
 
-### 1.4. Negative Score Handling
-- **File:** `scripts/core/Main.gd`, `scripts/core/ScoreManager.gd`
-- **Issue:** `_on_food_stolen` subtracts 5 from the score. If the player has fewer than 5 points, the score becomes negative.
-- **Impact:** High score leaderboard might show negative values, and `ScoreManager.is_new_high_score` only checks `score <= 0`, potentially allowing a negative score to be recorded if it's "better" than no score.
+### Negative Score Handling
+- **Files:** scripts/core/Main.gd and scripts/core/ScoreManager.gd
+- **Issue:** Score subtraction from UFO theft can result in a score below zero.
+- **Impact:** The high score leaderboard might show negative values, and the score manager may allow a negative score to be recorded as a personal best.
 
-### 1.5. Inadequate DeathRay Length
-- **File:** `scenes/main/SnakeHead.tscn`
-- **Issue:** The `DeathRay` has a `target_position` of `(0, 0, -0.6)`. The snake head mesh is 1.0 units wide (0.5 radius). This means the ray only extends 0.1 units beyond the head's front face.
-- **Impact:** At high speeds, the snake might penetrate a wall or its own body before the ray detects the collision, leading to "clipping" deaths or failed detections.
+### Inadequate Death Ray Length
+- **File:** scenes/main/SnakeHead.tscn
+- **Issue:** The Death Ray target position is very close to the head. The snake head has a certain width, and the ray only extends a tiny fraction beyond the head.
+- **Impact:** At high speeds, the snake might penetrate a wall or its own body before the ray detects the collision, leading to clipping deaths.
 
-### 1.6. Hardcoded Reset of Speed Multiplier
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** `_on_mega_food_fully_eaten` sets `speed_multiplier = 1.0`.
-- **Impact:** If future power-ups (e.g., a "Speed Boost" item) are added that also modify `speed_multiplier`, this hard reset will overwrite them, causing bugs.
+### Hardcoded Reset of Speed Multiplier
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** When Mega Food is fully eaten, the speed multiplier is hard-reset to one point zero.
+- **Impact:** If future power-ups also modify the speed multiplier, this hard reset will overwrite them, causing bugs.
 
-### 1.7. Food Relocation while Eating
-- **File:** `scripts/core/FoodSpawner.gd`
-- **Issue:** `relocate_all_food()` (triggered by World Stomper) moves all nodes in the "foods" group.
-- **Impact:** If the snake is currently inside a Mega Food's area taking bites, the food might suddenly vanish from "under" its mouth, preventing the snake from finishing the meal and potentially leaving it in a "slowed" state.
+### Food Relocation while Eating
+- **File:** scripts/core/FoodSpawner.gd
+- **Issue:** The function to relocate all food moves all nodes in the foods group.
+- **Impact:** If the snake is currently taking bites of a Mega Food, the food might suddenly vanish, preventing the snake from finishing the meal and potentially leaving it in a slowed state.
 
----
+### High-Speed Grid Skipping
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** If movement speed increases significantly, the distance traveled in a single frame might exceed the grid size.
+- **Impact:** The snake could theoretically teleport past a grid boundary without triggering a turn or a position snap correctly.
 
-## 2. Common Values that should be Constants
+### Position History Desync
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** If the game frame rate drops significantly, distance traveled might exceed the history resolution by a large margin in a single frame, but only one history entry is recorded per frame.
+- **Impact:** This could cause segments to appear to stretch or lag behind during lag spikes.
 
-To improve maintainability, the following hardcoded values should be moved to `GameConstants.gd`:
+### Food Spawner Dependency
+- **File:** scripts/core/FoodSpawner.gd
+- **Issue:** The food spawner looks for the SnakeHead node at a specific relative path.
+- **Impact:** If the SnakeHead node is renamed or moved in the scene tree, food spawning will fail silently.
 
-- **SnakeHead.gd:**
-    - `Vector3(0, 1.5, 0)`: Dazed particle offset.
-    - `0.1` and `0.2`: Tween durations for "eat juice" animation.
-    - `Vector3(1.2, 0.8, 1.2)`: Squash and stretch scales.
-- **Food.gd:**
-    - `0.75`: Growth animation duration.
-    - `0.7` and `0.5`: Bobbing height limits.
-    - `1.0`: Bobbing duration.
-    - `0.25`: Jump animation duration in `jump_to`.
-    - `1.5`: Scale multiplier during jump.
-- **FoodSpawner.gd:**
-    - `2.0`: Distance threshold for spawning away from head.
-    - `1.0`: Distance threshold for spawning away from segments.
-    - `50`: Max retry attempts for spawning.
-    - `-7.0`: Initial food Z position.
-- **UFO.gd:**
-    - `2.0`: Abduction time/timer.
-    - `1.0`: Delay before UFO leaves after abduction.
-- **WorldStomper.gd:**
-    - `30.0`: Stomp cycle interval.
-    - `18.0`: Spawn distance.
+### Invulnerability Window
+- **File:** scripts/core/SnakeHead.gd
+- **Issue:** The invulnerability timer is a fixed duration.
+- **Impact:** At very slow speeds, this might not be enough time for the tail segments to clear the starting position of the head.
 
 ---
 
-## 3. False Assumptions
+## Common Values that should be Constants
 
-### 3.1. Node Hierarchy Stability
-- **Issue:** `FoodSpawner.gd` and other scripts use `get_node_or_null("../SnakeHead")`.
-- **Assumption:** Assumes the `SnakeHead` will always be a sibling of the `FoodSpawner`.
-- **Reality:** If the scene tree is refactored (e.g., putting all "Managers" under a single node), these scripts will break.
+To improve maintainability, the following hardcoded values should be moved to GameConstants:
 
-### 3.2. Frame Rate Independence for Grid Alignment
-- **Issue:** `move_forward` assumes `delta` will never be so large that `move_vec.length()` exceeds `GameConstants.GRID_SIZE`.
-- **Reality:** On a significant lag spike (e.g., loading assets or OS background task), `delta` could be large enough to skip a grid cell entirely, causing the snake to miss a turn or snap incorrectly.
-
-### 3.3. Achievement Uniqueness
-- **Issue:** `_check_achievements` in `Main.gd` uses `score % 10 == 0`.
-- **Assumption:** Assumes score increases by exactly 1 at a time.
-- **Reality:** If a "Bonus Item" is added that gives +2 points, or if the UFO penalty (-5) happens right before a milestone, the player might skip the `score % 10 == 0` check entirely.
+- **SnakeHead.gd:** The vertical offset for dazed particles, tween durations for animations, and squash and stretch scale values.
+- **Food.gd:** Growth animation duration, bobbing height limits, bobbing duration, jump animation duration, and scale multipliers.
+- **FoodSpawner.gd:** Distance thresholds for spawning away from the head and body segments, maximum retry attempts for spawning, and initial food coordinates.
+- **UFO.gd:** Abduction duration and the delay before the UFO leaves after abduction.
+- **WorldStomper.gd:** Stomp cycle interval and spawn distance.
 
 ---
 
-## 4. Edge Cases
+## False Assumptions
 
-### 4.1. The "Zero-Point" Theft
-- **Scenario:** Player has 0 points and the UFO steals the first food.
-- **Result:** Score becomes -5. The HUD might look strange, and internal logic for achievements might behave unexpectedly.
+### Node Hierarchy Stability
+- **Issue:** Multiple scripts use relative node paths to find other nodes.
+- **Assumption:** Assumes the scene tree structure will never change.
+- **Reality:** If the scene tree is refactored, these scripts will break.
 
-### 4.2. Invulnerability Window vs. Speed
-- **Scenario:** Player increases speed significantly.
-- **Issue:** The `INVULNERABILITY_TIME` is a constant `0.5s`. If the snake is moving very fast, it might collide with its tail later than 0.5s, but if it's moving very slow, 0.5s might not be enough to clear the starting segments.
+### Frame Rate Independence for Grid Alignment
+- **Issue:** Movement logic assumes the time between frames will always be small enough to detect grid boundaries.
+- **Reality:** On a significant lag spike, the snake could skip a grid cell entirely.
 
-### 4.3. Mega Food "Burp" Delay
-- **Scenario:** Player dies during the 0.5s delay before the "Burp" sound and `fully_eaten` signal.
-- **Result:** The `SnakeHead` is dead, but the `Food` node is still in the tree waiting to emit a signal that will try to trigger a new food spawn on a dead game state.
+### Achievement Uniqueness
+- **Issue:** Milestone checks use a modulo operation on the score.
+- **Assumption:** Assumes the score increases by exactly one at a time.
+- **Reality:** If a bonus item is added that gives multiple points, the player might skip the milestone check entirely.
 
-### 4.4. Name Prompt Focus
+---
+
+## Edge Cases
+
+### The Zero-Point Theft
+- **Scenario:** Player has zero points and the UFO steals the first food.
+- **Result:** Score becomes negative. The user interface might behave unexpectedly.
+
+### Mega Food Burp Delay
+- **Scenario:** Player dies during the short delay between finishing a Mega Food and the burp sound.
+- **Result:** The SnakeHead is dead, but the food node is still in the tree waiting to emit a signal that will try to trigger a new food spawn.
+
+### Name Prompt Focus
 - **Scenario:** Player uses a controller or keyboard only.
-- **Issue:** If `new_name_input` loses focus, there's no clear way to get it back without a mouse if the `selected_index` logic doesn't perfectly handle wrap-around or "None" selection.
+- **Issue:** If the name input field loses focus, there may be no clear way to regain focus without a mouse.
