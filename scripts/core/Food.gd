@@ -6,6 +6,8 @@ const MODELS = {
 	"sweet_potato": preload("res://assets/models/food/sweet_potato/sweet_potato_4k.gltf")
 }
 
+const WHOOSH_SOUND = preload("res://assets/audio/whoosh.wav")
+
 var food_type: String = ""
 var bob_tween: Tween
 
@@ -21,21 +23,47 @@ func _ready() -> void:
 	add_child(model)
 
 	_reset_all_node_positions(model)
-	model.scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE
+
+	# Start at scale zero for growth animation
+	model.scale = Vector3.ZERO
 
 	if collision_shape.shape is BoxShape3D:
 		collision_shape.shape.size = Vector3.ONE
 
 	var light = OmniLight3D.new()
 	light.light_color = Color(1.0, 1.0, 0.5)
-	light.omni_range = 10.0
-	light.light_energy = 3.0
+	light.omni_range = 0.0 # Start at 0
+	light.light_energy = 0.0 # Start at 0
 	add_child(light)
 	light.position = Vector3(0, 0.5, 0)
 
 	model.rotation_degrees = Vector3(0, randf_range(0, 360), 0)
 
-	start_bobbing()
+	# Spawn Sound
+	var audio_player = AudioStreamPlayer3D.new()
+	audio_player.stream = WHOOSH_SOUND
+	audio_player.bus = &"SFX" # Assumes SFX bus exists, fallback to Master if not
+	add_child(audio_player)
+	audio_player.play()
+
+	# Growth Animation
+	var tween = create_tween().set_parallel(true)
+	var target_scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE
+	var duration = 0.75
+
+	tween.tween_property(model, "scale", target_scale, duration)\
+		.set_trans(Tween.TRANS_ELASTIC)\
+		.set_ease(Tween.EASE_OUT)
+
+	tween.tween_property(light, "omni_range", 10.0, duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_OUT)
+
+	tween.tween_property(light, "light_energy", 3.0, duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_OUT)
+	
+	tween.finished.connect(start_bobbing)
 
 func start_bobbing() -> void:
 	if bob_tween:
