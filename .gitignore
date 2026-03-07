@@ -2,6 +2,7 @@
 .godot/
 export_presets.godot
 *.uid
+*.import
 
 # Mono/C# ignores
 .mono/
