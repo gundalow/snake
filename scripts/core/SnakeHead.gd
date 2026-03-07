@@ -3,6 +3,7 @@ extends Node3D
 signal score_changed(new_score)
 signal food_eaten(type, total_score, food_counts)
 signal status_message(text)
+signal game_over(final_score)
 
 enum Dir { NORTH, SOUTH, EAST, WEST }
 
@@ -202,6 +203,7 @@ func die(reason: String = "Unknown") -> void:
 	if not is_alive: return
 	is_alive = false
 	print("SNAKE DIED! Reason: ", reason)
+	game_over.emit(score)
 
 	var dazed = dazed_scene.instantiate()
 	add_child.call_deferred(dazed)
