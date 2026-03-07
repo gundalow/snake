@@ -49,7 +49,7 @@ func _ready() -> void:
 	add_child(model)
 
 	_reset_all_node_positions(model)
-	
+
 	# Start at scale zero for growth animation
 	model.scale = Vector3.ZERO
 
@@ -60,7 +60,7 @@ func _ready() -> void:
 	light.light_color = Color(1.0, 1.0, 0.5)
 	if food_type == Type.MEGA:
 		light.light_color = Color(1.0, 0.5, 0.0)
-	
+
 	light.omni_range = 0.0 # Start at 0
 	light.light_energy = 0.0 # Start at 0
 	add_child(light)
@@ -80,7 +80,7 @@ func _ready() -> void:
 	var target_scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE
 	if food_type == Type.MEGA:
 		target_scale = Vector3.ONE * GameConstants.MEGA_FOOD_INITIAL_SCALE
-	
+
 	var duration = 0.75
 
 	tween.tween_property(model, "scale", target_scale, duration)\
@@ -94,7 +94,7 @@ func _ready() -> void:
 	tween.tween_property(light, "light_energy", 3.0, duration)\
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_OUT)
-	
+
 	tween.finished.connect(start_bobbing)
 
 func _setup_audio() -> void:

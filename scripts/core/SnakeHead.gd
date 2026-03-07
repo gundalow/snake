@@ -168,7 +168,7 @@ func _eat_food(area: Area3D) -> void:
 	var type = ""
 	if "food_name" in area:
 		type = area.food_name
-	
+
 	if type != "":
 		food_counts[type] = food_counts.get(type, 0) + 1
 
