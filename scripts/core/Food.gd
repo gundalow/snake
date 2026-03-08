@@ -77,7 +77,8 @@ func _ready() -> void:
 
 	# Growth Animation
 	var tween = create_tween().set_parallel(true)
-	var target_scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE
+	var multiplier = GameConstants.FOOD_MODEL_SCALES.get(food_name, 1.0)
+	var target_scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE * multiplier
 	if food_type == Type.MEGA:
 		target_scale = Vector3.ONE * GameConstants.MEGA_FOOD_INITIAL_SCALE
 
@@ -156,7 +157,8 @@ func _update_visuals() -> void:
 			1: s = GameConstants.MEGA_FOOD_MIN_SCALE
 		model.scale = Vector3.ONE * s
 	else:
-		model.scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE
+		var multiplier = GameConstants.FOOD_MODEL_SCALES.get(food_name, 1.0)
+		model.scale = Vector3.ONE * GameConstants.FOOD_VISUAL_SCALE * multiplier
 
 func take_bite() -> bool:
 	bites_remaining -= 1
