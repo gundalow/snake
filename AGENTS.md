@@ -7,6 +7,12 @@ This file is primarily for AI Agents to ensure efficient, consistent, and high-q
 
 **Target Operating Systems**: Linux (Fedora, Debian-based).
 
+### 3D Model Inspection & Skeleton3D
+- **Bones are not Nodes**: In standard Godot GLTF imports, bones are internal to `Skeleton3D` and are NOT separate `Node` objects. You cannot find them using `find_child()` or `get_node()` on the model root.
+- **Bone Poses**: Use `skeleton.get_bone_global_pose(index)` to get the transform relative to the skeleton node.
+- **Global Bone Position**: To get the world position, use `skeleton.global_transform * skeleton.get_bone_global_pose(index).origin`.
+- **Mesh Discovery**: Visual meshes are typically `MeshInstance3D` children of the `Skeleton3D` or the root.
+
 ## 🚀 Efficient Development & Testing
 
 To minimize token usage and maximize speed, follow these testing procedures:
