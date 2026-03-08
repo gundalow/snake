@@ -1,49 +1,60 @@
 # 3D Snake Model Integration Plan
 
-## Ground Truth: snake_Titanoboa (Milestone 1 COMPLETE)
+## Milestone 1: Basic Rigid Movement (COMPLETE)
 
-The following configuration is verified for the production model:
+### 1. Ground Truth: snake_Titanoboa
+The following configuration is definitively verified for the production model:
 
-### 1. Transform Basis Breakdown
-The `Transform3D` constructor uses 12 floats: `Transform3D(x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z, o_x, o_y, o_z)`
-
-**Our Configuration:**
+**Verified Transform3D:**
 `Transform3D(0, 0, -1, 0, 3, 0, 3, 0, 0, 0, -0.05, 0.46)`
 
-| Column | Vector | Mapping | Purpose |
-| :--- | :--- | :--- | :--- |
-| **X** | `(0, 0, -1)` | Local X $\rightarrow$ World -Z | Maps model length to World North. Scale = 1.0. |
-| **Y** | `(0, 3, 0)` | Local Y $\rightarrow$ World +Y | Maps model up to World Up. **Scale = 3.0**. |
-| **Z** | `(3, 0, 0)` | Local Z $\rightarrow$ World +X | Maps model side to World East. **Scale = 3.0**. |
-| **Origin**| `(0, -0.05, 0.46)` | Translation | Centers snout at pivot and aligns with floor. |
+**Technical Breakdown for Junior Developers:**
+Godot's `Transform3D` constructor takes 12 floats in this order: `Basis.x (3), Basis.y (3), Basis.z (3), Origin (3)`.
 
-**Why this works:**
-- **Rotation:** By mapping Local X to World -Z, the snake's visual head (which is at Local X = 0.46) points North.
-- **Scaling:** The basis vectors' lengths (3.0 for Y and Z) triple the snake's thickness while keeping length at 1.0.
-- **Alignment:** The $0.46$ Z-offset pulls the snout tip exactly to the $(0,0,0)$ pivot.
+| Property | Value | Mapping & Logic |
+| :--- | :--- | :--- |
+| **Basis.x** | `(0, 0, -1)` | Maps model's **Local X** to **World -Z** (North). Length is 1.0 (1x scale). |
+| **Basis.y** | `(0, 3, 0)` | Maps model's **Local Y** to **World +Y** (Up). Length is 3.0 (**3x vertical scale**). |
+| **Basis.z** | `(3, 0, 0)` | Maps model's **Local Z** to **World +X** (East). Length is 3.0 (**3x horizontal scale**). |
+| **Origin** | `(0, -0.05, 0.46)`| **Translation**: `0.46` on the Z-axis pulls the visual snout tip to $(0,0,0)$. `-0.05` aligns the belly with the floor. |
 
 ---
 
-## Milestone 2: Bending & Morphing (STARTING)
-
-### 1. Requirements
-- The snake body must follow the historical path of the head.
-- Use bone-based skinning for the 91-bone skeleton.
-
-### 2. Strategy: Spline-Based Bone Following
-- **Resolution:** 91 bones over ~24 units $\approx 0.26$ units per bone.
-- **Bone Mapping:** 
-  - `Bone.001` through `Bone.084`.
-  - Sample `position_history` at offsets of 0.26 units.
-  - Apply `global_transform` to bones.
+### 2. The "Wrong Ways" (Lessons Learned)
+*   **Assuming Identity Rotation:** We initially tried `Transform3D.IDENTITY`. In many GLTF models, the head is NOT pointing along the $-Z$ axis. For Titanoboa, the head is along Local $+X$.
+*   **Confusing Column Order:** In the 12-float constructor, the first three floats are NOT the position. They are the direction the local X-axis points.
+*   **Ignoring Script Interference:** We spent hours fixing the `.tscn` while the `.gd` script was counter-rotating the mesh to create a "smooth turn." Always disable "juice" logic when calibrating base transforms.
+*   **Relying on Numbers over Vision:** Positional logs confirmed the pivot was at $(0,0,0)$, but we couldn't see the snake was 180 degrees backward. The "Truth Arrows" (visual axis markers) were the only way to solve this.
 
 ---
 
-## Future Milestones
+## Milestone 2: Bending & Morphing (IN PROGRESS)
 
-### Milestone 3: Growing & Length Adjustment
-- **Strategy:** Sequential bone scaling. tail bones start at `0.0`.
+### 1. The Skeleton System
+*   **Bones vs Nodes**: In Godot, bones are **internal data** within a `Skeleton3D` node. They are NOT nodes themselves.
+*   **Bone Mapping**: Titanoboa has 91 bones.
+    *   **Head**: `GLTF_created_0_rootJoint` through `Bone.086`.
+    *   **Body/Spine**: `Bone.001` through `Bone.084`.
+*   **Coordinate Spaces**:
+    *   **Bone Rest**: The default "T-pose" of the bone.
+    *   **Bone Pose**: The local transformation we apply.
+    *   **Global Pose**: The final position of the bone relative to the `Skeleton3D` node.
 
-### Milestone 5: Mouth & Eating Interactions
-- **Morph Target:** `morph_0` (To be confirmed if this opens the jaw).
-- **Fallback:** If `morph_0` is unsuitable, use vertex shader deformation for biting.
+### 2. Implementation Logic
+To make the body follow a path:
+1.  Use `skeleton.set_bone_global_pose_override(bone_idx, transform, 1.0, true)`.
+2.  The `transform` must be in the **Skeleton node's local coordinate space**.
+3.  Formula: `Target_Global_Transform * Skeleton_Node.global_transform.affine_inverse()`.
+
+---
+
+## Milestone 3: Growing & Length Adjustment
+*   **Strategy**: Every bone in the skeleton has a `pose_scale`.
+*   **Junior Tip**: To "hide" the tail, iterate through bones `Bone.020` to `Bone.084` and set their `pose_scale` to `Vector3.ZERO`. As the snake eats, scale them back to `Vector3.ONE` one by one.
+
+---
+
+## Milestone 5: Mouth & Eating Interactions
+*   **Verification**: `Titanoboa` has no jaw bones but has `morph_0`.
+*   **Discovery**: If `morph_0` does not open the mouth, we must use a **Vertex Shader** to procedurally move the vertices of the head mesh downward based on their distance from the snout.
+*   **Logic**: `mouth_open_amount` (0.0 to 1.0) will be a uniform passed to the shader.

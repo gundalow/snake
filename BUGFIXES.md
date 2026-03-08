@@ -66,6 +66,24 @@ The following hardcoded values should be moved to `GameConstants.gd` for easier 
 
 ---
 
+## ✅ Solved Bugs (Milestone 1)
+
+### 1. 180-Degree Snake Orientation
+- **Issue:** The Titanoboa model's internal forward axis was Local $+X$, but the game logic assumed $-Z$.
+- **Fix:** Applied a custom `Transform3D` basis mapping `Basis.x` to World $+Z$ and `Basis.z` to World $-X$.
+- **Lesson:** Never assume GLTF models follow standard Forward/-Z conventions. Use visual debug markers immediately.
+
+### 2. Snout Pivot Misalignment
+- **Issue:** The rotation pivot was at the model's center, causing the head to "swing" in a wide arc during turns.
+- **Fix:** Applied a `0.46` unit offset to the model's translation to align the visual snout with the parent node's $(0,0,0)$ origin.
+- **Lesson:** Skeleton origins and visual mesh tips rarely align. Always verify snout position via inspection scripts.
+
+### 3. Smooth Turn Logic Conflict
+- **Issue:** `SnakeHead.gd` was counter-rotating the visual mesh to create a smooth turn effect, which scrambled the pre-calculated calibration transform.
+- **Fix:** Removed the visual smoothing logic until the base alignment was 100% verified. Visuals should inherit parent rotation directly when using complex rigged models.
+
+---
+
 ## 🧐 False Assumptions & Edge Cases
 
 - **Grid Alignment:** The movement logic assumes `delta` will always be small enough that `grid_distance` doesn't skip a full `GRID_SIZE` in one frame. At very low FPS or extreme speeds, the snake might miss a turn opportunity.

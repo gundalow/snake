@@ -11,7 +11,11 @@ This file is primarily for AI Agents to ensure efficient, consistent, and high-q
 - **Bones are not Nodes**: In standard Godot GLTF imports, bones are internal to `Skeleton3D` and are NOT separate `Node` objects. You cannot find them using `find_child()` or `get_node()` on the model root.
 - **Bone Poses**: Use `skeleton.get_bone_global_pose(index)` to get the transform relative to the skeleton node.
 - **Global Bone Position**: To get the world position, use `skeleton.global_transform * skeleton.get_bone_global_pose(index).origin`.
-- **Mesh Discovery**: Visual meshes are typically `MeshInstance3D` children of the `Skeleton3D` or the root.
+- **Coordinate Spaces**: 
+    - **Local**: Relative to the parent node.
+    - **Global**: Relative to the $(0,0,0)$ world origin.
+    - **Pose**: (Specific to bones) Relative to the `Skeleton3D` node's origin.
+- **Visual over Numbers**: **CRITICAL**. Never trust numerical logs for orientation. Always implement runtime visual markers (e.g., Arrows for Forward/Right axes) when integrating or debugging 3D models.
 
 ## 🚀 Efficient Development & Testing
 

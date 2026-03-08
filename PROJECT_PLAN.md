@@ -25,7 +25,9 @@
     - Classic screen-relative controls: WASD / Arrow Keys set absolute NSEW direction.
     - **Safety Check:** 180-degree reversals are rejected (e.g., if heading North, pressing Down/S is ignored).
 - [x] **Visuals:**
-    - Update the `SnakeHead` mesh. Start with a vibrant cube; eventually, move to a modeled head with a hinged jaw for the "eating" animation.
+    - Replaced the basic cube mesh with a high-resolution 3D Titanoboa model.
+    - Verified orientation mapping (Local X $\rightarrow$ World -Z) and pivot alignment (0.46 offset).
+    - Established "Skeleton Neutralization" to ensure a clean visual baseline.
 
 ## Milestone: The "Train" System (Body & Food)
 *Core dependencies: Requires a moving Head to generate position history.*
