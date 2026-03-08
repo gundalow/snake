@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bvy8x8l8j8x7y"]
+
+[ext_resource type="Script" path="res://tools/test_vasian_capabilities.gd" id="1_test_script"]
+
+[node name="TestVasian" type="Node3D"]
+script = ExtResource("1_test_script")

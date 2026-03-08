@@ -121,8 +121,7 @@ func move_forward(delta: float) -> void:
 
 	if distance_traveled >= GameConstants.HISTORY_RESOLUTION:
 		distance_traveled -= GameConstants.HISTORY_RESOLUTION
-		var visual_transform = global_transform
-		position_history.insert(0, visual_transform)
+		position_history.insert(0, global_transform)
 		update_segments()
 
 		var max_history = segments.size() * GameConstants.SEGMENT_SPACING + 1
@@ -206,12 +205,11 @@ func die(reason: String = "Unknown") -> void:
 	).call_deferred()
 
 func play_eat_juice() -> void:
-	var model = $SnakeModel
+	var model = get_node_or_null("SnakeModel")
 	if not model: return
 	
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	# Apply scale to the model's existing transform
 	var original_scale = model.transform.basis.get_scale()
 	var new_scale = Vector3(original_scale.x, original_scale.y * 0.8, original_scale.z * 1.2)
 	tween.tween_property(model, "scale", new_scale, 0.1)

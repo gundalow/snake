@@ -2,74 +2,89 @@
 extends SceneTree
 
 func _init():
-	var scene = load("res://assets/models/snake_Titanoboa/scene.gltf").instantiate()
+	var args = OS.get_cmdline_args()
+	var model_path = "res://assets/models/snake_Titanoboa/scene.gltf"
+	
+	for i in range(args.size()):
+		if args[i].ends_with(".gltf"):
+			model_path = args[i]
+			if not model_path.begins_with("res://"):
+				model_path = "res://" + model_path
+			break
+
+	print("\n====================================================")
+	print("DEEP INSPECTION: ", model_path)
+	print("====================================================\n")
+
+	var scene = load(model_path)
 	if not scene:
-		print("Failed to load scene")
+		print("Error: Could not load scene")
 		quit()
 		return
-
-	print("--- All Mesh Instances ---")
-	_print_meshes(scene, Transform3D())
-
-	print("\n--- Skeleton & Bone Hierarchy ---")
-	var skeleton = _find_skeleton(scene)
+	
+	var root = scene.instantiate()
+	
+	print("[1] Morph Target (Blend Shape) Analysis")
+	_find_all_morphs(root)
+	
+	print("\n[2] Jaw & Head Bone Analysis")
+	var skeleton = _find_skeleton(root)
 	if skeleton:
-		print("Skeleton found: ", skeleton.name)
-		var bone_count = skeleton.get_bone_count()
-		var head_bones = []
-		var tail_bones = []
-		
-		# Find bones by name and position
-		var min_x = 1e9
-		var max_x = -1e9
-		var min_x_idx = -1
-		var max_x_idx = -1
-
-		for i in range(bone_count):
-			var b_name = skeleton.get_bone_name(i)
-			var pose = skeleton.get_bone_global_pose(i).origin
-			if pose.x < min_x:
-				min_x = pose.x
-				min_x_idx = i
-			if pose.x > max_x:
-				max_x = pose.x
-				max_x_idx = i
-			
-			if "head" in b_name.to_lower() or "teeth" in b_name.to_lower():
-				head_bones.append({"name": b_name, "pos": pose})
-		
-		print("Bone X Range: ", min_x, " (", skeleton.get_bone_name(min_x_idx), ") to ", max_x, " (", skeleton.get_bone_name(max_x_idx), ")")
-		print("Potential Head Bones:")
-		for hb in head_bones:
-			print("  ", hb.name, " at ", hb.pos)
-			
-		# Check if parent of min_x_bone is towards max_x or vice-versa
-		var current = min_x_idx
-		print("\nPath from Min-X bone to root:")
-		while current != -1:
-			print("  ", skeleton.get_bone_name(current), " at ", skeleton.get_bone_global_pose(current).origin)
-			current = skeleton.get_bone_parent(current)
-			
+		_analyze_bones_for_mouth(skeleton)
+	
+	print("\n[3] Animation Analysis")
+	var anim_player = _find_node_of_type(root, "AnimationPlayer")
+	if anim_player:
+		for anim_name in anim_player.get_animation_list():
+			var anim = anim_player.get_animation(anim_name)
+			print("  Animation: '", anim_name, "' (Length: ", anim.length, "s)")
+			print("    Tracks: ", anim.get_track_count())
+			# Look for tracks that might be mouth related
+			for t in range(anim.get_track_count()):
+				var path = str(anim.track_get_path(t))
+				if "morph" in path.to_lower() or "blend" in path.to_lower() or "jaw" in path.to_lower() or "mouth" in path.to_lower():
+					print("      - Found relevant track: ", path)
+	
 	quit()
 
-func _print_meshes(node, accum_transform):
-	var local_transform = accum_transform
-	if node is Node3D:
-		local_transform = accum_transform * node.transform
-	
+func _find_all_morphs(node):
 	if node is MeshInstance3D:
-		var aabb = node.mesh.get_aabb()
-		var center = local_transform * aabb.get_center()
-		var min_corner = local_transform * aabb.position
-		var max_corner = local_transform * (aabb.position + aabb.size)
-		print("Mesh: ", node.name, " | Center: ", center, " | X-Range: ", min_corner.x, " to ", max_corner.x)
-	
+		var mesh = node.mesh
+		if mesh:
+			var morph_count = mesh.get_blend_shape_count()
+			if morph_count > 0:
+				print("  Mesh '", node.name, "' has ", morph_count, " morph targets:")
+				for i in range(morph_count):
+					print("    - Index ", i, ": '", mesh.get_blend_shape_name(i), "'")
 	for child in node.get_children():
-		_print_meshes(child, local_transform)
+		_find_all_morphs(child)
+
+func _analyze_bones_for_mouth(skeleton):
+	print("  Skeleton: ", skeleton.name)
+	var found_any = false
+	var keywords = ["jaw", "mouth", "head", "teeth", "tongue", "upper", "lower"]
+	for i in range(skeleton.get_bone_count()):
+		var b_name = skeleton.get_bone_name(i).to_lower()
+		for kw in keywords:
+			if kw in b_name:
+				print("    - Found Bone: '", skeleton.get_bone_name(i), "' at index ", i)
+				found_any = true
+				break
+	if not found_any:
+		print("    No bones matching mouth/jaw keywords found.")
 
 func _find_skeleton(node):
 	if node is Skeleton3D: return node
 	for child in node.get_children():
 		var res = _find_skeleton(child)
 		if res: return res
+	return null
+
+func _find_node_of_type(node, type_name):
+	if node.get_class() == type_name:
+		return node
+	for child in node.get_children():
+		var found = _find_node_of_type(child, type_name)
+		if found:
+			return found
 	return null

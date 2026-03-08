@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://d3k8v8l8j8x7y"]
+[gd_scene load_steps=10 format=3 uid="uid://d3k8v8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/core/SnakeHead.gd" id="1_snake_head"]
 [ext_resource type="PackedScene" uid="uid://dfdewnk5ekbor" path="res://assets/models/snake_Titanoboa/scene.gltf" id="2_snake_model"]
@@ -21,13 +21,6 @@ no_depth_test = true
 albedo_color = Color(1, 1, 0, 1)
 no_depth_test = true
 
-[sub_resource type="BoxMesh" id="BoxMesh_arrow"]
-size = Vector3(0.1, 0.1, 2.0)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blue"]
-albedo_color = Color(0, 0, 1, 1)
-no_depth_test = true
-
 [node name="SnakeHead" type="Node3D"]
 script = ExtResource("1_snake_head")
 
@@ -35,14 +28,14 @@ script = ExtResource("1_snake_head")
 script = ExtResource("10_debug_logger")
 
 [node name="SnakeModel" parent="." instance=ExtResource("2_snake_model")]
-transform = Transform3D(0, 0, -1, 0, 3, 0, 3, 0, 0, 0, -0.05, 0)
+transform = Transform3D(0, 0, -1, 0, 3, 0, 3, 0, 0, 0, -0.05, 0.46)
 
 [node name="HeadDebug" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_debug")
 surface_material_override/0 = SubResource("StandardMaterial3D_red")
 
 [node name="TailDebug" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 24.34)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7.36)
 mesh = SubResource("BoxMesh_debug")
 surface_material_override/0 = SubResource("StandardMaterial3D_yellow")
 
