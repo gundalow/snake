@@ -35,6 +35,7 @@ func setup(type: Type, name: String) -> void:
 		bites_remaining = GameConstants.MEGA_FOOD_BITES_TO_FINISH
 
 func _ready() -> void:
+	add_to_group("foods")
 	var model_scene: PackedScene
 	if food_type == Type.MEGA:
 		model_scene = GameConstants.MEGA_FOOD_MODELS[food_name]

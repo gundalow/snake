@@ -1,19 +1,19 @@
-extends Node3D
+extends SpecialEvent
 
 signal stomped
 
 const SPAWN_DISTANCE = 18.0
 
 @onready var animation_player = $AnimationPlayer
-@onready var timer = $Timer
 
 func _ready() -> void:
-	timer.wait_time = 30.0
-	timer.start()
-	timer.timeout.connect(_on_timer_timeout)
+	animation_player.animation_finished.connect(_on_animation_finished)
 
-func _on_timer_timeout() -> void:
+func start_event() -> void:
 	start_stomp_cycle()
+
+func _on_animation_finished(_anim_name: String) -> void:
+	event_finished.emit()
 
 func start_stomp_cycle() -> void:
 	# Pick a random side (North, South, East, West)
