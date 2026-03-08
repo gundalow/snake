@@ -1,41 +1,60 @@
-# Plan: Final-Attempt Snake Orientation Debug
+# 3D Snake Model Integration Plan
 
-## Executive Summary
-Previous attempts to fix the snake's 180-degree orientation issue have failed, despite logs confirming the pivot point is now correct. This indicates a fundamental disconnect between our assumption of the model's intrinsic "forward" direction and its visual reality. Positional logs are no longer sufficient. We must debug the model's rotation directly.
+## Ground Truth: Snake Rendering & Direction
 
-This plan abandons all prior rotational assumptions and implements a new visual validation strategy called the "Arrow Hat" to get an undeniable, in-game ground truth before making the final correction.
+As of Milestone 1 completion, the following facts are definitively verified for the `snake_Titanoboa` model:
 
-## Phase 1: The "Arrow Hat" (Visual Ground Truth)
+### 1. Model Topology
+- **Forward Vector (Intrinsic):** The model's visually forward direction (from tail to snout) is along its **Local Negative X Axis**.
+- **Head/Snout Location:** The snout meshes (`teeth.001`, `mouth.001`) are centered at local $(0, 0, 0)$ in the provided GLTF instance.
+- **Length:** The skeleton extends approximately $24.3$ units along the **Local Positive X Axis**.
+- **Up Vector:** The model's "Up" is Local Y.
 
-**Hypothesis:** The model's visually-apparent "forward" direction is not aligned with what the code assumes to be its local forward axis.
+### 2. Transformation Basis (in `SnakeHead.tscn`)
+To align this model with Godot's coordinate system (where $-Z$ is forward) and the game's 1x1x1 grid logic:
+- **Basis:** `Transform3D(0, 0, -1, 0, 3, 0, 3, 0, 0, 0, -0.05, 0)`
+  - **Local -X (Snout)** maps to **World -Z (Forward)**.
+  - **Local Y (Up)** maps to **World Y (Up)**, scaled $3\times$.
+  - **Local Z (Side)** maps to **World X (Right)**, scaled $3\times$.
+- **Offset:** $Y = -0.05$ to sit the belly on the floor ($Y=0$). Snout is already at origin $X=0, Z=0$.
 
-**Validation Strategy:** We will programmatically attach a bright, arrow-shaped mesh to the snake's head. This arrow will be hard-coded to point along the model's assumed forward vector (local `-X`). By observing where this arrow points *in-game*, we can definitively determine the model's true orientation.
+### 3. Movement Logic
+- **Parent Rotation:** The `SnakeHead` node (pivot) rotates instantly to match the `heading`.
+- **Inheritance:** The `SnakeModel` is a direct child and inherits this rotation perfectly.
+- **No Smoothing:** The previous "smooth turn" logic (counter-rotating the child mesh) has been removed as it conflicted with the model's pre-rotation.
 
-**Implementation Steps:**
-1.  **Modify `scripts/utils/DebugLogger.gd`:** This script, which is already attached to the `SnakeHead`, will be given a new task.
-2.  **Programmatically Create Arrow:** In the `_ready` function, the script will:
-    *   Instantiate a new `MeshInstance3D`.
-    *   Create a `PrismMesh` or `BoxMesh` resource, sized and shaped to look like a distinct arrow.
-    *   Crucially, the arrow's geometry will be oriented to point along the **local negative X axis**.
-    *   Assign a new, bright magenta `StandardMaterial3D` to the arrow for maximum visibility.
-3.  **Attach Arrow to Head:**
-    *   The script will find the `teeth_node` (`Object_11`) within the `SnakeModel`.
-    *   It will add the newly created magenta arrow as a direct child of the `teeth_node`.
+---
 
-**Expected Outcome:**
-When the game runs, a magenta arrow will be visibly "stuck" to the snake's snout. This arrow's direction relative to the snake's body provides the ground truth we need.
+## Post-Mortem: False Assumptions & Lessons Learned
 
-## Phase 2: Analysis & Final Correction
+### False Assumptions
+1.  **"Head is at the end of the Bone Range":** Initially, we found bones from $X = -1.5$ to $X = 22.8$ and assumed the head was at one of these extremes. While true, we guessed *which* end was the head multiple times instead of verifying mesh-to-material assignments.
+2.  **"Godot Forward is the only Forward":** We assumed that rotating the model to face $-Z$ would "just work," forgetting that the logic in `SnakeHead.gd` was *also* manipulating the rotation of the child mesh to create a "smooth turn" effect.
+3.  **"Logs tell the whole story":** We relied heavily on `global_position` logs. These confirmed the *pivot* was correct but provided zero information about *orientation*. A node can be in the exact right spot but facing the opposite direction.
 
-With the Arrow Hat in place, analysis is simple:
+### Why Mistakes Were Made
+- **Code Interference:** We tried to fix orientation via the `.tscn` file while the `.gd` script was actively fighting us by applying its own rotational logic to the child nodes. We were fixing the transform in one place and breaking it in another.
+- **Lack of Visual Debugging:** We spent too long looking at numbers in the console. The "Arrow Hat" (Magenta arrow) was the turning point; it provided an undeniable visual proof of where the model *thought* it was facing.
+- **Premature Optimization/Clean-up:** We removed the debug boxes and logs before the user had visually confirmed the fix. This led to "flying blind" when the user reported it was still broken.
 
-1.  **Run the game** and move the snake North (press the "Up" arrow key).
-2.  **Observe the Arrow:**
-    *   **If the magenta arrow points South (towards the camera/bottom of the screen):** Our core assumption was wrong. The model's visual forward is local `+X`. A 180-degree rotation is required.
-    *   **If the magenta arrow points North (away from the camera):** Our assumption and rotation basis are correct, and the issue lies elsewhere (which is extremely unlikely at this point).
-    *   **If the arrow points East or West:** The primary axis is not X, or there is an unhandled base rotation in the model hierarchy.
-3.  **Calculate Final Transform:** Based on the observation, calculate the one, final `Transform3D` basis.
-    *   If a 180-degree flip is needed, the `Basis.x` column will be flipped from `(0,0,1)` to `(0,0,-1)` and the `Basis.z` from `(-3,0,0)` to `(3,0,0)`. The origin offset will also be recalculated to keep the pivot correct.
-4.  **Implement:** Apply the final transform to `SnakeModel` in `SnakeHead.tscn`.
+### How to Produce Better Software Next Time
+- **Isolate the System:** When integrating a new asset, disable existing "juice" or secondary logic (like smooth turns) until the basic alignment is 100% verified.
+- **Visual Over Numbers:** Always implement visual orientation markers (arrows, coordinate axes) at runtime for 3D assets.
+- **Verify Asset Metadata:** Use inspection scripts (`tools/`) to check materials and mesh names immediately, rather than guessing based on bounding box extremes.
+- **Step-by-Step Validation:** Do not proceed to "Bending" or "Growing" until the "Rigid Move" is confirmed visually and logically by all stakeholders.
 
-This method replaces all guesswork with a clear, empirical visual test and will be the final step in resolving the orientation bug.
+---
+
+## Future Milestones
+
+### Milestone 2: Bending & Morphing
+- Implement bone-based skinning to deform the $24.3$ unit mesh along the `position_history` path.
+
+### Milestone 3: Growing & Length Adjustment
+- Address the fact that the snake starts at full $24$-unit length.
+
+### Milestone 4: Advanced Physics & Visuals
+- Body collisions and shadows.
+
+### Milestone 5: Animations
+- Slither animation synchronization.
