@@ -23,14 +23,13 @@ var next_heading: Dir = Dir.NORTH
 var base_move_speed: float = GameConstants.INITIAL_MOVE_SPEED
 var speed_multiplier: float = 1.0
 
-@onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
 
 func _ready() -> void:
 	_initialize_history()
-	add_segment()
-	add_segment()
+	# add_segment()
+	# add_segment()
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
 func _initialize_history() -> void:
@@ -58,7 +57,6 @@ func _process(delta: float) -> void:
 
 	handle_input()
 	move_forward(delta)
-	update_rotation(delta)
 
 func handle_input() -> void:
 	var requested := heading
@@ -118,17 +116,12 @@ func move_forward(delta: float) -> void:
 		global_position.z = snapped(global_position.z, GameConstants.GRID_SIZE)
 
 		if next_heading != heading:
-			var old_rot = _rotation_for_heading(heading)
-			var new_rot = _rotation_for_heading(next_heading)
-			var diff = wrapf(new_rot - old_rot, -PI, PI)
-			mesh.rotation.y -= diff
 			heading = next_heading
 			rotation.y = _rotation_for_heading(heading)
 
 	if distance_traveled >= GameConstants.HISTORY_RESOLUTION:
 		distance_traveled -= GameConstants.HISTORY_RESOLUTION
 		var visual_transform = global_transform
-		visual_transform.basis = mesh.global_transform.basis
 		position_history.insert(0, visual_transform)
 		update_segments()
 
@@ -185,7 +178,7 @@ func _eat_food(area: Area3D) -> void:
 					area.fully_eaten.connect(_on_mega_food_fully_eaten)
 
 	# EVERY bite adds a segment and increases score
-	add_segment()
+	# add_segment()
 	base_move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
 	score_changed.emit.call_deferred(score)
@@ -213,11 +206,13 @@ func die(reason: String = "Unknown") -> void:
 	).call_deferred()
 
 func play_eat_juice() -> void:
+	var model = $SnakeModel
+	if not model: return
+	
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(mesh, "scale", Vector3(1.2, 0.8, 1.2), 0.1)
-	tween.tween_property(mesh, "scale", Vector3(1.0, 1.0, 1.0), 0.2)
-
-func update_rotation(delta: float) -> void:
-	var rot_speed = GameConstants.TURN_INTERPOLATION_SPEED * delta
-	mesh.rotation.y = lerp_angle(mesh.rotation.y, 0.0, rot_speed)
+	# Apply scale to the model's existing transform
+	var original_scale = model.transform.basis.get_scale()
+	var new_scale = Vector3(original_scale.x, original_scale.y * 0.8, original_scale.z * 1.2)
+	tween.tween_property(model, "scale", new_scale, 0.1)
+	tween.tween_property(model, "scale", original_scale, 0.2)

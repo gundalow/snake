@@ -1,0 +1,11 @@
+Model Information:
+* title:	Snake Titanoboa by Dino Raul
+* source:	https://sketchfab.com/3d-models/snake-titanoboa-by-dino-raul-ce8d56f440ea4259b3e328eb9a1a90ca
+* author:	kenchoo (https://sketchfab.com/kenchoo)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Snake Titanoboa by Dino Raul" (https://sketchfab.com/3d-models/snake-titanoboa-by-dino-raul-ce8d56f440ea4259b3e328eb9a1a90ca) by kenchoo (https://sketchfab.com/kenchoo) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
