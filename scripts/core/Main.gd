@@ -118,7 +118,7 @@ func _on_world_stomped() -> void:
 		food_spawner.relocate_all_food()
 
 func _on_food_stolen() -> void:
-	snake_head.score -= 5
+	snake_head.score = max(0, snake_head.score - GameConstants.UFO_SCORE_PENALTY)
 	snake_head.score_changed.emit(snake_head.score)
 	_flash_score_red()
 
