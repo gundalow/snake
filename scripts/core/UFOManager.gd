@@ -6,10 +6,16 @@ signal food_stolen
 
 func start_event() -> void:
 	var foods = get_tree().get_nodes_in_group("foods")
+	var main = get_tree().root.get_node_or_null("Main")
+	var special_event_manager = null
+	if main:
+		special_event_manager = main.get_node_or_null("SpecialEventManager")
 
 	while foods.is_empty():
 		# If no food, wait a second then retry
 		await get_tree().create_timer(1.0).timeout
+		if special_event_manager and not special_event_manager.is_running:
+			return
 		foods = get_tree().get_nodes_in_group("foods")
 
 	var target_food = foods.pick_random()
