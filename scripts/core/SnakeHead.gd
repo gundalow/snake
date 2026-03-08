@@ -7,7 +7,6 @@ signal game_over(final_score)
 
 enum Dir { NORTH, SOUTH, EAST, WEST }
 
-@export var segment_scene: PackedScene = preload("res://scenes/main/SnakeSegment.tscn")
 @export var dazed_scene: PackedScene = preload("res://scenes/effects/dazed_particles.tscn")
 
 var is_alive: bool = true
@@ -15,7 +14,7 @@ var invulnerability_timer: float = GameConstants.INVULNERABILITY_TIME
 var score: int = 0
 var food_counts: Dictionary = {}
 var position_history: Array[Transform3D] = []
-var segments: Array[Node3D] = []
+var segments_count: int = 0
 var distance_traveled: float = 0.0
 var grid_distance: float = 0.0
 var heading: Dir = Dir.NORTH
@@ -26,6 +25,8 @@ var speed_multiplier: float = 1.0
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
+@onready var body_multimesh: MultiMeshInstance3D = $BodyMultiMesh
+@onready var body_area: Area3D = $BodyArea
 
 func _ready() -> void:
 	_initialize_history()
@@ -132,34 +133,47 @@ func move_forward(delta: float) -> void:
 		position_history.insert(0, visual_transform)
 		update_segments()
 
-		var max_history = segments.size() * GameConstants.SEGMENT_SPACING + 1
+		var max_history = segments_count * GameConstants.SEGMENT_SPACING + 1
 		if position_history.size() > max_history:
 			position_history.resize(max_history)
 
 func update_segments() -> void:
-	for i in range(segments.size()):
+	if segments_count == 0: return
+
+	var mm = body_multimesh.multimesh
+	for i in range(segments_count):
 		var history_index = i * GameConstants.SEGMENT_SPACING
 		if history_index < position_history.size():
-			segments[i].global_transform = position_history[history_index]
+			var t = position_history[history_index]
+			mm.set_instance_transform(i, t)
+			body_area.get_child(i).global_transform = t
 
 func add_segment() -> void:
-	var new_segment = segment_scene.instantiate()
-	get_parent().add_child.call_deferred(new_segment)
+	segments_count += 1
+	var mm = body_multimesh.multimesh
+	mm.instance_count = segments_count
 
-	var target_index = segments.size() * GameConstants.SEGMENT_SPACING
+	var shape = CollisionShape3D.new()
+	var box_shape = BoxShape3D.new()
+	box_shape.size = Vector3(0.8, 0.8, 0.8)
+	shape.shape = box_shape
+	body_area.add_child(shape)
+
+	var target_index = (segments_count - 1) * GameConstants.SEGMENT_SPACING
+	var t: Transform3D
 	if target_index < position_history.size():
-		new_segment.global_transform = position_history[target_index]
+		t = position_history[target_index]
 	elif position_history.size() > 0:
-		new_segment.global_transform = position_history.back()
+		t = position_history.back()
 	else:
-		new_segment.global_transform = global_transform
+		t = global_transform
 
-	var area = new_segment.get_node_or_null("SegmentArea")
-	if area:
-		area.monitorable = false
-		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
+	mm.set_instance_transform(segments_count - 1, t)
+	shape.global_transform = t
 
-	segments.append(new_segment)
+	# Mimic the delayed collision activation
+	shape.disabled = true
+	get_tree().create_timer(1.0).timeout.connect(func(): shape.disabled = false)
 
 func _on_mouth_area_entered(area: Area3D) -> void:
 	if is_alive and area.is_in_group("foods"):
