@@ -26,9 +26,15 @@ const MEGA_FOOD_BITES_TO_FINISH: int = 3
 const MEGA_FOOD_SPEED_MULTIPLIER: float = 0.5
 
 const FOOD_MODELS = {
-	"apple": preload("res://assets/models/food/apple/food_apple_01_4k.gltf"),
-	"lychee": preload("res://assets/models/food/lychee/food_lychee_01_4k.gltf"),
-	"sweet_potato": preload("res://assets/models/food/sweet_potato/sweet_potato_4k.gltf")
+	"apple": preload("res://assets/models/food/apple/food_apple_01_1k.gltf"),
+	"lychee": preload("res://assets/models/food/lychee/food_lychee_01_1k.gltf"),
+	"sweet_potato": preload("res://assets/models/food/sweet_potato/sweet_potato_1k.gltf")
+}
+
+const FOOD_MODEL_SCALES = {
+	"apple": 1.0,
+	"lychee": 4.0,
+	"sweet_potato": 2.0
 }
 
 const MEGA_FOOD_MODELS = {

@@ -152,13 +152,13 @@
   ],
   "images": [
     {
-      "uri": "textures/Melon_baseColor.jpeg"
+      "uri": "textures/Melon_baseColor_1k.jpeg"
     },
     {
-      "uri": "textures/Melon_metallicRoughness.png"
+      "uri": "textures/Melon_metallicRoughness_1k.png"
     },
     {
-      "uri": "textures/Melon_normal.png"
+      "uri": "textures/Melon_normal_1k.png"
     }
   ],
   "materials": [
