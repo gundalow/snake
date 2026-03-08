@@ -1,18 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://d3k8v8l8j8x7y"]
+[gd_scene load_steps=12 format=3 uid="uid://d3k8v8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/core/SnakeHead.gd" id="1_snake_head"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_head"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_head"]
-albedo_color = Color(0, 1, 0, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_eyes"]
-size = Vector3(0.2, 0.2, 0.2)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eyes"]
-albedo_color = Color(0, 0, 0, 1)
+[ext_resource type="PackedScene" uid="uid://dfdewnk5ekbor" path="res://assets/models/snake_Titanoboa/scene.gltf" id="2_snake_model"]
+[ext_resource type="Script" path="res://scripts/utils/DebugLogger.gd" id="10_debug_logger"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_head"]
 size = Vector3(0.9, 0.9, 0.9)
@@ -20,25 +10,43 @@ size = Vector3(0.9, 0.9, 0.9)
 [sub_resource type="BoxShape3D" id="BoxShape_mouth"]
 size = Vector3(0.4, 0.4, 0.4)
 
+[sub_resource type="BoxMesh" id="BoxMesh_debug"]
+size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_red"]
+albedo_color = Color(1, 0, 0, 1)
+no_depth_test = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yellow"]
+albedo_color = Color(1, 1, 0, 1)
+no_depth_test = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_arrow"]
+size = Vector3(0.1, 0.1, 2.0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blue"]
+albedo_color = Color(0, 0, 1, 1)
+no_depth_test = true
+
 [node name="SnakeHead" type="Node3D"]
 script = ExtResource("1_snake_head")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_head")
-surface_material_override/0 = SubResource("StandardMaterial3D_head")
+[node name="DebugLogger" type="Node" parent="."]
+script = ExtResource("10_debug_logger")
 
-[node name="EyeL" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.45)
-mesh = SubResource("BoxMesh_eyes")
-surface_material_override/0 = SubResource("StandardMaterial3D_eyes")
+[node name="SnakeModel" parent="." instance=ExtResource("2_snake_model")]
+transform = Transform3D(0, 0, -1, 0, 3, 0, 3, 0, 0, 0, -0.05, 0)
 
-[node name="EyeR" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.45)
-mesh = SubResource("BoxMesh_eyes")
-surface_material_override/0 = SubResource("StandardMaterial3D_eyes")
+[node name="HeadDebug" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_debug")
+surface_material_override/0 = SubResource("StandardMaterial3D_red")
+
+[node name="TailDebug" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 24.34)
+mesh = SubResource("BoxMesh_debug")
+surface_material_override/0 = SubResource("StandardMaterial3D_yellow")
 
 [node name="HeadArea" type="Area3D" parent="."]
-
 collision_layer = 1
 collision_mask = 0
 
