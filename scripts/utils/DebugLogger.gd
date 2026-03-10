@@ -14,19 +14,19 @@ var bone_spheres: Array[MeshInstance3D] = []
 func _ready():
 	head_box = snake_head.get_node_or_null("HeadDebug")
 	tail_box = snake_head.get_node_or_null("TailDebug")
-	
+
 	if snake_model:
 		teeth_node = snake_model.find_child("Object_11", true, false) # teeth.001
 		mouth_mesh_node = snake_model.find_child("Object_12", true, false) # mouth.001
 		tongue_mesh_node = snake_model.find_child("Object_10", true, false) # tongue
-		
+
 		_add_truth_arrows.call_deferred()
 		_setup_skeleton_debug.call_deferred()
 
 func _setup_skeleton_debug():
 	var skeleton = _find_skeleton(snake_model)
 	if not skeleton: return
-	
+
 	# Create spheres for the first 10 and last 10 bones
 	var bone_count = skeleton.get_bone_count()
 	for i in range(bone_count):
@@ -46,7 +46,7 @@ func _setup_skeleton_debug():
 func _process(_delta):
 	var skeleton = _find_skeleton(snake_model)
 	if not skeleton: return
-	
+
 	var bone_count = skeleton.get_bone_count()
 	var sphere_idx = 0
 	for i in range(bone_count):
@@ -83,14 +83,14 @@ func log_positions(label: String):
 	print("SnakeHead (Pivot) Global Pos: ", snake_head.global_position)
 	if snake_model:
 		print("Model Local Transform: ", snake_model.transform)
-	
+
 	var skeleton = _find_skeleton(snake_model)
 	if skeleton:
 		var min_pos = Vector3(1e9, 1e9, 1e9)
 		var max_pos = Vector3(-1e9, -1e9, -1e9)
 		var min_bone = ""
 		var max_bone = ""
-		
+
 		for i in range(skeleton.get_bone_count()):
 			var g_pos = skeleton.global_transform * skeleton.get_bone_global_pose(i).origin
 			if g_pos.z < min_pos.z:
@@ -99,19 +99,19 @@ func log_positions(label: String):
 			if g_pos.z > max_pos.z:
 				max_pos = g_pos
 				max_bone = skeleton.get_bone_name(i)
-		
+
 		print("  --- SKELETON WORLD EXTREMES (Z-AXIS) ---")
 		print("  Furthest NORTH (-Z): %s at %s" % [min_bone, min_pos])
 		print("  Furthest SOUTH (+Z): %s at %s" % [max_bone, max_pos])
 		print("  Z-Length: %f" % (max_pos.z - min_pos.z))
-		
+
 		print("  --- FRONT BONES ---")
 		for i in range(10):
 			var b_name = skeleton.get_bone_name(i)
 			var pose = skeleton.get_bone_global_pose(i)
 			var g_pos = skeleton.global_transform * pose.origin
 			print("  Bone [%d]: '%s' | Global: %s" % [i, b_name, g_pos])
-		
+
 		var head_keywords = ["head", "tongue", "mouse", "eye", "teeth", "bone.086"]
 		for i in range(skeleton.get_bone_count()):
 			var b_name = skeleton.get_bone_name(i).to_lower()
