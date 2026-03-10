@@ -16,24 +16,58 @@ var score: int = 0
 var food_counts: Dictionary = {}
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
+var body_bones: Array[int] = []
 var distance_traveled: float = 0.0
 var grid_distance: float = 0.0
 var heading: Dir = Dir.NORTH
 var next_heading: Dir = Dir.NORTH
 var base_move_speed: float = GameConstants.INITIAL_MOVE_SPEED
 var speed_multiplier: float = 1.0
+var snake_length: int = 10 # Initial number of bones to show
 
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
+@onready var snake_model: Node3D = $SnakeModel
+@onready var skeleton: Skeleton3D = _find_skeleton(snake_model)
 
 func _ready() -> void:
+	_initialize_bones()
 	_initialize_history()
 	# add_segment()
 	# add_segment()
 	mouth_area.area_entered.connect(_on_mouth_area_entered)
 
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if not node: return null
+	if node is Skeleton3D: return node
+	for child in node.get_children():
+		var res = _find_skeleton(child)
+		if res: return res
+	return null
+
+func _initialize_bones() -> void:
+	if not skeleton: return
+
+	for i in range(skeleton.get_bone_count()):
+		var b_name = skeleton.get_bone_name(i)
+		# From 3D_Plan.md: Body/Spine: Bone.001 through Bone.084
+		if b_name.begins_with("Bone"):
+			body_bones.append(i)
+
+	# Initial visibility
+	update_bone_visibility()
+
+func update_bone_visibility() -> void:
+	if not skeleton: return
+	for i in range(body_bones.size()):
+		var bone_idx = body_bones[i]
+		if i < snake_length:
+			skeleton.set_bone_pose_scale(bone_idx, Vector3.ONE)
+		else:
+			skeleton.set_bone_pose_scale(bone_idx, Vector3.ZERO)
+
 func _initialize_history() -> void:
-	var needed = 2 * GameConstants.SEGMENT_SPACING + 1
+	var needed = body_bones.size() * GameConstants.SEGMENT_SPACING + 1
 	var behind = transform.basis.z.normalized()
 	for i in range(needed):
 		var t = global_transform
@@ -123,16 +157,33 @@ func move_forward(delta: float) -> void:
 		distance_traveled -= GameConstants.HISTORY_RESOLUTION
 		position_history.insert(0, global_transform)
 		update_segments()
+		update_skeleton()
 
-		var max_history = segments.size() * GameConstants.SEGMENT_SPACING + 1
+		var max_history = body_bones.size() * GameConstants.SEGMENT_SPACING + 1
 		if position_history.size() > max_history:
 			position_history.resize(max_history)
 
 func update_segments() -> void:
 	for i in range(segments.size()):
-		var history_index = i * GameConstants.SEGMENT_SPACING
+		var history_index = (i + 1) * GameConstants.SEGMENT_SPACING * 5 # Offset segments to be further back if still using them
 		if history_index < position_history.size():
 			segments[i].global_transform = position_history[history_index]
+
+func update_skeleton() -> void:
+	if not skeleton: return
+
+	var inv_skeleton_transform = skeleton.global_transform.affine_inverse()
+
+	for i in range(snake_length):
+		if i >= body_bones.size(): break
+
+		var bone_idx = body_bones[i]
+		var history_index = (i + 1) * GameConstants.SEGMENT_SPACING
+
+		if history_index < position_history.size():
+			var target_transform = position_history[history_index]
+			var local_transform = inv_skeleton_transform * target_transform
+			skeleton.set_bone_global_pose_override(bone_idx, local_transform, 1.0, true)
 
 func add_segment() -> void:
 	var new_segment = segment_scene.instantiate()
@@ -178,6 +229,9 @@ func _eat_food(area: Area3D) -> void:
 
 	# EVERY bite adds a segment and increases score
 	# add_segment()
+	snake_length = min(body_bones.size(), snake_length + 1)
+	update_bone_visibility()
+
 	base_move_speed += GameConstants.SPEED_INCREMENT
 	score += 1
 	score_changed.emit.call_deferred(score)
@@ -207,7 +261,7 @@ func die(reason: String = "Unknown") -> void:
 func play_eat_juice() -> void:
 	var model = get_node_or_null("SnakeModel")
 	if not model: return
-	
+
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	var original_scale = model.transform.basis.get_scale()
