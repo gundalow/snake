@@ -191,6 +191,25 @@ def run_gdlint():
         print(f"Error during gdlint: {e}", file=sys.stderr)
         return False
 
+def run_integration_tests():
+    """Runs integration tests if Godot is available."""
+    print("Running integration tests...")
+    try:
+        result = subprocess.run(
+            [sys.executable, "tests/integration/test_screenshot.py"],
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+        if result.returncode != 0:
+            print("Error: Integration tests failed.", file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            return False
+        return True
+    except Exception as e:
+        print(f"Error during integration tests: {e}", file=sys.stderr)
+        return False
+
 def run_headless_execution():
     """Runs Godot in headless mode for a few frames and scans for errors."""
     print("Running Godot headless execution check...")
@@ -263,6 +282,7 @@ def main():
         if not run_headless_import(): success = False
         if not run_headless_syntax_check(): success = False
         if not run_headless_execution(): success = False
+        if not run_integration_tests(): success = False
     else:
         print("Skipping Godot-dependent checks (syntax/build/execution) as 'godot' is not in PATH.")
 
