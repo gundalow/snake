@@ -1,74 +1,69 @@
-# Code Review Findings: 3D Snake GDScript
+# Code Review & Bug Report
 
-This document outlines potential bugs, performance improvements, and architectural concerns discovered during the full code review.
+This document details the findings from a full code review of the 3D Snake project.
 
 ## 🐛 Potential Bugs
 
-### 1. Input Overwriting (High Speed / High APM)
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The `next_heading` system only stores one pending turn. If a player presses "Right" then "Up" extremely quickly (before the snake reaches the next grid boundary), the "Right" turn is overwritten and lost.
-- **Impact:** Controls feel "unresponsive" or "slippery" during fast gameplay.
+### 1. Input Overwriting (Input Lag)
+**Location:** `scripts/core/SnakeHead.gd` -> `handle_input()`
+**Description:** The current system only stores a single `next_heading`. If a player performs two quick turns (e.g., "Right" then "Up") within one grid cell, the "Right" input is overwritten and lost. The snake will only register the "Up" turn, making the controls feel unresponsive at high speeds or for skilled players.
+**Recommended Fix:** Implement an input queue to store multiple pending turns.
 
-### 2. Negative Score Possibility
-- **File:** `scripts/core/Main.gd`
-- **Issue:** When a UFO steals food, `_on_food_stolen` subtracts 5 points: `snake_head.score -= 5`.
-- **Impact:** If the player has fewer than 5 points, the score becomes negative, which is generally undesirable for a classic arcade game.
+### 2. UFO & Mega Food Softlock
+**Location:** `scripts/core/SnakeHead.gd` and `scripts/core/UFO.gd`
+**Description:** When eating a Mega Food, the snake's `speed_multiplier` is set to 0.5. This multiplier is only reset to 1.0 when the `fully_eaten` signal is emitted. If a UFO steals the Mega Food while the snake is in the middle of eating it (after at least one bite), the `fully_eaten` signal is emitted by the UFO's abduction logic, but the `SnakeHead` might not be correctly notified to reset the speed if the connection was only to the specific food instance that was just freed. More critically, if the snake is slowed and the food vanishes, there's a risk the state doesn't reset.
+**Recommended Fix:** Ensure `SnakeHead` resets `speed_multiplier` whenever a food item it was eating is destroyed or stolen.
 
-### 3. Food Spawn Stalling Logic
-- **File:** `scripts/core/FoodSpawner.gd` & `scripts/core/Main.gd`
-- **Issue:** `FoodSpawner` relies on the `fully_eaten` signal from `Food.gd` to spawn the next item. However, the UFO simply `queue_free()`s the food in `UFO.gd`, which never emits `fully_eaten`.
-- **Risk:** While `Main.gd` manually calls `spawn_food()` after a timeout in `_on_food_stolen`, this creates a fragile dependency where the spawner doesn't handle the loss of its own managed objects.
+### 3. Destructive Model Centering
+**Location:** `scripts/core/Food.gd` -> `_reset_all_node_positions()`
+**Description:** This function recursively sets `node.position = Vector3.ZERO` for all children of a loaded model. This assumes all parts of a 3D model should be centered at the origin. If a model (like the Apple or Lychee) consists of multiple offset parts (stems, leaves, etc.), this logic will collapse all parts into the center, effectively breaking the model's visual structure.
+**Recommended Fix:** Center the root node only, or use the model's bounding box to calculate a center offset without zeroing out internal relative transforms.
 
-### 4. Collision "Tunneling" at High Speeds
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The `DeathRay` length is hardcoded to `0.6`. Since the head mesh is 1.0 units wide, the ray only extends 0.1 units beyond the mesh.
-- **Impact:** If `move_speed` is high enough that `delta * move_speed > 0.1`, the snake could penetrate a wall or body segment before the ray detects the collision.
+### 4. Frame-Rate Dependent History Recording
+**Location:** `scripts/core/SnakeHead.gd` -> `move_forward()`
+**Description:** Position history is recorded based on `distance_traveled` in `_process`. If the frame rate drops significantly and `distance_traveled` exceeds `HISTORY_RESOLUTION` by a large margin (e.g., 2x or 3x), only one history entry is added for that frame. This causes the snake's body segments to "stretch" or skip parts of the path during lag spikes.
+**Recommended Fix:** Use a `while` loop to catch up on history entries if `distance_traveled` is much larger than `HISTORY_RESOLUTION`.
 
-### 5. Fragile Node References
-- **File:** `scripts/core/FoodSpawner.gd`, `scripts/core/Main.gd`, `scripts/core/InputHandler.gd`
-- **Issue:** Multiple scripts use `get_node("../SnakeHead")` or `get_parent().get_node("HUD")`.
-- **Impact:** If the scene tree structure is slightly modified (e.g., nesting nodes for organization), these scripts will crash. Use of `%UniqueNames` or signals via a singleton would be more robust.
-
----
-
-## 🚀 Performance Improvements (Fedora / Integrated Graphics)
-
-### 1. 4K Texture Memory Pressure
-- **File:** `scripts/core/GameConstants.gd`
-- **Issue:** Food models are loading `4k.gltf` variants (e.g., `food_apple_01_4k.gltf`).
-- **Improvement:** 4K textures are excessive for a stylized snake game and will quickly saturate VRAM on integrated graphics, leading to stuttering or crashes. Using 1K or 2K textures is recommended.
-
-### 2. Draw Call Optimization for Snake Body
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** Every snake segment is a separate `MeshInstance3D` and `Area3D`.
-- **Improvement:** For very long snakes, this significantly increases draw calls. Using a `MultiMeshInstance3D` for the body visuals would be much more efficient.
-
-### 3. Collision Complexity
-- **Issue:** Each segment has its own `Area3D`.
-- **Improvement:** Consider using a single `Area3D` for the entire body with multiple `CollisionShape3D` children, or a simplified proximity check for the tail.
+### 5. Death Ray Precision
+**Location:** `scenes/main/SnakeHead.tscn` -> `DeathRay`
+**Description:** The `DeathRay` has a `target_position` of `(0, 0, -0.6)`. Since the head is a `1.0` unit cube and the ray starts at the center, it only extends `0.1` units beyond the front face. At high speeds (e.g., 10+ units/sec), the snake could potentially move more than `0.1` units in a single frame, passing through a wall's collision boundary before the raycast triggers.
+**Recommended Fix:** Increase the ray length or use a `Shapecast3D` for more robust collision detection.
 
 ---
 
-## ⚙️ Constants to be Centralized
+## 🔢 Constants to be Defined
 
-The following hardcoded values should be moved to `GameConstants.gd` for easier tuning:
+The following values are hardcoded and should be moved to `GameConstants.gd`:
 
-- **SnakeHead.gd:**
-    - `1.5` (Dazed particle Y-offset)
-    - `1.0` (Invulnerability timer for new segments)
-- **Food.gd:**
-    - `0.7` / `0.5` (Bobbing heights)
-    - `0.75` (Growth animation duration)
-    - `10.0` / `3.0` (OmniLight range and energy)
-- **UFO.gd:**
-    - `5.0` (Flight height - currently matches `GameConstants` but re-declared)
-    - `2.0` (Abduction duration)
+*   **Audio Bus Names:** The string `&"SFX"` is used in `Food.gd`.
+*   **Animation Durations:** `0.75` (growth), `1.0` (bobbing), and `0.25` (jump) in `Food.gd`.
+*   **UI Thresholds:** `0.01` for shake intensity decay in `CameraShake.gd`.
+*   **Default Altitudes:** UFO flight height `5.0` is used as a default in `UFO.gd` despite being in constants.
+*   **Collision Layers:** Physics layers are referenced by integers in some scenes/scripts instead of using the named layer constants.
 
 ---
 
-## 🧐 False Assumptions & Edge Cases
+## ❓ False Assumptions
 
-- **Grid Alignment:** The movement logic assumes `delta` will always be small enough that `grid_distance` doesn't skip a full `GRID_SIZE` in one frame. At very low FPS or extreme speeds, the snake might miss a turn opportunity.
-- **Empty Names:** `NamePrompt.gd` prevents empty names, but doesn't prevent names consisting only of spaces, which can mess up the leaderboard UI.
-- **UFO vs. Mega Food:** If a UFO abducts a Mega Food, the "slow down" effect applied to the snake is never cleared because the `fully_eaten` signal is never received.
-- **Invulnerability Window:** The 0.5s invulnerability assumes the snake will have moved far enough away from its own head-spawn point. At very slow speeds, the snake might still be "inside" its first segment when invulnerability expires.
+1.  **Grid Alignment:** The code assumes the grid is always aligned to global `0.0` coordinates. If the board is moved, the `snapped()` logic in `move_forward` will fail to align the snake correctly with the environment.
+2.  **Y-Axis Consistency:** Many scripts assume the floor is exactly at `Y=0` and items should be at `Y=0.5`. This makes the game fragile if verticality is added or if the environment meshes are changed.
+3.  **Single Food Item:** `FoodSpawner.gd` assumes only one food item exists at a time for its `_on_food_fully_eaten` logic. While `relocate_all_food` handles multiple, the core spawn loop is strictly linear.
+
+---
+
+## ⚠️ Edge Cases
+
+1.  **Zero Score Highscore:** `ScoreManager.gd` returns `false` for `is_new_high_score` if the score is `0`. This prevents a player's first run from being recorded if they die immediately, which might be confusing.
+2.  **Rapid Speed Boosts:** If `base_move_speed` becomes extremely high, `grid_distance` could exceed `GameConstants.GRID_SIZE` by more than double in one frame. The current logic only subtracts `GRID_SIZE` once, leading to a permanent desync from the grid.
+3.  **UFO Target Loss:** If a UFO is hunting a food item and the player eats it first, the UFO enters a "Leaving" state. However, if a new food spawns immediately in the same spot (unlikely but possible), the UFO's state machine might behave unexpectedly.
+
+---
+
+## 🚀 Performance Improvements
+*Target: Fedora Laptop with Integrated Graphics*
+
+1.  **Circular Buffer for History:** `position_history.insert(0, ...)` is an `O(n)` operation. As the snake grows very long, shifting thousands of elements every `0.1` units of movement will cause CPU spikes. Use a fixed-size circular buffer (Array with a pointer).
+2.  **Shadow Optimization:** The `DirectionalLight3D` has shadows enabled. On integrated graphics, reducing shadow resolution or using `Shadow Atlas` settings in the Project Settings is critical.
+3.  **Particle Systems:** `GPUParticles3D` are used for the dazed effect. While visually superior, `CPUParticles3D` are significantly lighter for integrated Intel/AMD graphics.
+4.  **Collision Masking:** Ensure `MouthArea` and `HeadArea` have their `collision_mask` strictly limited to exactly what they need to detect to minimize broad-phase physics calculations.
+5.  **Forward Plus vs. Compatibility:** `Forward Plus` is the most demanding renderer in Godot 4. For a laptop with integrated graphics, the `Mobile` (Vulkan) or `Compatibility` (OpenGL) renderers would provide a much more stable framerate.
