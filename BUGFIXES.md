@@ -1,74 +1,80 @@
-# Code Review Findings: 3D Snake GDScript
+# Code Review & Potential Bug Report
 
-This document outlines potential bugs, performance improvements, and architectural concerns discovered during the full code review.
+This document details identified bugs, missing constants, false assumptions, edge cases, and performance improvement opportunities in the **3D Snake GDScript** project.
 
 ## 🐛 Potential Bugs
 
-### 1. Input Overwriting (High Speed / High APM)
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The `next_heading` system only stores one pending turn. If a player presses "Right" then "Up" extremely quickly (before the snake reaches the next grid boundary), the "Right" turn is overwritten and lost.
-- **Impact:** Controls feel "unresponsive" or "slippery" during fast gameplay.
+### 1. Input Overwriting (Input Lag/Loss)
+*   **File**: `scripts/core/SnakeHead.gd`
+*   **Issue**: The `next_heading` variable only stores the *most recent* input. If a player performs a quick double-turn (e.g., "Right" then "Up") before the snake reaches the next grid boundary, the "Right" turn is completely discarded.
+*   **Consequence**: The snake feels unresponsive or "skips" turns during fast gameplay.
+*   **Fix**: Implement an input queue to store at least two pending turns.
 
-### 2. Negative Score Possibility
-- **File:** `scripts/core/Main.gd`
-- **Issue:** When a UFO steals food, `_on_food_stolen` subtracts 5 points: `snake_head.score -= 5`.
-- **Impact:** If the player has fewer than 5 points, the score becomes negative, which is generally undesirable for a classic arcade game.
+### 2. Initial Segment Overlap
+*   **File**: `scripts/core/SnakeHead.gd` -> `add_segment()`
+*   **Issue**: In `_ready()`, `add_segment()` is called twice. The logic uses `segments.size() * GameConstants.SEGMENT_SPACING` to pick a history index. For the first segment, `size()` is 0, so it picks index 0 (the head's position).
+*   **Consequence**: The first body segment spawns exactly inside the snake's head mesh, causing visual flickering (Z-fighting).
+*   **Fix**: Offset the initial segment index to `(segments.size() + 1) * GameConstants.SEGMENT_SPACING`.
 
-### 3. Food Spawn Stalling Logic
-- **File:** `scripts/core/FoodSpawner.gd` & `scripts/core/Main.gd`
-- **Issue:** `FoodSpawner` relies on the `fully_eaten` signal from `Food.gd` to spawn the next item. However, the UFO simply `queue_free()`s the food in `UFO.gd`, which never emits `fully_eaten`.
-- **Risk:** While `Main.gd` manually calls `spawn_food()` after a timeout in `_on_food_stolen`, this creates a fragile dependency where the spawner doesn't handle the loss of its own managed objects.
+### 3. UFO Abduction Race Condition
+*   **File**: `scripts/core/UFO.gd`
+*   **Issue**: The UFO disconnects from the food's `tree_exited` signal *after* starting the abduction tween. If the snake eats the food in the exact same frame that the UFO starts its abduction, the `target_food` reference might become invalid or trigger double-free logic.
+*   **Fix**: Check for `is_instance_valid(target_food)` immediately before and during the abduction sequence.
 
-### 4. Collision "Tunneling" at High Speeds
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** The `DeathRay` length is hardcoded to `0.6`. Since the head mesh is 1.0 units wide, the ray only extends 0.1 units beyond the mesh.
-- **Impact:** If `move_speed` is high enough that `delta * move_speed > 0.1`, the snake could penetrate a wall or body segment before the ray detects the collision.
+### 4. High-Speed Grid Skipping
+*   **File**: `scripts/core/SnakeHead.gd` -> `move_forward()`
+*   **Issue**: The grid boundary check `if grid_distance >= GameConstants.GRID_SIZE` assumes that `move_speed * delta` will not exceed `GRID_SIZE`. If speed is increased significantly, the snake could skip a grid intersection entirely.
+*   **Fix**: Use a `while` loop or a more robust distance-remaining calculation to ensure every grid intersection triggers a turn check.
 
-### 5. Fragile Node References
-- **File:** `scripts/core/FoodSpawner.gd`, `scripts/core/Main.gd`, `scripts/core/InputHandler.gd`
-- **Issue:** Multiple scripts use `get_node("../SnakeHead")` or `get_parent().get_node("HUD")`.
-- **Impact:** If the scene tree structure is slightly modified (e.g., nesting nodes for organization), these scripts will crash. Use of `%UniqueNames` or signals via a singleton would be more robust.
-
----
-
-## 🚀 Performance Improvements (Fedora / Integrated Graphics)
-
-### 1. 4K Texture Memory Pressure
-- **File:** `scripts/core/GameConstants.gd`
-- **Issue:** Food models are loading `4k.gltf` variants (e.g., `food_apple_01_4k.gltf`).
-- **Improvement:** 4K textures are excessive for a stylized snake game and will quickly saturate VRAM on integrated graphics, leading to stuttering or crashes. Using 1K or 2K textures is recommended.
-
-### 2. Draw Call Optimization for Snake Body
-- **File:** `scripts/core/SnakeHead.gd`
-- **Issue:** Every snake segment is a separate `MeshInstance3D` and `Area3D`.
-- **Improvement:** For very long snakes, this significantly increases draw calls. Using a `MultiMeshInstance3D` for the body visuals would be much more efficient.
-
-### 3. Collision Complexity
-- **Issue:** Each segment has its own `Area3D`.
-- **Improvement:** Consider using a single `Area3D` for the entire body with multiple `CollisionShape3D` children, or a simplified proximity check for the tail.
+### 5. Persistent Data Growth
+*   **File**: `scripts/core/ScoreManager.gd`
+*   **Issue**: `submit_score()` appends every single game's score to the `high_scores` array and saves it to disk. There is no pruning mechanism.
+*   **Consequence**: Over thousands of games, `highscores.json` will grow indefinitely, slowing down startup and saving.
+*   **Fix**: Limit the `high_scores` array to the top 100 or 500 entries before saving.
 
 ---
 
-## ⚙️ Constants to be Centralized
+## 💎 Common Values to be Constants
 
-The following hardcoded values should be moved to `GameConstants.gd` for easier tuning:
+The following "magic numbers" should be moved to `scripts/core/GameConstants.gd`:
 
-- **SnakeHead.gd:**
-    - `1.5` (Dazed particle Y-offset)
-    - `1.0` (Invulnerability timer for new segments)
-- **Food.gd:**
-    - `0.7` / `0.5` (Bobbing heights)
-    - `0.75` (Growth animation duration)
-    - `10.0` / `3.0` (OmniLight range and energy)
-- **UFO.gd:**
-    - `5.0` (Flight height - currently matches `GameConstants` but re-declared)
-    - `2.0` (Abduction duration)
+### `SnakeHead.gd`
+*   `Vector3(0, 1.5, 0)`: Dazed particle spawn offset.
+*   `Vector3(1.2, 0.8, 1.2)`: Squash and stretch scale values.
+*   `0.1` and `0.2`: Eat animation tween durations.
+*   `1.0`: Invulnerability timer default (different from `GameConstants.INVULNERABILITY_TIME` which is 0.5).
+
+### `Food.gd`
+*   `0.75`: Growth animation duration.
+*   `10.0`: `OmniLight3D` range.
+*   `3.0`: `OmniLight3D` energy.
+*   `0.7` and `0.5`: Bobbing animation height offsets.
+*   `5.0`: Jump height during relocation.
+*   `0.25`: Jump animation duration.
 
 ---
 
-## 🧐 False Assumptions & Edge Cases
+## ❓ False Assumptions
 
-- **Grid Alignment:** The movement logic assumes `delta` will always be small enough that `grid_distance` doesn't skip a full `GRID_SIZE` in one frame. At very low FPS or extreme speeds, the snake might miss a turn opportunity.
-- **Empty Names:** `NamePrompt.gd` prevents empty names, but doesn't prevent names consisting only of spaces, which can mess up the leaderboard UI.
-- **UFO vs. Mega Food:** If a UFO abducts a Mega Food, the "slow down" effect applied to the snake is never cleared because the `fully_eaten` signal is never received.
-- **Invulnerability Window:** The 0.5s invulnerability assumes the snake will have moved far enough away from its own head-spawn point. At very slow speeds, the snake might still be "inside" its first segment when invulnerability expires.
+1.  **Node Hierarchy**: `FoodSpawner.gd` and `UFO.gd` use `get_node("../SnakeHead")` or similar relative paths. This assumes the `SnakeHead` will always be a direct sibling in the `Main` scene. If the project is refactored to use a `GameWorld` sub-node, these will break.
+2.  **Frame Rate Independence**: While movement is multiplied by `delta`, the input handling and turning are locked to grid boundaries. At extremely low FPS, the "snapping" logic might cause the snake to appear to teleport backwards to the grid center.
+3.  **Physics Layers**: Logic assumes `layer_3` is always "walls" and `layer_4` is "foods". If these are changed in `project.godot` without updating scripts, the game will fail silently.
+
+---
+
+## 边缘 Case (Edge Cases)
+
+1.  **The "Tail-Bite" Paradox**: If the snake is long enough to circle back and hit its own neck within the `INVULNERABILITY_TIME` (0.5s), it won't die. This is rare but possible at very high speeds.
+2.  **UFO Staling**: If the UFO is approaching a food item and the snake eats it, the UFO enters `LEAVING` state. If another food spawns immediately in the same spot, the UFO does not re-target it.
+3.  **Mega Food Speed**: If the player eats a Mega Food and dies before finishing it, the `speed_multiplier` might remain at `0.5` on the next run if not reset in `_ready()` (currently it is initialized to 1.0, so this is safe).
+
+---
+
+## ⚡ Performance Improvements
+
+**Target Environment**: Fedora Laptop with Integrated Graphics.
+
+1.  **Renderer Down-grade**: The project is currently using `Forward Plus`. For integrated graphics, switching to the **Mobile** or **Compatibility** renderer would significantly improve frame stability and reduce thermal throttling.
+2.  **Light Optimization**: Every food item has an `OmniLight3D`. While only 1-2 items are usually on screen, these lights are dynamic. Using `OmniLight3D` with "Static" or "Baked" shadows (or no shadows) is essential.
+3.  **Particle Count**: The `dazed_particles` and `whoosh` effects should use a fixed, low number of particles.
+4.  **Mesh Complexity**: Ensure the photorealistic food scans in `assets/models/food/` have LODs (Level of Detail) or are low-poly enough for integrated GPUs. 1k textures are fine, but the vertex count should be monitored.
