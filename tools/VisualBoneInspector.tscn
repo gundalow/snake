@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dmv8x8l8j8x7y"]
+
+[ext_resource type="Script" path="res://tools/visual_bone_inspector.gd" id="1_inspector_script"]
+
+[node name="VisualBoneInspector" type="Node3D"]
+script = ExtResource("1_inspector_script")
