@@ -66,7 +66,6 @@ def verify_files():
         "scenes/ui/hud.tscn",
         "scenes/main/SnakeHead.tscn",
         "scenes/main/Food.tscn",
-        "scenes/main/SnakeSegment.tscn",
         "scenes/effects/dazed_particles.tscn",
         "scripts/core/SnakeHead.gd",
         "scripts/core/InputHandler.gd",
