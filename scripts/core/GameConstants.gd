@@ -46,3 +46,7 @@ const UFO_SPAWN_INTERVAL: float = 30.0
 const UFO_SPEED: float = 10.0
 const UFO_FLIGHT_HEIGHT: float = 5.0
 const UFO_SCORE_PENALTY: int = 5
+
+# Wiggle Effect
+const WIGGLE_AMPLITUDE: float = 0.15
+const WIGGLE_FREQUENCY: float = 4.0

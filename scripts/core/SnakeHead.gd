@@ -16,8 +16,10 @@ var score: int = 0
 var food_counts: Dictionary = {}
 var position_history: Array[Transform3D] = []
 var segments: Array[Node3D] = []
+var segment_meshes: Array[MeshInstance3D] = []
 var distance_traveled: float = 0.0
 var grid_distance: float = 0.0
+var cumulative_distance: float = 0.0
 var heading: Dir = Dir.NORTH
 var next_heading: Dir = Dir.NORTH
 var base_move_speed: float = GameConstants.INITIAL_MOVE_SPEED
@@ -25,6 +27,7 @@ var speed_multiplier: float = 1.0
 
 @onready var mouth_area: Area3D = $MouthArea
 @onready var death_ray: RayCast3D = $DeathRay
+@onready var snake_model: Node3D = $SnakeModel
 
 func _ready() -> void:
 	_initialize_history()
@@ -57,6 +60,7 @@ func _process(delta: float) -> void:
 
 	handle_input()
 	move_forward(delta)
+	_update_wiggle()
 
 func handle_input() -> void:
 	var requested := heading
@@ -109,6 +113,7 @@ func move_forward(delta: float) -> void:
 	var step = move_vec.length()
 	distance_traveled += step
 	grid_distance += step
+	cumulative_distance += step
 
 	if grid_distance >= GameConstants.GRID_SIZE:
 		grid_distance -= GameConstants.GRID_SIZE
@@ -152,6 +157,9 @@ func add_segment() -> void:
 		get_tree().create_timer(1.0).timeout.connect(func(): area.monitorable = true)
 
 	segments.append(new_segment)
+	var mesh = new_segment.get_node_or_null("MeshInstance3D")
+	if mesh:
+		segment_meshes.append(mesh)
 
 func _on_mouth_area_entered(area: Area3D) -> void:
 	if is_alive and area.is_in_group("foods"):
@@ -204,10 +212,22 @@ func die(reason: String = "Unknown") -> void:
 		dazed.emitting = true
 	).call_deferred()
 
+func _update_wiggle() -> void:
+	var base_phase = cumulative_distance * GameConstants.WIGGLE_FREQUENCY
+	var wiggle = sin(base_phase) * GameConstants.WIGGLE_AMPLITUDE
+	if snake_model:
+		snake_model.position.x = wiggle
+
+	for i in range(segment_meshes.size()):
+		# Phase shift each segment based on its position in the tail
+		var phase_offset = (i + 1) * GameConstants.GRID_SIZE * GameConstants.WIGGLE_FREQUENCY
+		var segment_wiggle = sin(base_phase - phase_offset) * GameConstants.WIGGLE_AMPLITUDE
+		segment_meshes[i].position.x = segment_wiggle
+
 func play_eat_juice() -> void:
-	var model = get_node_or_null("SnakeModel")
+	var model = snake_model
 	if not model: return
-	
+
 	var tween = create_tween()
 	tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	var original_scale = model.transform.basis.get_scale()
