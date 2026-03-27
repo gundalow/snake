@@ -36,6 +36,7 @@ var name_prompt_scene = preload("res://scenes/ui/NamePrompt.tscn")
 @onready var world_stomper = $WorldStomper
 @onready var camera = $OverheadCam
 @onready var ufo_manager = $UFOManager
+@onready var special_event_manager = $SpecialEventManager
 
 func _ready() -> void:
 	ScoreManager.load_scores()
@@ -53,9 +54,6 @@ func _ready() -> void:
 
 	if food_spawner:
 		food_spawner.spawn_food()
-		var initial_food = food_spawner.get_child(food_spawner.get_child_count() - 1)
-		if ufo_manager:
-			ufo_manager.on_food_spawned(initial_food)
 
 	# Show name prompt on startup
 	get_tree().paused = true
@@ -68,6 +66,8 @@ func _ready() -> void:
 
 func _on_name_selected(player_name: String) -> void:
 	get_tree().paused = false
+	if special_event_manager:
+		special_event_manager.start_manager()
 	if hud:
 		hud.update_player_name(player_name)
 
@@ -125,9 +125,6 @@ func _on_food_stolen() -> void:
 	if food_spawner:
 		await get_tree().create_timer(2.0).timeout
 		food_spawner.spawn_food()
-		var new_food = food_spawner.get_child(food_spawner.get_child_count() - 1)
-		if ufo_manager:
-			ufo_manager.on_food_spawned(new_food)
 
 func _flash_score_red() -> void:
 	if score_label:
@@ -137,6 +134,8 @@ func _flash_score_red() -> void:
 		tween.set_loops(3)
 
 func _on_game_over(final_score: int) -> void:
+	if special_event_manager:
+		special_event_manager.stop_manager()
 	ScoreManager.submit_score(final_score)
 	if hud:
 		hud.update_leaderboard()
