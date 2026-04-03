@@ -15,6 +15,7 @@ A 2D re-implementation of the Godot 3D Snake game using Pygame.
 - **Juicy Visuals:**
   - Cartoon-style graphics with scale-pop animations.
   - "Dazed" stars upon death.
+  - "Hinged Jaw" animation when near food.
   - "New High Score" celebration with confetti.
 - **Audio:** Full sound effects for eating, spawning, burping, and event transitions.
 - **HUD:** Real-time score, player name, and achievement pop-ups with puns.
@@ -34,5 +35,5 @@ A 2D re-implementation of the Godot 3D Snake game using Pygame.
 ## How to Run
 ```bash
 pip install pygame
-python python_snake/src/main.py
+python python_snake/main.py
 ```

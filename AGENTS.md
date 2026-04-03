@@ -27,10 +27,9 @@ Use `ruff` or `flake8` if available in the environment to ensure Python style st
 | :--- | :--- |
 | `assets/` | Raw assets including sound effects and music. |
 | `python_snake/` | Root of the Python project. |
-| `python_snake/src/` | Python source code. |
-| `python_snake/src/core/` | Core logic: `snake.py`, `food.py`, `events.py`. |
-| `python_snake/src/ui/` | UI components: `hud.py`. |
-| `python_snake/src/utils/` | Utilities: `constants.py`, `score_manager.py`, `audio_manager.py`. |
+| `python_snake/core/` | Core logic: `snake.py`, `food.py`, `events.py`. |
+| `python_snake/ui/` | UI components: `hud.py`. |
+| `python_snake/utils/` | Utilities: `constants.py`, `score_manager.py`, `audio_manager.py`. |
 | `python_snake/tests/` | Unit tests. |
 | `requirements.txt` | Python dependencies. |
 

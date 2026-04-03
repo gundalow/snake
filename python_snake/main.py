@@ -5,9 +5,9 @@ import random
 import math
 
 # Project Root (root of repo)
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-# Add python_snake/src to sys.path
+# Add python_snake to sys.path
 SRC_DIR = os.path.abspath(os.path.dirname(__file__))
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
@@ -88,7 +88,7 @@ def main():
         if snake.is_alive and not is_paused:
             keys = pygame.key.get_pressed()
             snake.handle_input(keys)
-            snake.update(delta_time, food_spawner.foods) # Added foods for hinged jaw logic
+            snake.update(delta_time, food_spawner.foods)
 
             if burp_timer > 0:
                 burp_timer -= delta_time
