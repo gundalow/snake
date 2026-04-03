@@ -1,0 +1,24 @@
+key_bindings {
+  input: KEY_UP
+  action: "up"
+}
+key_bindings {
+  input: KEY_DOWN
+  action: "down"
+}
+key_bindings {
+  input: KEY_LEFT
+  action: "left"
+}
+key_bindings {
+  input: KEY_RIGHT
+  action: "right"
+}
+touch_bindings {
+  input: TOUCH_MULTI
+  action: "touch"
+}
+mouse_bindings {
+  input: MOUSE_BUTTON_1
+  action: "touch"
+}
