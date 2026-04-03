@@ -10,11 +10,11 @@
 ---
 
 ## Milestone: "Yellow World" & Infrastructure
-**Goal:** Verify the pipeline from Fedora to Netlify. A "Yellow World" means a successful render loop and a successful CI/CD build.
+**Goal:** Verify the pipeline from Fedora to Netlify and Android. A "Yellow World" means a successful render loop and a successful CI/CD build for both platforms.
 
 ### Project Initialization
 * **Task:** Create a `game.project` file.
-* **Requirements:** Set Display width to 720 and height to 1280 (Portrait). Set "High DPI" to true.
+* **Requirements:** Set Display width to 720 and height to 1280 (Portrait). Set "High DPI" to true. Configure Android metadata (Package ID: `com.vibe.snake`).
 * **Approach:** Defining resolution early ensures the AI doesn't calculate coordinates based on a dynamic window, which prevents UI scaling bugs on Android.
 * **Verification:** Running the game locally on Fedora shows a window of the correct aspect ratio.
 
@@ -26,9 +26,9 @@
 
 ### Netlify & GitHub Action CI
 * **Task:** Create `.github/workflows/build.yml`.
-* **Requirements:** Use Java 25, download `bob.jar` using the SHA1 from `info.json`, and bundle for `x86_64-web`. Output to a directory watched by the Netlify GitHub App.
+* **Requirements:** Use Java 25, download `bob.jar` using the SHA1 from `info.json`, and bundle for `js-web` and `arm64-android`.
 * **Approach:** Automating the build immediately ensures that "vibe coding" doesn't lead to "it works on my machine" syndrome.
-* **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link showing the yellow screen.
+* **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link and provides an APK artifact.
 
 ---
 
@@ -55,20 +55,14 @@
 
 ---
 
-## Milestone: Graphics Polish & APK Generation
-**Goal:** Move from "Developer Art" to "Vibe Art" and produce the final Android binary.
+## Milestone: Graphics Polish
+**Goal:** Move from "Developer Art" to "Vibe Art."
 
 ### The Visual "Vibe" (Atlas & Shaders)
 * **Task:** Create a `.atlas` file and a custom `.fp` (fragment program) shader.
 * **Requirements:** Add a "Glow" or "Pulse" effect to the snake head using a simple shader. Use an Atlas for all textures to reduce "Draw Calls."
 * **Approach:** On-board graphics struggle with many small textures; an Atlas combines them into one, making the game run at a silky 60FPS on Fedora and Android.
 * **Verification:** The snake head pulses visually; the game remains at 60FPS.
-
-### Android Metadata & Export
-* **Task:** Configure Android icons, splash screen, and Package ID (e.g., `com.vibe.snake`) in `game.project`.
-* **Requirements:** Update the GitHub Action to bundle `armv7-android` or `arm64-android` on merge to `main`.
-* **Approach:** Creating the APK on merge ensures you always have a "shippable" version ready for your phone.
-* **Verification:** Downloading the APK from the GitHub "Actions" tab and installing it on an Android device works perfectly.
 
 ---
 

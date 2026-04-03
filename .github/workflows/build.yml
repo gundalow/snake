@@ -26,28 +26,32 @@ jobs:
       - name: Resolve dependencies
         run: java -jar bob.jar resolve
 
-      - name: Build and Bundle
+      - name: Build and Bundle (HTML5)
         run: |
-          mkdir -p _build
-          java -jar bob.jar --archive --platform x86_64-web build bundle --bundle-output _build/x86_64-web
+          mkdir -p _build/html5
+          java -jar bob.jar --archive --platform js-web build bundle --bundle-output _build/html5
 
-      - name: Debug Output Directory
+      - name: Build and Bundle (Android)
         run: |
-          echo "Listing all files in _build/x86_64-web:"
-          ls -R _build/x86_64-web
-          echo "---"
+          mkdir -p _build/android
+          java -jar bob.jar --archive --platform arm64-android build bundle --bundle-output _build/android
 
       - name: Prepare Netlify Upload
         run: |
-          # The output of bob.jar bundle for x86_64-web is usually a folder named after the project title.
-          # In game.project, title = Snake. So the folder should be 'Snake'.
-          # We want the content of that folder in the root of _build.
-          cp -r _build/x86_64-web/Snake/* _build/
+          # The output of bob.jar bundle for js-web is a folder named after the project title.
+          # We want the content of that folder in the root of _build for Netlify.
+          cp -r _build/html5/Snake/* _build/
           # Ensure index.html exists in _build
           if [ ! -f _build/index.html ]; then
             echo "Error: index.html not found in _build!"
             exit 1
           fi
+
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: snake-android-apk
+          path: _build/android/Snake/*.apk
 
       - name: Upload to Netlify
         uses: netlify/actions/cli@master
