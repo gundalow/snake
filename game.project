@@ -14,7 +14,7 @@ update_frequency = 60
 main_collection = /main/main.collection
 
 [render]
-render = /builtins/render/default.render
+render = /render/snake.render
 
 [input]
 gamepads = /builtins/input/default.gamepads

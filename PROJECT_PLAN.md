@@ -26,7 +26,7 @@
 
 ### Netlify & GitHub Action CI
 * **Task:** Create `.github/workflows/build.yml`.
-* **Requirements:** Use Java 21, download `bob.jar` using the SHA1 from `info.json`, and bundle for `x86_64-web`. Output to a directory watched by the Netlify GitHub App.
+* **Requirements:** Use Java 25, download `bob.jar` using the SHA1 from `info.json`, and bundle for `x86_64-web`. Output to a directory watched by the Netlify GitHub App.
 * **Approach:** Automating the build immediately ensures that "vibe coding" doesn't lead to "it works on my machine" syndrome.
 * **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link showing the yellow screen.
 
