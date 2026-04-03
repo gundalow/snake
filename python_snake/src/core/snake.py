@@ -33,12 +33,12 @@ class Snake:
         self.grid_distance = 0.0
         self.distance_traveled = 0.0
 
+        # Number of segments
+        self.num_segments = 2
+
         # History of transforms (pos and rot)
         self.position_history = []
         self._initialize_history()
-
-        # Number of segments
-        self.num_segments = 2
 
         # Visual Juice
         self.head_scale = 1.0
