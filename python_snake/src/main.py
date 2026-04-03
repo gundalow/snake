@@ -88,7 +88,7 @@ def main():
         if snake.is_alive and not is_paused:
             keys = pygame.key.get_pressed()
             snake.handle_input(keys)
-            snake.update(delta_time)
+            snake.update(delta_time, food_spawner.foods) # Added foods for hinged jaw logic
 
             if burp_timer > 0:
                 burp_timer -= delta_time
@@ -179,7 +179,7 @@ def main():
         for y in range(0, GameConstants.BOARD_HEIGHT, GameConstants.GRID_SIZE):
             pygame.draw.line(screen, (40, 150, 40), (0 + shake_off[0], y + shake_off[1]), (GameConstants.BOARD_WIDTH + shake_off[0], y + shake_off[1]))
 
-        food_spawner.draw(screen) # We could add shake_off here too if desired
+        food_spawner.draw(screen)
         snake.draw(screen, shake_off)
         if ufo: ufo.draw(screen)
         if world_stomper: world_stomper.draw(screen)
