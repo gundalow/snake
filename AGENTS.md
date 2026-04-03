@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This document provides essential instructions and guidelines for AI Agents (Google Jules, Google Gemini, Google Gemini CLI, etc.) working on the **3D Snake GDScript** project.
+This document provides essential instructions and guidelines for AI Agents (Google Jules, Google Gemini, Google Gemini CLI, etc.) working on the **Python 2D Snake** project.
 
 ## 🎯 Target Audience
 This file is primarily for AI Agents to ensure efficient, consistent, and high-quality contributions to the codebase.
@@ -11,79 +11,41 @@ This file is primarily for AI Agents to ensure efficient, consistent, and high-q
 
 To minimize token usage and maximize speed, follow these testing procedures:
 
-### 1. Local Validation (`validate.py`)
-Always run the validation script before submitting any changes. It performs headless checks for:
-- Required file existence.
-- **Linting** (via `gdlint` if available).
-- Input Map configurations.
-- Physics layer names.
-- Missing external resources in `.tscn` files.
-- GDScript syntax errors.
-- Basic runtime execution (20 frames) to catch common crashes.
+### 1. Local Validation
+Always run the unit tests before submitting any changes.
 
 ```bash
-python3 validate.py
+python3 python_snake/tests/test_game.py
 ```
 
-### 2. Linting (`gdlint`)
-Use `gdlint` (if available in the environment) to ensure GDScript follows style standards.
-*Note: If `gdlint` is not in the PATH, prioritize the syntax checks in `validate.py`.*
-
-### 3. Quick Iteration (`run.sh`)
-Use `run.sh` to refresh the Godot cache and launch the game for manual verification if needed.
-
-```bash
-./run.sh
-```
-
-**IMPORTANT**: After renaming files or directories, you MUST run the clean command to prevent UID cache synchronization issues:
-```bash
-./run.sh --clean
-```
-This command removes stale `.uid` files and triggers a headless import to ensure all internal references are correctly updated.
+### 2. Linting
+Use `ruff` or `flake8` if available in the environment to ensure Python style standards.
 
 ## 📂 Directory Structure
 
 | Path | Description |
 | :--- | :--- |
-| `assets/` | Raw assets including 3D models and textures. |
-| `assets/models/food/` | Photorealistic 3D scans of food items (Apple, Lychee, etc.). |
-| `scenes/` | Godot scene files (`.tscn`). |
-| `scenes/main/` | Core game scenes: `main.tscn`, `SnakeHead.tscn`, `Food.tscn`, `SnakeSegment.tscn`. |
-| `scenes/ui/` | UI-related scenes: `hud.tscn`. |
-| `scenes/effects/` | Visual effects: `dazed_particles.tscn`. |
-| `scripts/` | GDScript source files. |
-| `scripts/core/` | Principal game logic: `SnakeHead.gd`, `Main.gd`, `FoodSpawner.gd`, `CameraManager.gd`. |
-| `scripts/utils/` | Utility scripts: `FPSCounter.gd`. |
-| `tools/` | **Subdirectory for AI Tools**: Store task-specific debug or helper scripts here. Use one subdirectory per task (e.g., `tools/mesh_fixer/`). |
-| `project.godot` | Main Godot project configuration. |
-| `validate.py` | Primary validation script for AI agents. |
-| `run.sh` | Bash script to clear cache and run the project. |
-| `PROJECT_PLAN.md` | Roadmap and milestones. |
+| `assets/` | Raw assets including sound effects and music. |
+| `python_snake/` | Root of the Python project. |
+| `python_snake/core/` | Core logic: `snake.py`, `food.py`, `events.py`. |
+| `python_snake/ui/` | UI components: `hud.py`. |
+| `python_snake/utils/` | Utilities: `constants.py`, `score_manager.py`, `audio_manager.py`. |
+| `python_snake/tests/` | Unit tests. |
+| `requirements.txt` | Python dependencies. |
 
-## 🎮 Godot 3D Best Practices
+## 🎮 Pygame Best Practices
 
-### Collision Detection
-- **RayCast3D**: Use for high-speed or critical "lethal" checks (e.g., `DeathRay` in `SnakeHead.gd`). This prevents "tunneling" or side-collisions during 90-degree snap turns.
-- **Area3D**: Use for non-physics-based triggers like eating food or entering zones.
-- **Layers & Masks**: Always use named physics layers (see `project.godot`). Ensure `collision_layer` and `collision_mask` are correctly assigned to avoid unnecessary collision checks.
+### Movement
+- **Delta Time:** Always multiply movement vectors by `delta_time` (seconds) to ensure frame-rate independent physics.
+- **History Buffer:** Use the `Snake.position_history` to allow segments to follow the path of the head smoothly.
 
-### Scene Organization
-- Keep logic in `.gd` scripts and visuals/structure in `.tscn` files.
-- Use `unique_name_in_owner` (%) for accessing key nodes in scripts to make them resilient to hierarchy changes.
-- Prefer `instantiate()` over `duplicate()` for spawning objects like segments or food.
+### UI & UX
+- Use `pygame.font` for text rendering.
+- Implement "juice" via procedural animations (scaling, bouncing) using `math.sin` and time-based interpolation.
 
-### Performance
-- **Asset Preloading**: Always use `preload()` for models (`.gltf`, `.tscn`) and audio files (`.mp3`, `.ogg`, `.wav`) at the top of scripts or in a central Autoload (e.g., `GameConstants.gd`). Avoid using `load()` during gameplay (e.g., inside `_on_area_entered`), as it causes noticeable frame stutters.
-- **Signal Emission**: For signals that trigger heavy logic (like `spawn_food()`), use `emit.call_deferred()` to ensure the current frame logic completes without synchronous blocking.
-- **Particles**: For visual effects, use `GPUParticles3D` for better performance on modern hardware.
-- **Forward Plus**: Use the `Forward Plus` renderer for high-quality visuals on supported hardware.
-
-### Audio Standards
-- **File Formats**: Use `.ogg` for short sounds/effects and `.wav` for longer files (e.g., background music).
+### Audio
+- Use `pygame.mixer` for sound. Handle missing assets gracefully to prevent crashes in CI environments.
 
 ## 🛠 Workflow Guidelines
-1. **Always Verify**: Run `python3 validate.py` after *any* change to the codebase.
-2. **Task Tools**: If you need to perform a complex automated task (e.g., batch-updating materials), create a Python script in `tools/<task_name>/`.
-3. **Token Efficiency**: Focus on reading only the files necessary for the current task. Use `list_files` to locate assets before attempting to read or modify them.
-4. **No Numbered Milestones**: `PROJECT_PLAN.md` MUST NOT use numbers for milestones or features ideas. Numbering headings causes git merge conflicts.
+1. **Always Verify**: Run tests after *any* change to the codebase.
+2. **Token Efficiency**: Focus on reading only the files necessary for the current task.

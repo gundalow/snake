@@ -9,28 +9,22 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        godot_version: ["4.3"]
-    container:
-      image: barichello/godot-ci:${{ matrix.godot_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y python3 wget unzip
-          mkdir -v -p build
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-          # Install Godot Export Templates
-          VERSION=${{ matrix.godot_version }}
-          mkdir -v -p ~/.local/share/godot/export_templates/${VERSION}.stable
-          wget https://github.com/godotengine/godot/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_export_templates.tpz
-          unzip Godot_v${VERSION}-stable_export_templates.tpz
-          mv templates/* ~/.local/share/godot/export_templates/${VERSION}.stable/
-          rm -rf templates Godot_v${VERSION}-stable_export_templates.tpz
-
-      - name: Run Validation Script
-        run: python3 validate.py
+      - name: Run Tests
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: python3 python_snake/tests/test_game.py
