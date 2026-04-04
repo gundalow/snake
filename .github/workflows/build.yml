@@ -6,9 +6,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      DEFOLD_VERSION: 1.12.2 # Latest stable version found
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,18 +14,16 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          # Defold 1.12.2 requires Java 25 (class file version 69.0)
-          java-version: '25'
+          java-version: '21'
 
       - name: Download Bob (Defold Builder)
         run: |
-          # Get SHA1 for the version
-          SHA1=$(curl -s https://d.defold.com/stable/info.json | jq -r .sha1)
-          wget -q http://d.defold.com/archive/stable/${SHA1}/bob/bob.jar -O bob.jar
+          BOB_SHA1=$(curl -s https://d.defold.com/stable/info.json | jq -r .sha1)
+          wget -q http://d.defold.com/archive/stable/${BOB_SHA1}/bob/bob.jar -O bob.jar
 
       - name: Build HTML5
         run: |
-          java -jar bob.jar --archive --platform js-web build
+          java -jar bob.jar --archive --platform js-web resolve build
           java -jar bob.jar --platform js-web bundle --bundle-output build/html5
 
       - name: Build Android
@@ -46,7 +41,6 @@ jobs:
       - name: Prepare Netlify Upload
         run: |
           mkdir -p _netlify
-          # Dynamically find the index.html and its directory content in build/html5
           HTML_PATH=$(find build/html5 -name index.html)
           if [ -z "$HTML_PATH" ]; then
             echo "Error: index.html not found!"
