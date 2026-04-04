@@ -1,0 +1,33 @@
+[project]
+title = Snake
+version = 1.0
+write_log = 0
+compress_archive = 1
+
+[display]
+width = 720
+height = 1280
+high_dpi = 1
+update_frequency = 60
+
+[bootstrap]
+main_collection = /main/main.collection;
+
+[render]
+render = /render/snake.render;
+
+[input]
+gamepads = /builtins/input/default.gamepads;
+game_binding = /input/game.input_binding;
+
+[physics]
+type = 2D
+
+[graphics]
+default_texture_min_filter = linear
+default_texture_mag_filter = linear
+max_debug_vertices = 10000
+
+[android]
+package_id = com.vibe.snake
+version_code = 1

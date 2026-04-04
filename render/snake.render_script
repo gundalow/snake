@@ -1,0 +1,18 @@
+function init(self)
+    self.clear_color = vmath.vector4(0, 0, 0, 1)
+end
+
+function update(self)
+    render.set_viewport(0, 0, render.get_window_width(), render.get_window_height())
+    render.clear({[render.BUFFER_COLOR_BIT] = self.clear_color, [render.BUFFER_DEPTH_BIT] = 1, [render.BUFFER_STENCIL_BIT] = 0})
+
+    render.set_projection(vmath.matrix4_orthographic(0, render.get_window_width(), 0, render.get_window_height(), -1, 1))
+
+    render.draw_debug()
+end
+
+function on_message(self, message_id, message)
+    if message_id == hash("clear_color") then
+        self.clear_color = message.color
+    end
+end

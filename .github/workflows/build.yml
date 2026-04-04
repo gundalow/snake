@@ -1,0 +1,58 @@
+name: Build Defold Game
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Download Bob (Defold Builder)
+        run: |
+          # Use 1.11.2 which is confirmed to work with Java 21
+          wget -q http://d.defold.com/archive/stable/cddb6eb43c32e4930257fcbbb30f19cf28deb081/bob/bob.jar -O bob.jar
+
+      - name: Build HTML5
+        run: |
+          java -jar bob.jar --archive --platform js-web resolve build
+          java -jar bob.jar --platform js-web bundle --bundle-output build/html5
+
+      - name: Build Android
+        run: |
+          # This creates a debug APK.
+          java -jar bob.jar --archive --platform armv7-android build
+          java -jar bob.jar --platform armv7-android bundle --bundle-output build/android
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-builds
+          path: build/
+
+      - name: Prepare Netlify Upload
+        run: |
+          mkdir -p _netlify
+          HTML_PATH=$(find build/html5 -name index.html)
+          if [ -z "$HTML_PATH" ]; then
+            echo "Error: index.html not found!"
+            exit 1
+          fi
+          HTML_DIR=$(dirname "$HTML_PATH")
+          cp -r "$HTML_DIR"/* _netlify/
+
+      - name: Upload to Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --dir=_netlify --prodIfMain
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
