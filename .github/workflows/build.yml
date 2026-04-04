@@ -1,14 +1,13 @@
-name: Build Game
+name: Build Defold Game
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      DEFOLD_VERSION: 1.8.0 # Update to your current editor version
 
     steps:
       - name: Checkout code
@@ -17,13 +16,12 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Defold Bob
-        uses: dl-with-love/setup-defold@v1
-        with:
-          version: '1.6.4' # Use the latest stable version
+      - name: Download Bob (Defold Builder)
+        run: |
+          wget -q http://d.defold.com/archive/stable/${{ env.DEFOLD_VERSION }}/bob/bob.jar -O bob.jar
 
       - name: Build HTML5
         run: |
@@ -32,20 +30,16 @@ jobs:
 
       - name: Build Android
         run: |
+          # This creates a debug APK.
+          # Release builds require --keystore and --alias flags.
           java -jar bob.jar --archive --platform armv7-android build
           java -jar bob.jar --platform armv7-android bundle --bundle-output build/android
 
-      - name: Upload HTML5 Artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: html5-bundle
-          path: build/html5/
-
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-bundle
-          path: build/android/
+          name: game-builds
+          path: build/
 
       - name: Prepare Netlify Upload
         run: |
