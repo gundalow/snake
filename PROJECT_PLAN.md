@@ -26,7 +26,7 @@
 
 ### Netlify & GitHub Action CI
 * **Task:** Create `.github/workflows/build.yml`.
-* **Requirements:** Use Java 17, Defold 1.8.0, and bundle for `js-web` and `armv7-android`.
+* **Requirements:** Use Java 25, Defold 1.12.2, and bundle for `js-web` and `armv7-android`.
 * **Approach:** Automating the build immediately ensures that "vibe coding" doesn't lead to "it works on my machine" syndrome.
 * **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link and provides APK artifacts.
 

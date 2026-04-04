@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DEFOLD_VERSION: 1.8.0 # Update to your current editor version
+      DEFOLD_VERSION: 1.12.2 # Latest stable version found
 
     steps:
       - name: Checkout code
@@ -17,11 +17,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          # Defold 1.12.2 requires Java 25 (class file version 69.0)
+          java-version: '25'
 
       - name: Download Bob (Defold Builder)
         run: |
-          wget -q http://d.defold.com/archive/stable/${{ env.DEFOLD_VERSION }}/bob/bob.jar -O bob.jar
+          # Get SHA1 for the version
+          SHA1=$(curl -s https://d.defold.com/stable/info.json | jq -r .sha1)
+          wget -q http://d.defold.com/archive/stable/${SHA1}/bob/bob.jar -O bob.jar
 
       - name: Build HTML5
         run: |
@@ -31,7 +34,6 @@ jobs:
       - name: Build Android
         run: |
           # This creates a debug APK.
-          # Release builds require --keystore and --alias flags.
           java -jar bob.jar --archive --platform armv7-android build
           java -jar bob.jar --platform armv7-android bundle --bundle-output build/android
 
