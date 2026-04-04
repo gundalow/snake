@@ -28,38 +28,27 @@ jobs:
 
       - name: Build and Bundle (HTML5)
         run: |
-          mkdir -p _build/html5
           java -jar bob.jar --archive --platform js-web build bundle --bundle-output _build/html5
 
       - name: Build and Bundle (Android)
         run: |
-          mkdir -p _build/android
-          java -jar bob.jar --archive --platform arm64-android build bundle --bundle-output _build/android
-
-      - name: Debug Output Directory Structure
-        run: |
-          echo "Listing HTML5 output directory:"
-          ls -R _build/html5
-          echo "Listing Android output directory:"
-          ls -R _build/android
+          # Building for arm64-android. Use --bundle-format apk to generate the installable file.
+          java -jar bob.jar --archive --platform arm64-android --architectures arm64-android build bundle --bundle-output _build/android --bundle-format apk
 
       - name: Prepare Netlify Upload
         run: |
-          # Copy HTML5 build to a root-level Netlify directory
           mkdir -p _netlify
-          cp -r _build/html5/*/ . || true
-          # We need to find the actual bundle folder. Bob usually nests it like _build/html5/<project_name>/...
-          # Let's find index.html and move its parent's contents to _netlify
-          HTML_PATH=$(find _build/html5 -name index.html)
-          if [ -z "$HTML_PATH" ]; then
-            echo "Error: index.html not found!"
-            exit 1
+          # Dynamically find the index.html and its directory content
+          find _build/html5 -name index.html -exec cp -r {}/.. _netlify/ \;
+          # Cleanup if the find-exec didn't quite do what we wanted (it might copy the folder itself)
+          if [ -d _netlify/js-web ]; then
+            mv _netlify/js-web/* _netlify/
+            rm -rf _netlify/js-web
           fi
-          HTML_DIR=$(dirname "$HTML_PATH")
-          cp -r "$HTML_DIR"/* _netlify/
-          if [ ! -f _netlify/index.html ]; then
-            echo "Error: index.html not found in _netlify!"
-            exit 1
+          # Specific check for Snake folder if Bob output it that way
+          if [ -d _netlify/Snake ]; then
+            mv _netlify/Snake/* _netlify/
+            rm -rf _netlify/Snake
           fi
 
       - name: Upload APK to Artifacts
