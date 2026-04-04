@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build Game
 
 on:
   push:
@@ -9,53 +9,55 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '25'
-          distribution: 'temurin'
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Download Bob
+      - name: Install Defold Bob
+        uses: dl-with-love/setup-defold@v1
+        with:
+          version: '1.6.4' # Use the latest stable version
+
+      - name: Build HTML5
         run: |
-          SHA1=$(curl -s https://d.defold.com/stable/info.json | jq -r .sha1)
-          curl -L -O https://d.defold.com/archive/stable/${SHA1}/bob/bob.jar
+          java -jar bob.jar --archive --platform js-web build
+          java -jar bob.jar --platform js-web bundle --bundle-output build/html5
 
-      - name: Resolve dependencies
-        run: java -jar bob.jar resolve
-
-      - name: Build and Bundle (HTML5)
+      - name: Build Android
         run: |
-          java -jar bob.jar --archive --platform js-web build bundle --bundle-output _build/html5
+          java -jar bob.jar --archive --platform armv7-android build
+          java -jar bob.jar --platform armv7-android bundle --bundle-output build/android
 
-      - name: Build and Bundle (Android)
-        run: |
-          # Building for arm64-android. Use --bundle-format apk to generate the installable file.
-          java -jar bob.jar --archive --platform arm64-android --architectures arm64-android build bundle --bundle-output _build/android --bundle-format apk
+      - name: Upload HTML5 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html5-bundle
+          path: build/html5/
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: build/android/
 
       - name: Prepare Netlify Upload
         run: |
           mkdir -p _netlify
-          # Dynamically find the index.html and its directory content
-          find _build/html5 -name index.html -exec cp -r {}/.. _netlify/ \;
-          # Cleanup if the find-exec didn't quite do what we wanted (it might copy the folder itself)
-          if [ -d _netlify/js-web ]; then
-            mv _netlify/js-web/* _netlify/
-            rm -rf _netlify/js-web
+          # Dynamically find the index.html and its directory content in build/html5
+          HTML_PATH=$(find build/html5 -name index.html)
+          if [ -z "$HTML_PATH" ]; then
+            echo "Error: index.html not found!"
+            exit 1
           fi
-          # Specific check for Snake folder if Bob output it that way
-          if [ -d _netlify/Snake ]; then
-            mv _netlify/Snake/* _netlify/
-            rm -rf _netlify/Snake
-          fi
-
-      - name: Upload APK to Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: snake-android-apk
-          path: _build/android/**/*.apk
+          HTML_DIR=$(dirname "$HTML_PATH")
+          cp -r "$HTML_DIR"/* _netlify/
 
       - name: Upload to Netlify
         uses: netlify/actions/cli@master

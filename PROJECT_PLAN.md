@@ -26,9 +26,9 @@
 
 ### Netlify & GitHub Action CI
 * **Task:** Create `.github/workflows/build.yml`.
-* **Requirements:** Use Java 25, download `bob.jar` using the SHA1 from `info.json`, and bundle for `js-web` and `arm64-android`.
+* **Requirements:** Use Java 17, `dl-with-love/setup-defold@v1`, and bundle for `js-web` and `armv7-android`.
 * **Approach:** Automating the build immediately ensures that "vibe coding" doesn't lead to "it works on my machine" syndrome.
-* **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link and provides an APK artifact.
+* **Verification:** Opening a Pull Request triggers a Netlify "Deploy Preview" link and provides APK artifacts.
 
 ---
 
@@ -69,4 +69,4 @@
 ## Information needed for Agent Execution:
 * **Asset Names:** I will provide `head.png`, `body.png`, and `food.png`.
 * **Grid Size:** 20x20.
-* **Netlify Folder:** `_build`.
+* **Netlify Folder:** `_netlify`.
