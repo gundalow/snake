@@ -18,8 +18,8 @@ jobs:
 
       - name: Download Bob (Defold Builder)
         run: |
-          BOB_SHA1=$(curl -s https://d.defold.com/stable/info.json | jq -r .sha1)
-          wget -q http://d.defold.com/archive/stable/${BOB_SHA1}/bob/bob.jar -O bob.jar
+          # Use 1.11.2 which is confirmed to work with Java 21
+          wget -q http://d.defold.com/archive/stable/cddb6eb43c32e4930257fcbbb30f19cf28deb081/bob/bob.jar -O bob.jar
 
       - name: Build HTML5
         run: |

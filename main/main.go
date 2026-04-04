@@ -1,8 +1,6 @@
-name: "default"
-scale_along_z: 0
-instances {
+components {
   id: "main"
-  prototype: "/main/main.go"
+  component: "/main/main.script"
   position {
     x: 0.0
     y: 0.0

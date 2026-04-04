@@ -11,14 +11,14 @@ high_dpi = 1
 update_frequency = 60
 
 [bootstrap]
-main_collection = /main/main.collection
+main_collection = /main/main.collection;
 
 [render]
-render = /render/snake.render
+render = /render/snake.render;
 
 [input]
-gamepads = /builtins/input/default.gamepads
-game_binding = /input/game.input_binding
+gamepads = /builtins/input/default.gamepads;
+game_binding = /input/game.input_binding;
 
 [physics]
 type = 2D
