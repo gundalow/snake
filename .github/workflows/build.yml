@@ -36,14 +36,29 @@ jobs:
           mkdir -p _build/android
           java -jar bob.jar --archive --platform arm64-android build bundle --bundle-output _build/android
 
+      - name: Debug Output Directory Structure
+        run: |
+          echo "Listing HTML5 output directory:"
+          ls -R _build/html5
+          echo "Listing Android output directory:"
+          ls -R _build/android
+
       - name: Prepare Netlify Upload
         run: |
-          # The output of bob.jar bundle for js-web is a folder named after the project title.
-          # We want the content of that folder in the root of _build for Netlify.
-          cp -r _build/html5/Snake/* _build/
-          # Ensure index.html exists in _build
-          if [ ! -f _build/index.html ]; then
-            echo "Error: index.html not found in _build!"
+          # Copy HTML5 build to a root-level Netlify directory
+          mkdir -p _netlify
+          cp -r _build/html5/*/ . || true
+          # We need to find the actual bundle folder. Bob usually nests it like _build/html5/<project_name>/...
+          # Let's find index.html and move its parent's contents to _netlify
+          HTML_PATH=$(find _build/html5 -name index.html)
+          if [ -z "$HTML_PATH" ]; then
+            echo "Error: index.html not found!"
+            exit 1
+          fi
+          HTML_DIR=$(dirname "$HTML_PATH")
+          cp -r "$HTML_DIR"/* _netlify/
+          if [ ! -f _netlify/index.html ]; then
+            echo "Error: index.html not found in _netlify!"
             exit 1
           fi
 
@@ -51,12 +66,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: snake-android-apk
-          path: _build/android/Snake/*.apk
+          path: _build/android/**/*.apk
 
       - name: Upload to Netlify
         uses: netlify/actions/cli@master
         with:
-          args: deploy --dir=_build --prodIfMain
+          args: deploy --dir=_netlify --prodIfMain
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
