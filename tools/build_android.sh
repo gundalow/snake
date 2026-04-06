@@ -24,19 +24,31 @@ if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools" ]; then
 fi
 
 # 2. Setup Godot Templates if missing
-if [ ! -d "$TEMPLATES_DIR" ]; then
+# Check if templates already exist in the standard Godot 4 location for the CI image
+if [ ! -d "$TEMPLATES_DIR" ] || [ ! -f "$TEMPLATES_DIR/android_debug.apk" ]; then
     echo "--- Downloading Godot Export Templates ---"
     mkdir -p "$TEMPLATES_DIR"
-    wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -O templates.tpz
-    unzip -q templates.tpz
-    mv templates/* "$TEMPLATES_DIR/"
-    rm -rf templates templates.tpz
+    # Use a temporary directory for extraction
+    mkdir -p /tmp/godot_templates
+    wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -O /tmp/godot_templates.tpz
+    unzip -q /tmp/godot_templates.tpz -d /tmp/godot_templates
+    # Move extracted templates to the final destination
+    mv /tmp/godot_templates/* "$TEMPLATES_DIR/"
+    rm -rf /tmp/godot_templates*
+else
+    echo "--- Godot Export Templates already exist at $TEMPLATES_DIR ---"
 fi
 
 # 3. Configure Godot Editor Settings
 echo "--- Configuring Godot Editor Settings ---"
+# Ensure the config directory exists
 mkdir -p "$HOME/.config/godot"
+# Determine Java SDK path
 JAVA_SDK_PATH=$(dirname $(dirname $(readlink -f $(which javac))))
+echo "JAVA_SDK_PATH found: $JAVA_SDK_PATH"
+
+# Use absolute path for debug keystore
+DEBUG_KEYSTORE_PATH="$(pwd)/debug.keystore"
 
 cat <<EOF > "$HOME/.config/godot/editor_settings-4.tres"
 [gd_resource type="EditorSettings" format=3]
@@ -44,15 +56,15 @@ cat <<EOF > "$HOME/.config/godot/editor_settings-4.tres"
 [resource]
 export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
 export/android/java_sdk_path = "$JAVA_SDK_PATH"
-export/android/debug_keystore = "$(pwd)/debug.keystore"
+export/android/debug_keystore = "$DEBUG_KEYSTORE_PATH"
 export/android/debug_keystore_user = "androiddebugkey"
 export/android/debug_keystore_pass = "android"
 EOF
 
 # 4. Generate Debug Keystore if missing
-if [ ! -f "debug.keystore" ]; then
+if [ ! -f "$DEBUG_KEYSTORE_PATH" ]; then
     echo "--- Generating Debug Keystore ---"
-    keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+    keytool -genkey -v -keystore "$DEBUG_KEYSTORE_PATH" -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 fi
 
 # 5. Build APK
@@ -66,7 +78,7 @@ echo "Godot Version:"
 godot --version || echo "Godot not found in path"
 
 echo "--- Exporting ---"
-godot --headless --editor --quit --verbose || echo "Editor quit with error (might be okay)"
+# Use --verbose for more detailed output during export
 godot --headless --export-debug "Android" "$BUILD_DIR/snake.apk" --verbose
 
 # 6. Prepare Deployment
