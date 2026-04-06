@@ -12,6 +12,12 @@ func _ready() -> void:
     for i in range(3):
         add_segment()
 
+    # Wait for the main scene to be ready so we can find the FuelCell
+    await get_tree().process_frame
+    var fuel_cell = get_parent().get_node_or_null("FuelCell")
+    if fuel_cell:
+        fuel_cell.collected.connect(add_segment)
+
 func _physics_process(_delta: float) -> void:
     # Record head position
     history.push_front(snake_head.global_position)
@@ -31,5 +37,5 @@ func add_segment() -> void:
     var segment = segment_scene.instantiate()
     add_child(segment)
     segments.append(segment)
-    # Hide new segment until history is populated
+    # Start segment at head position
     segment.global_position = snake_head.global_position

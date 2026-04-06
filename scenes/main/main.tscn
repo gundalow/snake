@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/main/obstacle.tscn" id="1_obstacle"]
 [ext_resource type="PackedScene" path="res://scenes/main/snake_head.tscn" id="2_snake_head"]
 [ext_resource type="Script" path="res://scripts/core/snake_manager.gd" id="3_snake_manager"]
+[ext_resource type="PackedScene" path="res://scenes/main/fuel_cell.tscn" id="4_fuel_cell"]
 
 [node name="World" type="Node2D"]
 
@@ -23,6 +24,9 @@ position = Vector2(600, 500)
 
 [node name="Obstacle3" parent="YSortContainer" instance=ExtResource("1_obstacle")]
 position = Vector2(900, 200)
+
+[node name="FuelCell" parent="YSortContainer" instance=ExtResource("4_fuel_cell")]
+position = Vector2(400, 400)
 
 [node name="SnakeChain" type="Node2D" parent="YSortContainer"]
 y_sort_enabled = true

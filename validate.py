@@ -67,7 +67,9 @@ def verify_files():
         "scenes/main/snake_head.tscn",
         "scripts/core/snake_head.gd",
         "scenes/main/segment.tscn",
-        "scripts/core/snake_manager.gd"
+        "scripts/core/snake_manager.gd",
+        "scenes/main/fuel_cell.tscn",
+        "scripts/core/fuel_cell.gd"
     ]
     all_exist = True
     for file_path in required_files:
