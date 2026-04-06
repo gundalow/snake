@@ -72,6 +72,7 @@ def verify_files():
         "scripts/core/fuel_cell.gd",
         "scenes/ui/hud.tscn",
         "scripts/ui/hud.gd",
+        "scripts/core/GameConstants.gd",
         "export_presets.cfg",
         ".github/workflows/android.yml"
     ]
