@@ -6,19 +6,37 @@ extends Node2D
 var history: Array[Vector2] = []
 var segments: Array[Node2D] = []
 var spacing: int = 15
+var score: int = 0
+var is_game_over: bool = false
+var hud: CanvasLayer
+var invulnerability_timer: float = 0.5
 
 func _ready() -> void:
     # Spawn 3 initial segments
     for i in range(3):
         add_segment()
 
-    # Wait for the main scene to be ready so we can find the FuelCell
+    # Wait for the main scene to be ready so we can find other nodes
     await get_tree().process_frame
     var fuel_cell = get_parent().get_node_or_null("FuelCell")
     if fuel_cell:
-        fuel_cell.collected.connect(add_segment)
+        fuel_cell.collected.connect(_on_fuel_collected)
+
+    hud = get_node_or_null("../../HUD")
+    snake_head.hit_obstacle.connect(_on_snake_hit)
+
+    # Connect BiteArea to detect segments
+    var bite_area = snake_head.get_node_or_null("BiteArea")
+    if bite_area:
+        bite_area.area_entered.connect(_on_bite_area_entered)
+
+func _process(delta: float) -> void:
+    if invulnerability_timer > 0:
+        invulnerability_timer -= delta
 
 func _physics_process(_delta: float) -> void:
+    if is_game_over: return
+
     # Record head position
     history.push_front(snake_head.global_position)
 
@@ -39,3 +57,27 @@ func add_segment() -> void:
     segments.append(segment)
     # Start segment at head position
     segment.global_position = snake_head.global_position
+
+func _on_fuel_collected() -> void:
+    score += 1
+    if hud:
+        hud.update_score(score)
+    add_segment()
+
+func _on_snake_hit() -> void:
+    end_game()
+
+func _on_bite_area_entered(area: Area2D) -> void:
+    if is_game_over: return
+    if invulnerability_timer > 0: return
+
+    # If the head's bite area hits a segment, game over
+    if area.name.begins_with("Segment") or area in segments:
+        end_game()
+
+func end_game() -> void:
+    if is_game_over: return
+    is_game_over = true
+    snake_head.die()
+    if hud:
+        hud.show_game_over()
