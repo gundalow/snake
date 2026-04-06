@@ -71,7 +71,9 @@ def verify_files():
         "scenes/main/fuel_cell.tscn",
         "scripts/core/fuel_cell.gd",
         "scenes/ui/hud.tscn",
-        "scripts/ui/hud.gd"
+        "scripts/ui/hud.gd",
+        "export_presets.cfg",
+        ".github/workflows/android.yml"
     ]
     all_exist = True
     for file_path in required_files:
