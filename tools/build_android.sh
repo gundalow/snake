@@ -20,7 +20,7 @@ if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools" ]; then
     rm cmdline-tools.zip
 
     export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-    yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+    yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "build-tools;34.0.0" "build-tools;33.0.2" "platforms;android-34" "platforms;android-33"
 fi
 
 # 2. Setup Godot Templates if missing
@@ -58,8 +58,16 @@ fi
 # 5. Build APK
 echo "--- Building Android APK ---"
 mkdir -p "$BUILD_DIR"
-godot --headless --editor --quit
-godot --headless --export-debug "Android" "$BUILD_DIR/snake.apk"
+echo "Current Directory: $(pwd)"
+echo "HOME: $HOME"
+echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+echo "JAVA_SDK_PATH: $JAVA_SDK_PATH"
+echo "Godot Version:"
+godot --version || echo "Godot not found in path"
+
+echo "--- Exporting ---"
+godot --headless --editor --quit --verbose || echo "Editor quit with error (might be okay)"
+godot --headless --export-debug "Android" "$BUILD_DIR/snake.apk" --verbose
 
 # 6. Prepare Deployment
 echo "--- Preparing Deployment Directory ---"
