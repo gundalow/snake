@@ -30,12 +30,18 @@ jobs:
           # Create a debug keystore for the build to succeed in CI
           keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-          # Configure Godot to use the correct SDK and keystore paths
+          # Configure Godot to use the correct SDK, JDK, and keystore paths
+          # We use .tres extension for text-based editor settings
           mkdir -p ~/.config/godot
-          echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-4.tre
-          echo 'export/android/debug_keystore = "'$(pwd)'/debug.keystore"' >> ~/.config/godot/editor_settings-4.tre
-          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-4.tre
-          echo 'export/android/debug_keystore_pass = "android"' >> ~/.config/godot/editor_settings-4.tre
+          echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/jdk_path = "/usr/lib/jvm/java-21-openjdk-amd64"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore = "'$(pwd)'/debug.keystore"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_pass = "android"' >> ~/.config/godot/editor_settings-4.tres
+
+          # Trigger headless import to generate UIDs and import assets
+          # This is necessary because some scripts preload files that aren't imported yet
+          godot --headless --editor --quit
 
           mkdir -p build/android
           godot --headless --export-debug "Android" build/android/snake.apk
