@@ -18,6 +18,11 @@ script = ExtResource("1_script")
 
 [node name="Visuals" type="Node2D" parent="."]
 
+[node name="Shadow" type="Polygon2D" parent="Visuals"]
+modulate = Color(0, 0, 0, 0.3)
+position = Vector2(4, 4)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
 [node name="Body" type="Polygon2D" parent="Visuals"]
 color = Color(0.2, 0.2, 0.25, 1)
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
