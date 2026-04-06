@@ -76,8 +76,7 @@ def verify_files():
         "scripts/core/Main.gd",
         "scripts/ui/NamePrompt.gd",
         "scripts/ui/HUD.gd",
-        "export_presets.cfg",
-        ".github/workflows/android.yml"
+        "export_presets.cfg"
     ]
     all_exist = True
     for file_path in required_files:

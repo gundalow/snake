@@ -26,10 +26,11 @@ jobs:
 
           # Install Godot Export Templates
           VERSION=${{ matrix.godot_version }}
-          mkdir -v -p ~/.local/share/godot/export_templates/${VERSION}.stable
-          wget https://github.com/godotengine/godot/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_export_templates.tpz
-          unzip Godot_v${VERSION}-stable_export_templates.tpz
-          mv templates/* ~/.local/share/godot/export_templates/${VERSION}.stable/
+          TEMPLATES_DIR="/github/home/.local/share/godot/export_templates/${VERSION}.stable"
+          mkdir -v -p "$TEMPLATES_DIR"
+          wget -q https://github.com/godotengine/godot/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_export_templates.tpz
+          unzip -q Godot_v${VERSION}-stable_export_templates.tpz
+          mv templates/* "$TEMPLATES_DIR/"
           rm -rf templates Godot_v${VERSION}-stable_export_templates.tpz
 
       - name: Run Validation Script

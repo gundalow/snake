@@ -83,7 +83,8 @@ This command removes stale `.uid` files and triggers a headless import to ensure
 - **File Formats**: Use `.ogg` for short sounds/effects and `.wav` for longer files (e.g., background music).
 
 ## 🛠 Workflow Guidelines
-1. **Always Verify Locally**: Run `python3 validate.py` after *any* change to the codebase. **This MUST be run at every step and before every push.** Failures must be identified and fixed locally before being pushed to GitHub. Agents should strive to maintain environment parity with the GitHub Actions workflow.
-2. **Task Tools**: If you need to perform a complex automated task (e.g., batch-updating materials), create a Python script in `tools/<task_name>/`.
+1. **Always Verify Locally**: Run `python3 validate.py` after *any* change to the codebase. **This MUST be run at every step and before every push.** Failures must be identified and fixed locally before being pushed to GitHub.
+2. **Environment Parity**: You MUST ensure your local testing environment matches the GitHub Actions environment (e.g., Godot version 4.3). Use `run.sh` or manual Godot execution to verify syntax and runtime behavior.
+3. **Task Tools**: If you need to perform a complex automated task (e.g., batch-updating materials), create a Python script in `tools/<task_name>/`.
 3. **Token Efficiency**: Focus on reading only the files necessary for the current task. Use `list_files` to locate assets before attempting to read or modify them.
 4. **No Numbered Milestones**: `PROJECT_PLAN.md` MUST NOT use numbers for milestones or features ideas. Numbering headings causes git merge conflicts.

@@ -1,0 +1,48 @@
+name: Android Build and Netlify Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Android APK
+        env:
+          ANDROID_SDK_ROOT: "/github/home/android-sdk"
+        run: |
+          apt-get update && apt-get install -y wget unzip openjdk-17-jdk-headless
+          mkdir -p /github/home/android-sdk
+          bash tools/build_android.sh
+
+      - name: Verify and Prepare Deployment
+        run: |
+          APK_PATH="build/android/snake.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            exit 1
+          fi
+          mkdir -p deploy
+          cp "$APK_PATH" deploy/snake-game.apk
+          echo '<html><body><h1>Industrial Snake</h1><p>Latest Build</p><a href="snake-game.apk">Download APK</a></body></html>' > deploy/index.html
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './deploy'
+          production-deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy Android APK to Netlify"
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

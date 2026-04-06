@@ -8,7 +8,7 @@ var segments: Array[Node2D] = []
 var spacing: int = 15
 var score: int = 0
 var is_game_over: bool = false
-var hud: CanvasLayer
+var hud: Node
 var invulnerability_timer: float = 0.5
 
 func _ready() -> void:
