@@ -33,6 +33,9 @@ jobs:
           # Configure Godot to use the correct SDK, JDK, and keystore paths
           # We use .tres extension for text-based editor settings
           mkdir -p ~/.config/godot
+          echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-4.tres
+          echo '' >> ~/.config/godot/editor_settings-4.tres
+          echo '[resource]' >> ~/.config/godot/editor_settings-4.tres
           echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-4.tres
           echo 'export/android/jdk_path = "/usr/lib/jvm/java-21-openjdk-amd64"' >> ~/.config/godot/editor_settings-4.tres
           echo 'export/android/debug_keystore = "'$(pwd)'/debug.keystore"' >> ~/.config/godot/editor_settings-4.tres
