@@ -63,7 +63,9 @@ def verify_files():
     required_files = [
         "project.godot",
         "scenes/main/main.tscn",
-        "scenes/main/obstacle.tscn"
+        "scenes/main/obstacle.tscn",
+        "scenes/main/snake_head.tscn",
+        "scripts/core/snake_head.gd"
     ]
     all_exist = True
     for file_path in required_files:
