@@ -55,8 +55,12 @@ func add_segment() -> void:
     var segment = segment_scene.instantiate()
     add_child(segment)
     segments.append(segment)
-    # Start segment at head position
-    segment.global_position = snake_head.global_position
+
+    # Start segment at the tail of history if available, else far away
+    if history.size() > 0:
+        segment.global_position = history.back()
+    else:
+        segment.global_position = Vector2(-1000, -1000)
 
 func _on_fuel_collected() -> void:
     score += 1
@@ -71,8 +75,8 @@ func _on_bite_area_entered(area: Area2D) -> void:
     if is_game_over: return
     if invulnerability_timer > 0: return
 
-    # If the head's bite area hits a segment, game over
-    if area.name.begins_with("Segment") or area in segments:
+    # Check if we hit a segment. Since they are children of this node, we can check that.
+    if area.get_parent() == self and area != snake_head:
         end_game()
 
 func end_game() -> void:
