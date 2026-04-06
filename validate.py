@@ -73,9 +73,10 @@ def verify_files():
         "scenes/ui/hud.tscn",
         "scripts/ui/hud.gd",
         "scripts/core/GameConstants.gd",
-        "export_presets.cfg",
-        "scenes/ui/NamePrompt.tscn",
+        "scripts/core/Main.gd",
         "scripts/ui/NamePrompt.gd",
+        "scripts/ui/HUD.gd",
+        "export_presets.cfg",
         ".github/workflows/android.yml"
     ]
     all_exist = True

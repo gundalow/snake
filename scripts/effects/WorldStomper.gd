@@ -1,9 +1,10 @@
-extends Node2D
+extends Node3D
 
 signal stomped
 
-const SPAWN_DISTANCE = 500.0
+const SPAWN_DISTANCE = 18.0
 
+@onready var animation_player = $AnimationPlayer
 @onready var timer = $Timer
 
 func _ready() -> void:
@@ -15,35 +16,28 @@ func _on_timer_timeout() -> void:
 	start_stomp_cycle()
 
 func start_stomp_cycle() -> void:
-	# Pick a random side (North, South, East, West in 2D coordinates)
+	# Pick a random side (North, South, East, West)
 	var side = randi() % 4
-	var spawn_pos = Vector2.ZERO
+	var spawn_pos = Vector3.ZERO
 
 	match side:
-		0: # Top
-			spawn_pos = Vector2(randf_range(100, 1100), -SPAWN_DISTANCE)
-		1: # Bottom
-			spawn_pos = Vector2(randf_range(100, 1100), 720 + SPAWN_DISTANCE)
-		2: # Left
-			spawn_pos = Vector2(-SPAWN_DISTANCE, randf_range(100, 600))
-		3: # Right
-			spawn_pos = Vector2(1280 + SPAWN_DISTANCE, randf_range(100, 600))
+		0: # North
+			spawn_pos = Vector3(randf_range(-10, 10), 0, -SPAWN_DISTANCE)
+		1: # South
+			spawn_pos = Vector3(randf_range(-10, 10), 0, SPAWN_DISTANCE)
+		2: # West
+			spawn_pos = Vector3(-SPAWN_DISTANCE, 0, randf_range(-10, 10))
+		3: # East
+			spawn_pos = Vector3(SPAWN_DISTANCE, 0, randf_range(-10, 10))
 
 	global_position = spawn_pos
-	
-	# In 2.5D, we'll just move the foot into position and play an animation
-	# For now, we'll just simulate it with a tween
-	var target_pos = Vector2(randf_range(200, 1000), randf_range(150, 550))
-	var tween = create_tween()
-	tween.tween_property(self, "global_position", target_pos, 1.0)\
-		.set_trans(Tween.TRANS_QUAD)\
-		.set_ease(Tween.EASE_OUT)
-	tween.finished.connect(_on_impact)
+
+	# Look at center of board for better visual
+	look_at(Vector3(0, 0, 0), Vector3.UP)
+	# Correct for model rotation (usually legs are vertical, so we want the foot flat on ground)
+	# This depends on the mesh orientation
+
+	animation_player.play("stomp")
 
 func _on_impact() -> void:
 	stomped.emit()
-	# Shake effect would go here
-	# Retreat
-	var tween = create_tween()
-	tween.tween_interval(1.0)
-	tween.tween_property(self, "position:y", position.y - 1000, 1.0)

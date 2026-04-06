@@ -1,22 +1,150 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=10 format=3 uid="uid://b9x8y8l8j8x7y"]
 
 [ext_resource type="Script" path="res://scripts/effects/WorldStomper.gd" id="1_stomper"]
 
-[node name="WorldStomper" type="Node2D"]
+[sub_resource type="CylinderMesh" id="CylinderMesh_leg"]
+top_radius = 2.0
+bottom_radius = 2.0
+height = 20.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_foot"]
+size = Vector3(4, 2, 6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial_foot"]
+albedo_color = Color(0.6, 0.4, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_shadow"]
+size = Vector3(5, 0.1, 7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial_shadow"]
+transparency = 1
+albedo_color = Color(0, 0, 0, 0.5)
+
+[sub_resource type="Animation" id="Animation_stomp"]
+resource_name = "stomp"
+length = 5.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("FootRoot:position:y")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 2, 2.2, 3, 5),
+"transitions": PackedFloat32Array(1, 0.5, 1, 1.5, 1),
+"update": 0,
+"values": [30.0, 30.0, 0.0, 0.0, 30.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Shadow:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 2, 2.2, 3, 4.5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.1, 1, 0.1), Vector3(1, 1, 1), Vector3(1.1, 1, 1.1), Vector3(1.1, 1, 1.1), Vector3(0.1, 1, 0.1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Shadow:transparency")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1.5, 2, 3, 4.5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.5, 0.5, 0.5, 1.0]
+}
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(2.2),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_on_impact"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_RESET"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("FootRoot:position:y")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [30.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Shadow:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(1, 1, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Shadow:transparency")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_stomper"]
+_data = {
+"RESET": SubResource("Animation_RESET"),
+"stomp": SubResource("Animation_stomp")
+}
+
+[node name="WorldStomper" type="Node3D"]
 script = ExtResource("1_stomper")
 
-[node name="Shadow" type="Polygon2D" parent="."]
-modulate = Color(0, 0, 0, 0.5)
-scale = Vector2(1, 1)
-polygon = PackedVector2Array(-50, -30, 50, -30, 50, 30, -50, 30)
+[node name="FootRoot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 0)
 
-[node name="FootRoot" type="Node2D" parent="."]
-position = Vector2(0, -1000)
+[node name="Leg" type="MeshInstance3D" parent="FootRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+mesh = SubResource("CylinderMesh_leg")
+surface_material_override/0 = SubResource("StandardMaterial_foot")
 
-[node name="Foot" type="Polygon2D" parent="FootRoot"]
-color = Color(0.6, 0.4, 0.2, 1)
-polygon = PackedVector2Array(-40, -60, 40, -60, 40, 60, -40, 60)
+[node name="Foot" type="MeshInstance3D" parent="FootRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1)
+mesh = SubResource("BoxMesh_foot")
+surface_material_override/0 = SubResource("StandardMaterial_foot")
+
+[node name="Shadow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("BoxMesh_shadow")
+surface_material_override/0 = SubResource("StandardMaterial_shadow")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_stomper")
+}
 
 [node name="Timer" type="Timer" parent="."]
 wait_time = 30.0
-autostart = true
+one_shot = false
