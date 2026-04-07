@@ -98,39 +98,68 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1.5;
         document.body.appendChild(renderer.domElement);
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xffffff, 1.5);
-        pointLight.position.set(20, 30, 10);
+        const pointLight = new THREE.PointLight(0xffffff, 500, 100);
+        pointLight.position.set(5, 10, 5);
+        pointLight.castShadow = true;
+        pointLight.shadow.mapSize.width = 1024;
+        pointLight.shadow.mapSize.height = 1024;
         scene.add(pointLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(-10, 20, -10);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(-10, 20, 10);
+        directionalLight.castShadow = true;
         scene.add(directionalLight);
 
         // Texture Loader
         const textureLoader = new THREE.TextureLoader();
 
-        // Floor Texture
+        // Floor PBR
         const floorTexture = textureLoader.load('assets/textures/floor_rusted.png');
-        floorTexture.wrapS = THREE.RepeatWrapping;
-        floorTexture.wrapT = THREE.RepeatWrapping;
-        floorTexture.repeat.set(20, 20);
-        floorTexture.minFilter = THREE.LinearMipmapLinearFilter;
-
-        const floorGeometry = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
-        const floorMaterial = new THREE.MeshStandardMaterial({
-            map: floorTexture,
-            roughness: 0.8,
-            metalness: 0.2
+        const floorNormal = textureLoader.load('assets/textures/floor_normal.png');
+        const floorRoughness = textureLoader.load('assets/textures/floor_roughness.png');
+        [floorTexture, floorNormal, floorRoughness].forEach(t => {
+            // No tiling for the floor, unique 2048px texture
+            t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+            t.minFilter = THREE.LinearMipmapLinearFilter;
         });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
+
+        // Use distinct materials for the floor slab to avoid UV stretching on the sides
+        const floorTopMaterial = new THREE.MeshStandardMaterial({
+            map: floorTexture,
+            normalMap: floorNormal,
+            roughnessMap: floorRoughness,
+            metalness: 0.5,
+            roughness: 1.0
+        });
+
+        // Side material - reusing beam texture for the slab edges
+        const floorSideMaterial = new THREE.MeshStandardMaterial({
+            color: 0x333333,
+            metalness: 0.8,
+            roughness: 0.5
+        });
+
+        const floorGeometry = new THREE.BoxGeometry(GRID_SIZE, 0.5, GRID_SIZE);
+        // BoxGeometry materials: [x+, x-, y+, y-, z+, z-]
+        const floorMaterials = [
+            floorSideMaterial, floorSideMaterial, // Left/Right
+            floorTopMaterial,  floorSideMaterial, // Top/Bottom
+            floorSideMaterial, floorSideMaterial  // Front/Back
+        ];
+
+        const floor = new THREE.Mesh(floorGeometry, floorMaterials);
+        floor.position.y = -0.25;
+        floor.receiveShadow = true;
         scene.add(floor);
 
         // Grid (Subtle overlay)
@@ -142,16 +171,21 @@
 
         // Materials
         const snakeTexture = textureLoader.load('assets/textures/snake_body_diffuse.png');
+        const snakeNormal = textureLoader.load('assets/textures/snake_body_normal.png');
+        const snakeRoughness = textureLoader.load('assets/textures/snake_body_roughness.png');
         const snakeMaterial = new THREE.MeshStandardMaterial({
             map: snakeTexture,
-            roughness: 0.7
+            normalMap: snakeNormal,
+            roughnessMap: snakeRoughness,
+            metalness: 0.3
         });
 
         const foodTexture = textureLoader.load('assets/textures/battery_label.png');
         const foodMaterial = new THREE.MeshStandardMaterial({
             map: foodTexture,
-            emissive: 0xff3333,
-            emissiveIntensity: 0.2
+            emissive: 0xff0000,
+            emissiveIntensity: 1.0,
+            roughness: 0.3
         });
         const cubeGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
 
@@ -168,25 +202,37 @@
         const foodMesh = new THREE.Mesh(cubeGeometry, foodMaterial);
         scene.add(foodMesh);
 
-        // Walls / Beams
+        // Walls / Beams PBR
         const wallTexture = textureLoader.load('assets/textures/wall_beam_metal.png');
-        wallTexture.wrapS = THREE.RepeatWrapping;
-        wallTexture.wrapT = THREE.RepeatWrapping;
-        wallTexture.repeat.set(1, 4);
-        const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
+        const wallNormal = textureLoader.load('assets/textures/wall_beam_normal.png');
+        const wallRoughness = textureLoader.load('assets/textures/wall_beam_roughness.png');
+        [wallTexture, wallNormal, wallRoughness].forEach(t => {
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(5, 1); // Less repetition for better look
+        });
 
-        function createBeam(x, z, ry) {
-            const beam = new THREE.Mesh(new THREE.BoxGeometry(0.5, 10, 0.5), wallMaterial);
-            beam.position.set(x, 5, z);
-            beam.rotation.y = ry;
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            map: wallTexture,
+            normalMap: wallNormal,
+            roughnessMap: wallRoughness,
+            metalness: 0.7,
+            roughness: 0.8
+        });
+
+        function createEdgeBeam(x, y, z, w, h, d) {
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMaterial);
+            beam.position.set(x, y, z);
+            beam.castShadow = true;
+            beam.receiveShadow = true;
             scene.add(beam);
         }
 
-        // Add 4 corner beams
-        createBeam(-GRID_SIZE/2, -GRID_SIZE/2, 0);
-        createBeam(GRID_SIZE/2, -GRID_SIZE/2, 0);
-        createBeam(-GRID_SIZE/2, GRID_SIZE/2, 0);
-        createBeam(GRID_SIZE/2, GRID_SIZE/2, 0);
+        // Horizontal Perimeter Frame
+        const bw = 0.6; // beam width
+        createEdgeBeam(0, 0.2, -GRID_SIZE/2, GRID_SIZE + bw, 0.8, bw); // Back
+        createEdgeBeam(0, 0.2, GRID_SIZE/2, GRID_SIZE + bw, 0.8, bw);  // Front
+        createEdgeBeam(-GRID_SIZE/2, 0.2, 0, bw, 0.8, GRID_SIZE + bw); // Left
+        createEdgeBeam(GRID_SIZE/2, 0.2, 0, bw, 0.8, GRID_SIZE + bw);  // Right
 
         function updateSnakeMeshes() {
             snakeMeshes.forEach(m => scene.remove(m));
@@ -194,14 +240,17 @@
 
             snake.forEach(pos => {
                 const mesh = new THREE.Mesh(cubeGeometry, snakeMaterial);
-                mesh.position.set(pos.x - GRID_SIZE/2 + 0.5, 0.5, pos.z - GRID_SIZE/2 + 0.5);
+                mesh.position.set(pos.x - GRID_SIZE/2 + 0.5, 0.45, pos.z - GRID_SIZE/2 + 0.5);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
                 scene.add(mesh);
                 snakeMeshes.push(mesh);
             });
         }
 
+        foodMesh.castShadow = true;
         function updateFoodMesh() {
-            foodMesh.position.set(food.x - GRID_SIZE/2 + 0.5, 0.5, food.z - GRID_SIZE/2 + 0.5);
+            foodMesh.position.set(food.x - GRID_SIZE/2 + 0.5, 0.45, food.z - GRID_SIZE/2 + 0.5);
         }
 
         function spawnFood() {
@@ -324,6 +373,13 @@
         // Game Loop
         function animate(time) {
             requestAnimationFrame(animate);
+
+            // Dynamic Flickering Light
+            if (Math.random() > 0.95) {
+                pointLight.intensity = Math.random() * 800;
+            } else {
+                pointLight.intensity = 500 + Math.random() * 100;
+            }
 
             if (time - lastMoveTime > MOVE_SPEED) {
                 moveSnake();
