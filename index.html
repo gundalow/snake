@@ -90,8 +90,8 @@
 
         // Camera Setup (Orthographic 2.5D)
         const aspect = window.innerWidth / window.innerHeight;
-        const d = 15;
-        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        const CAMERA_D = 22; // Increased from 15 to show more of the board
+        const camera = new THREE.OrthographicCamera(-CAMERA_D * aspect, CAMERA_D * aspect, CAMERA_D, -CAMERA_D, 1, 1000);
         camera.position.set(30, 30, 30);
         camera.lookAt(0, 0, 0);
 
@@ -299,10 +299,10 @@
 
         window.addEventListener('resize', () => {
             const aspect = window.innerWidth / window.innerHeight;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
+            camera.left = -CAMERA_D * aspect;
+            camera.right = CAMERA_D * aspect;
+            camera.top = CAMERA_D;
+            camera.bottom = -CAMERA_D;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
