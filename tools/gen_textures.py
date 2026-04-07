@@ -108,8 +108,9 @@ def add_damage(pixels, h_map, width, height):
     return np.array(draw_p).astype(float), h_map
 
 def main():
-    base_path = 'html/assets/textures'
-    os.makedirs(base_path, exist_ok=True)
+    base_paths = ['html/assets/textures', 'assets/textures']
+    for p in base_paths:
+        os.makedirs(p, exist_ok=True)
     random.seed(42)
 
     # --- FLOOR (2048x2048 Unique) ---
@@ -138,16 +139,18 @@ def main():
 
     # Oil Layer - darker, more viscous looking
     oil_mask = np.clip((oil_noise - 0.65) / 0.35, 0, 1)
-    pixels = pixels * (1 - oil_mask[:,:,np.newaxis]) * 0.3 # Deep darkening for oil
+    # Corrected oil blending: only darken where the mask is active
+    pixels = pixels * (1 - oil_mask[:,:,np.newaxis] * 0.8) # 80% darkening in oil spots
 
     # Roughness
     roughness = np.full((H, W), 0.4) # Base metal
     roughness = roughness * (1 - rust_mask) + 0.9 * rust_mask # Rust is rough
     roughness = roughness * (1 - oil_mask) + 0.05 * oil_mask # Oil is VERY smooth/glossy
 
-    Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'floor_rusted.png'))
-    Image.fromarray(height_to_normal(h_map, strength=15.0)).save(os.path.join(base_path, 'floor_normal.png'))
-    Image.fromarray((roughness * 255).astype(np.uint8)).save(os.path.join(base_path, 'floor_roughness.png'))
+    for bp in base_paths:
+        Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8)).save(os.path.join(bp, 'floor_rusted.png'))
+        Image.fromarray(height_to_normal(h_map, strength=15.0)).save(os.path.join(bp, 'floor_normal.png'))
+        Image.fromarray((roughness * 255).astype(np.uint8)).save(os.path.join(bp, 'floor_roughness.png'))
 
     # --- SNAKE (512x512) ---
     print("Baking Snake Body...")
@@ -170,9 +173,10 @@ def main():
     s_pixels *= (0.8 + 0.2 * s_noise[:, :, np.newaxis]) # Grime
     s_rough = 0.3 + 0.4 * s_noise # Variable roughness
 
-    Image.fromarray(np.clip(s_pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'snake_body_diffuse.png'))
-    Image.fromarray(height_to_normal(s_h, strength=8.0)).save(os.path.join(base_path, 'snake_body_normal.png'))
-    Image.fromarray((s_rough * 255).astype(np.uint8)).save(os.path.join(base_path, 'snake_body_roughness.png'))
+    for bp in base_paths:
+        Image.fromarray(np.clip(s_pixels, 0, 255).astype(np.uint8)).save(os.path.join(bp, 'snake_body_diffuse.png'))
+        Image.fromarray(height_to_normal(s_h, strength=8.0)).save(os.path.join(bp, 'snake_body_normal.png'))
+        Image.fromarray((s_rough * 255).astype(np.uint8)).save(os.path.join(bp, 'snake_body_roughness.png'))
 
     # --- BEAM (512x512) ---
     print("Baking Metal Beams...")
@@ -197,9 +201,10 @@ def main():
             mask = yy*yy + xx*xx < 256
             b_h[ry-16:ry+17, rx-16:rx+17][mask] = 0.8
 
-    Image.fromarray(np.array(b_draw_img)).save(os.path.join(base_path, 'wall_beam_metal.png'))
-    Image.fromarray(height_to_normal(b_h)).save(os.path.join(base_path, 'wall_beam_normal.png'))
-    Image.fromarray(np.full((BH, BW), 180, dtype=np.uint8)).save(os.path.join(base_path, 'wall_beam_roughness.png'))
+    for bp in base_paths:
+        Image.fromarray(np.array(b_draw_img)).save(os.path.join(bp, 'wall_beam_metal.png'))
+        Image.fromarray(height_to_normal(b_h)).save(os.path.join(bp, 'wall_beam_normal.png'))
+        Image.fromarray(np.full((BH, BW), 180, dtype=np.uint8)).save(os.path.join(bp, 'wall_beam_roughness.png'))
 
     # --- BATTERY (256x256) ---
     print("Baking Battery Label...")
@@ -212,7 +217,8 @@ def main():
     for i in range(60, 240, 25):
         l_draw.rectangle([20, i, 236, i+8], fill=(40, 40, 40))
     l_draw.polygon([128, 70, 110, 130, 128, 130, 115, 190, 150, 110, 130, 110, 145, 70], fill=(255, 215, 0))
-    l_img.save(os.path.join(base_path, 'battery_label.png'))
+    for bp in base_paths:
+        l_img.save(os.path.join(bp, 'battery_label.png'))
 
     print("All textures baked successfully!")
 

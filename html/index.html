@@ -268,12 +268,13 @@
             scene.add(beam);
         }
 
-        // Horizontal Perimeter Frame
+        // Horizontal Perimeter Frame (Moved outward so they don't overlap with the grid)
         const bw = 0.6; // beam width
-        createEdgeBeam(0, 0.2, -GRID_SIZE/2, GRID_SIZE + bw, 0.8, bw); // Back
-        createEdgeBeam(0, 0.2, GRID_SIZE/2, GRID_SIZE + bw, 0.8, bw);  // Front
-        createEdgeBeam(-GRID_SIZE/2, 0.2, 0, bw, 0.8, GRID_SIZE + bw); // Left
-        createEdgeBeam(GRID_SIZE/2, 0.2, 0, bw, 0.8, GRID_SIZE + bw);  // Right
+        const offset = (GRID_SIZE / 2) + (bw / 2);
+        createEdgeBeam(0, 0.2, -offset, GRID_SIZE + (bw * 2), 0.8, bw); // Back
+        createEdgeBeam(0, 0.2, offset, GRID_SIZE + (bw * 2), 0.8, bw);  // Front
+        createEdgeBeam(-offset, 0.2, 0, bw, 0.8, GRID_SIZE + (bw * 2)); // Left
+        createEdgeBeam(offset, 0.2, 0, bw, 0.8, GRID_SIZE + (bw * 2));  // Right
 
         function updateSnakeMeshes() {
             snakeMeshes.forEach(m => scene.remove(m));
