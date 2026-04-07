@@ -4,7 +4,8 @@
   "description": "2.5D Snake game optimized for Android",
   "main": "index.html",
   "scripts": {
-    "build": "echo 'Building web assets...'"
+    "build": "echo 'Building web assets...'",
+    "start": "npx serve html"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",

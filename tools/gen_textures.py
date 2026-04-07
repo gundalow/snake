@@ -91,7 +91,8 @@ def gen_diamond_plate_base(width=1024, height=1024):
     return np.array(img).astype(float)
 
 def main():
-    os.makedirs('assets/textures', exist_ok=True)
+    base_path = 'html/assets/textures'
+    os.makedirs(base_path, exist_ok=True)
 
     # FLOOR
     print("Baking floor_rusted.png...")
@@ -111,7 +112,7 @@ def main():
     add_pitting(pixels, create_tileable_noise_np(1024, 1024, octaves=50, seed=123))
     add_grease_streaks(pixels)
     add_cracks(pixels)
-    Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8)).save('assets/textures/floor_rusted.png')
+    Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'floor_rusted.png'))
 
     # SNAKE
     print("Baking snake_body_diffuse.png...")
@@ -123,7 +124,7 @@ def main():
     s_fbm = create_fbm_np(512, 512, seed=7)
     s_pixels *= (0.5 + 0.5 * s_fbm[:, :, np.newaxis])
     add_grease_streaks(s_pixels)
-    Image.fromarray(np.clip(s_pixels, 0, 255).astype(np.uint8)).save('assets/textures/snake_body_diffuse.png')
+    Image.fromarray(np.clip(s_pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'snake_body_diffuse.png'))
 
     # WALL
     print("Baking wall_beam_metal.png...")
@@ -136,7 +137,7 @@ def main():
             yy, xx = np.ogrid[-8:9, -8:9]
             mask = yy*yy + xx*xx < 64
             w_pixels[(ry-8):(ry+9), (rx-8):(rx+9)][mask] *= 0.4
-    Image.fromarray(np.clip(w_pixels, 0, 255).astype(np.uint8)).save('assets/textures/wall_beam_metal.png')
+    Image.fromarray(np.clip(w_pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'wall_beam_metal.png'))
 
     # LABEL
     print("Baking battery_label.png...")
@@ -147,7 +148,7 @@ def main():
     # Torn edges
     l_pixels[l_fbm < 0.15] = [20, 20, 20] # Background or missing
     add_grease_streaks(l_pixels)
-    Image.fromarray(np.clip(l_pixels, 0, 255).astype(np.uint8)).save('assets/textures/battery_label.png')
+    Image.fromarray(np.clip(l_pixels, 0, 255).astype(np.uint8)).save(os.path.join(base_path, 'battery_label.png'))
 
     print("Success! Procedural textures baked.")
 

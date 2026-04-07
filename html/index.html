@@ -101,27 +101,57 @@
         document.body.appendChild(renderer.domElement);
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xffffff, 1);
+        const pointLight = new THREE.PointLight(0xffffff, 1.5);
         pointLight.position.set(20, 30, 10);
         scene.add(pointLight);
 
-        // Grid
-        const gridHelper = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x444444, 0x222222);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(-10, 20, -10);
+        scene.add(directionalLight);
+
+        // Texture Loader
+        const textureLoader = new THREE.TextureLoader();
+
+        // Floor Texture
+        const floorTexture = textureLoader.load('assets/textures/floor_rusted.png');
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(20, 20);
+        floorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+
+        const floorGeometry = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            map: floorTexture,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0;
+        scene.add(floor);
+
+        // Grid (Subtle overlay)
+        const gridHelper = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x000000, 0x000000);
+        gridHelper.position.y = 0.01;
+        gridHelper.material.opacity = 0.2;
+        gridHelper.material.transparent = true;
         scene.add(gridHelper);
 
         // Materials
+        const snakeTexture = textureLoader.load('assets/textures/snake_body_diffuse.png');
         const snakeMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ff88,
-            emissive: 0x00ff88,
-            emissiveIntensity: 0.5
+            map: snakeTexture,
+            roughness: 0.7
         });
+
+        const foodTexture = textureLoader.load('assets/textures/battery_label.png');
         const foodMaterial = new THREE.MeshStandardMaterial({
-            color: 0xff3333,
+            map: foodTexture,
             emissive: 0xff3333,
-            emissiveIntensity: 0.5
+            emissiveIntensity: 0.2
         });
         const cubeGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
 
@@ -137,6 +167,26 @@
         const snakeMeshes = [];
         const foodMesh = new THREE.Mesh(cubeGeometry, foodMaterial);
         scene.add(foodMesh);
+
+        // Walls / Beams
+        const wallTexture = textureLoader.load('assets/textures/wall_beam_metal.png');
+        wallTexture.wrapS = THREE.RepeatWrapping;
+        wallTexture.wrapT = THREE.RepeatWrapping;
+        wallTexture.repeat.set(1, 4);
+        const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
+
+        function createBeam(x, z, ry) {
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(0.5, 10, 0.5), wallMaterial);
+            beam.position.set(x, 5, z);
+            beam.rotation.y = ry;
+            scene.add(beam);
+        }
+
+        // Add 4 corner beams
+        createBeam(-GRID_SIZE/2, -GRID_SIZE/2, 0);
+        createBeam(GRID_SIZE/2, -GRID_SIZE/2, 0);
+        createBeam(-GRID_SIZE/2, GRID_SIZE/2, 0);
+        createBeam(GRID_SIZE/2, GRID_SIZE/2, 0);
 
         function updateSnakeMeshes() {
             snakeMeshes.forEach(m => scene.remove(m));
