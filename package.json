@@ -1,0 +1,15 @@
+{
+  "name": "vibesnake",
+  "version": "1.0.0",
+  "description": "2.5D Snake game optimized for Android",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Building web assets...'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0"
+  }
+}
