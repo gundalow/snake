@@ -65,6 +65,9 @@
 
     <script type="module">
         import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
         // Capacitor Haptics placeholder for browser testing
         let Haptics = { impact: async () => {} };
@@ -100,9 +103,47 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ReinhardToneMapping;
-        renderer.toneMappingExposure = 1.5;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         document.body.appendChild(renderer.domElement);
+
+        // Industrial Environment Map (Procedural)
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const envScene = new THREE.Scene();
+        const envGeometry = new THREE.BoxGeometry(10, 10, 10);
+        const envMaterial = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide });
+        const envBox = new THREE.Mesh(envGeometry, envMaterial);
+        envScene.add(envBox);
+
+        // Add some "lights" to the env map for reflections
+        for (let i = 0; i < 5; i++) {
+            const lightGeom = new THREE.BoxGeometry(1, 4, 0.1);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const lightMesh = new THREE.Mesh(lightGeom, lightMat);
+            lightMesh.position.set(
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10
+            );
+            lightMesh.lookAt(0,0,0);
+            envScene.add(lightMesh);
+        }
+
+        const envRenderTarget = pmremGenerator.fromScene(envScene);
+        scene.environment = envRenderTarget.texture;
+
+        // Post-processing
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.6,  // strength
+            0.4,  // radius
+            0.85  // threshold
+        );
+        composer.addPass(bloomPass);
 
         // Lights
         const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
@@ -341,23 +382,36 @@
 
             if (Math.abs(dx) > Math.abs(dy)) {
                 if (Math.abs(dx) > 30) {
-                    if (dx > 0 && direction.x === 0) nextDirection = { x: 1, z: 0 };
-                    else if (dx < 0 && direction.x === 0) nextDirection = { x: -1, z: 0 };
+                    if (dx > 0) { // Screen Right -> Top-Right (-Z)
+                        if (direction.z === 0) nextDirection = { x: 0, z: -1 };
+                    } else { // Screen Left -> Bottom-Left (+Z)
+                        if (direction.z === 0) nextDirection = { x: 0, z: 1 };
+                    }
                 }
             } else {
                 if (Math.abs(dy) > 30) {
-                    if (dy > 0 && direction.z === 0) nextDirection = { x: 0, z: 1 };
-                    else if (dy < 0 && direction.z === 0) nextDirection = { x: 0, z: -1 };
+                    if (dy > 0) { // Screen Down -> Bottom-Right (+X)
+                        if (direction.x === 0) nextDirection = { x: 1, z: 0 };
+                    } else { // Screen Up -> Top-Left (-X)
+                        if (direction.x === 0) nextDirection = { x: -1, z: 0 };
+                    }
                 }
             }
             touchStart = null;
         });
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' && direction.z === 0) nextDirection = { x: 0, z: -1 };
-            if (e.key === 'ArrowDown' && direction.z === 0) nextDirection = { x: 0, z: 1 };
-            if (e.key === 'ArrowLeft' && direction.x === 0) nextDirection = { x: -1, z: 0 };
-            if (e.key === 'ArrowRight' && direction.x === 0) nextDirection = { x: 1, z: 0 };
+            /**
+             * Screen-relative mapping for Isometric view (Camera at 30,30,30):
+             * - ArrowUp:    Move Top-Left (-X)
+             * - ArrowDown:  Move Bottom-Right (+X)
+             * - ArrowLeft:  Move Bottom-Left (+Z)
+             * - ArrowRight: Move Top-Right (-Z)
+             */
+            if (e.key === 'ArrowUp')    { if (direction.x === 0) nextDirection = { x: -1, z: 0 }; }
+            if (e.key === 'ArrowDown')  { if (direction.x === 0) nextDirection = { x: 1, z: 0 }; }
+            if (e.key === 'ArrowLeft')  { if (direction.z === 0) nextDirection = { x: 0, z: 1 }; }
+            if (e.key === 'ArrowRight') { if (direction.z === 0) nextDirection = { x: 0, z: -1 }; }
         });
 
         window.addEventListener('resize', () => {
@@ -368,25 +422,22 @@
             camera.bottom = -d;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
         // Game Loop
         function animate(time) {
             requestAnimationFrame(animate);
 
-            // Dynamic Flickering Light
-            if (Math.random() > 0.95) {
-                pointLight.intensity = Math.random() * 800;
-            } else {
-                pointLight.intensity = 500 + Math.random() * 100;
-            }
+            // Stable Industrial Light
+            pointLight.intensity = 600;
 
             if (time - lastMoveTime > MOVE_SPEED) {
                 moveSnake();
                 lastMoveTime = time;
             }
 
-            renderer.render(scene, camera);
+            composer.render();
         }
 
         resetGame();
