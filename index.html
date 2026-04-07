@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VibeSnake 2.5D</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ff88;
+            font-size: 24px;
+            text-shadow: 0 0 10px #00ff88;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff3333;
+            font-size: 48px;
+            text-align: center;
+            display: none;
+            text-shadow: 0 0 20px #ff3333;
+            z-index: 20;
+        }
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 20px;
+            background: transparent;
+            color: #00ff88;
+            border: 2px solid #00ff88;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">Score: 0</div>
+    <div id="game-over">
+        GAME OVER
+        <br>
+        <button id="restart-btn" onclick="resetGame()">RESTART</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Capacitor Haptics placeholder for browser testing
+        let Haptics = { impact: async () => {} };
+        let ImpactStyle = { Light: 'LIGHT', Heavy: 'HEAVY' };
+
+        // Attempt to load Capacitor Haptics
+        try {
+            const hapticsModule = await import('https://unpkg.com/@capacitor/haptics@6.0.0/dist/esm/index.js');
+            Haptics = hapticsModule.Haptics;
+            ImpactStyle = hapticsModule.ImpactStyle;
+        } catch (e) {
+            console.warn("Capacitor Haptics not loaded, using placeholder.");
+        }
+
+        // Game Constants
+        const GRID_SIZE = 20;
+        const MOVE_SPEED = 300; // ms
+        const INITIAL_SNAKE = [{x: 10, z: 10}, {x: 10, z: 11}, {x: 10, z: 12}];
+
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+
+        // Camera Setup (Orthographic 2.5D)
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 15;
+        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        camera.position.set(30, 30, 30);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(20, 30, 10);
+        scene.add(pointLight);
+
+        // Grid
+        const gridHelper = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // Materials
+        const snakeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ff88,
+            emissive: 0x00ff88,
+            emissiveIntensity: 0.5
+        });
+        const foodMaterial = new THREE.MeshStandardMaterial({
+            color: 0xff3333,
+            emissive: 0xff3333,
+            emissiveIntensity: 0.5
+        });
+        const cubeGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+
+        // Game State
+        let snake = [...INITIAL_SNAKE];
+        let direction = {x: 0, z: -1};
+        let nextDirection = {x: 0, z: -1};
+        let food = {x: 5, z: 5};
+        let score = 0;
+        let isGameOver = false;
+        let lastMoveTime = 0;
+
+        const snakeMeshes = [];
+        const foodMesh = new THREE.Mesh(cubeGeometry, foodMaterial);
+        scene.add(foodMesh);
+
+        function updateSnakeMeshes() {
+            snakeMeshes.forEach(m => scene.remove(m));
+            snakeMeshes.length = 0;
+
+            snake.forEach(pos => {
+                const mesh = new THREE.Mesh(cubeGeometry, snakeMaterial);
+                mesh.position.set(pos.x - GRID_SIZE/2 + 0.5, 0.5, pos.z - GRID_SIZE/2 + 0.5);
+                scene.add(mesh);
+                snakeMeshes.push(mesh);
+            });
+        }
+
+        function updateFoodMesh() {
+            foodMesh.position.set(food.x - GRID_SIZE/2 + 0.5, 0.5, food.z - GRID_SIZE/2 + 0.5);
+        }
+
+        function spawnFood() {
+            food = {
+                x: Math.floor(Math.random() * GRID_SIZE),
+                z: Math.floor(Math.random() * GRID_SIZE)
+            };
+            // Ensure food doesn't spawn on snake
+            if (snake.some(p => p.x === food.x && p.z === food.z)) {
+                spawnFood();
+            }
+        }
+
+        async function triggerHaptic(style) {
+            try {
+                await Haptics.impact({ style });
+            } catch (e) {
+                // Ignore if not on device
+            }
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById('game-over').style.display = 'block';
+            triggerHaptic(ImpactStyle.Heavy);
+        }
+
+        window.resetGame = function() {
+            snake = [{x: 10, z: 10}, {x: 10, z: 11}, {x: 10, z: 12}];
+            direction = {x: 0, z: 0}; // Start stationary
+            nextDirection = {x: 0, z: 0};
+            score = 0;
+            isGameOver = false;
+            document.getElementById('ui').innerText = `Score: ${score}`;
+            document.getElementById('game-over').style.display = 'none';
+            spawnFood();
+            updateSnakeMeshes();
+            updateFoodMesh();
+        };
+
+        function moveSnake() {
+            if (isGameOver) return;
+            if (nextDirection.x === 0 && nextDirection.z === 0) return; // Don't move until input
+
+            direction = nextDirection;
+            const head = { x: snake[0].x + direction.x, z: snake[0].z + direction.z };
+
+            // Wall collision
+            if (head.x < 0 || head.x >= GRID_SIZE || head.z < 0 || head.z >= GRID_SIZE) {
+                return gameOver();
+            }
+
+            // Self collision
+            if (snake.some(p => p.x === head.x && p.z === head.z)) {
+                return gameOver();
+            }
+
+            snake.unshift(head);
+
+            // Food collision
+            if (head.x === food.x && head.z === food.z) {
+                score++;
+                document.getElementById('ui').innerText = `Score: ${score}`;
+                spawnFood();
+                updateFoodMesh();
+                triggerHaptic(ImpactStyle.Light);
+            } else {
+                snake.pop();
+            }
+
+            updateSnakeMeshes();
+        }
+
+        // Input Handling
+        let touchStart = null;
+        window.addEventListener('touchstart', (e) => {
+            touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (touchStart) e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            if (!touchStart) return;
+            const dx = e.changedTouches[0].clientX - touchStart.x;
+            const dy = e.changedTouches[0].clientY - touchStart.y;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (Math.abs(dx) > 30) {
+                    if (dx > 0 && direction.x === 0) nextDirection = { x: 1, z: 0 };
+                    else if (dx < 0 && direction.x === 0) nextDirection = { x: -1, z: 0 };
+                }
+            } else {
+                if (Math.abs(dy) > 30) {
+                    if (dy > 0 && direction.z === 0) nextDirection = { x: 0, z: 1 };
+                    else if (dy < 0 && direction.z === 0) nextDirection = { x: 0, z: -1 };
+                }
+            }
+            touchStart = null;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' && direction.z === 0) nextDirection = { x: 0, z: -1 };
+            if (e.key === 'ArrowDown' && direction.z === 0) nextDirection = { x: 0, z: 1 };
+            if (e.key === 'ArrowLeft' && direction.x === 0) nextDirection = { x: -1, z: 0 };
+            if (e.key === 'ArrowRight' && direction.x === 0) nextDirection = { x: 1, z: 0 };
+        });
+
+        window.addEventListener('resize', () => {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Game Loop
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            if (time - lastMoveTime > MOVE_SPEED) {
+                moveSnake();
+                lastMoveTime = time;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        resetGame();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>

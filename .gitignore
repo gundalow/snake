@@ -1,17 +1,4 @@
-# Godot-specific ignores
-.godot/
-export_presets.godot
-*.uid
-*.import
-
-# Mono/C# ignores
-.mono/
-bin/
-obj/
-
-# Build artifacts
-build/
-
-# System ignores
+node_modules/
+android/
 .DS_Store
-Thumbs.db
+*.log
