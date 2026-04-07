@@ -82,7 +82,7 @@
         // Game Constants
         const GRID_SIZE = 20;
         const MOVE_SPEED = 300; // ms
-        const INITIAL_SNAKE = [{x: 10, z: 10}, {x: 10, z: 11}, {x: 10, z: 12}];
+        const INITIAL_SNAKE = [{x: 10, z: 15}, {x: 10, z: 16}, {x: 10, z: 17}];
 
         // Scene Setup
         const scene = new THREE.Scene();
@@ -132,6 +132,7 @@
         let food = {x: 5, z: 5};
         let score = 0;
         let isGameOver = false;
+        let gameStarted = false;
         let lastMoveTime = 0;
 
         const snakeMeshes = [];
@@ -154,14 +155,33 @@
             foodMesh.position.set(food.x - GRID_SIZE/2 + 0.5, 0.5, food.z - GRID_SIZE/2 + 0.5);
         }
 
-        function spawnFood() {
-            food = {
-                x: Math.floor(Math.random() * GRID_SIZE),
-                z: Math.floor(Math.random() * GRID_SIZE)
-            };
-            // Ensure food doesn't spawn on snake
-            if (snake.some(p => p.x === food.x && p.z === food.z)) {
-                spawnFood();
+        function spawnFood(isInitial = false) {
+            if (isInitial) {
+                // Initial food: North of head (10, 15), at (10, 10)
+                // Not close to walls (margin 2)
+                food = { x: 10, z: 10 };
+                return;
+            }
+
+            const emptySlots = [];
+            for (let x = 0; x < GRID_SIZE; x++) {
+                for (let z = 0; z < GRID_SIZE; z++) {
+                    let occupied = false;
+                    for (let i = 0; i < snake.length; i++) {
+                        if (snake[i].x === x && snake[i].z === z) {
+                            occupied = true;
+                            break;
+                        }
+                    }
+                    if (!occupied) {
+                        emptySlots.push({ x, z });
+                    }
+                }
+            }
+
+            if (emptySlots.length > 0) {
+                const randomIndex = Math.floor(Math.random() * emptySlots.length);
+                food = emptySlots[randomIndex];
             }
         }
 
@@ -180,21 +200,23 @@
         }
 
         window.resetGame = function() {
-            snake = [{x: 10, z: 10}, {x: 10, z: 11}, {x: 10, z: 12}];
-            direction = {x: 0, z: 0}; // Start stationary
-            nextDirection = {x: 0, z: 0};
+            // Initial position: South of center
+            snake = [...INITIAL_SNAKE];
+            direction = {x: 0, z: -1}; // Prepared to move North
+            nextDirection = {x: 0, z: -1};
+            gameStarted = false;
             score = 0;
             isGameOver = false;
+            lastMoveTime = 0; // Ensure immediate move on start
             document.getElementById('ui').innerText = `Score: ${score}`;
             document.getElementById('game-over').style.display = 'none';
-            spawnFood();
+            spawnFood(true);
             updateSnakeMeshes();
             updateFoodMesh();
         };
 
         function moveSnake() {
             if (isGameOver) return;
-            if (nextDirection.x === 0 && nextDirection.z === 0) return; // Don't move until input
 
             direction = nextDirection;
             const head = { x: snake[0].x + direction.x, z: snake[0].z + direction.z };
@@ -237,6 +259,13 @@
 
         window.addEventListener('touchend', (e) => {
             if (!touchStart) return;
+
+            if (!gameStarted) {
+                gameStarted = true;
+                touchStart = null;
+                return;
+            }
+
             const dx = e.changedTouches[0].clientX - touchStart.x;
             const dy = e.changedTouches[0].clientY - touchStart.y;
 
@@ -255,6 +284,13 @@
         });
 
         window.addEventListener('keydown', (e) => {
+            if (!gameStarted) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                    gameStarted = true;
+                    return;
+                }
+            }
+
             if (e.key === 'ArrowUp' && direction.z === 0) nextDirection = { x: 0, z: -1 };
             if (e.key === 'ArrowDown' && direction.z === 0) nextDirection = { x: 0, z: 1 };
             if (e.key === 'ArrowLeft' && direction.x === 0) nextDirection = { x: -1, z: 0 };
@@ -275,7 +311,7 @@
         function animate(time) {
             requestAnimationFrame(animate);
 
-            if (time - lastMoveTime > MOVE_SPEED) {
+            if (gameStarted && !isGameOver && time - lastMoveTime > MOVE_SPEED) {
                 moveSnake();
                 lastMoveTime = time;
             }
