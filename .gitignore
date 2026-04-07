@@ -2,3 +2,6 @@ node_modules/
 android/
 .DS_Store
 *.log
+
+tools/verification/*.png
+tools/verification/seamless_checks/

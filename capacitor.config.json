@@ -1,6 +1,6 @@
 {
   "appId": "com.vibesnake.app",
   "appName": "VibeSnake",
-  "webDir": ".",
+  "webDir": "html",
   "bundledWebRuntime": false
 }
