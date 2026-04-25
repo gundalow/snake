@@ -2,537 +2,355 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Warpath Classic</title>
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
-        }
-        #ticker-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #c0c0c0;
-            border-top: 2px solid #fff;
-            padding: 2px 10px;
-            box-sizing: border-box;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            z-index: 20;
-        }
-        #ticker-text {
-            display: inline-block;
-            animation: scroll-left 20s linear infinite;
-        }
-        @keyframes scroll-left {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        .window {
-            pointer-events: auto;
-        }
-        #joystick-container {
-            position: absolute;
-            bottom: 40px;
-            left: 20px;
-            width: 120px;
-            height: 120px;
-            background: rgba(192, 192, 192, 0.3);
-            border: 2px solid #c0c0c0;
-            border-radius: 50%;
-            pointer-events: auto;
-            z-index: 30;
-        }
-        #joystick-knob {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50px;
-            height: 50px;
-            background: #c0c0c0;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf;
-        }
-        #fire-button {
-            position: absolute;
-            bottom: 40px;
-            right: 20px;
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 0, 0, 0.3);
-            border: 2px solid #ff0000;
-            border-radius: 50%;
-            color: #ff0000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            pointer-events: auto;
-            z-index: 30;
-        }
-        .status-bar {
-            display: block !important;
-        }
-        .status-bar-field {
-            display: block !important;
-            flex-grow: 0 !important;
-        }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .window { pointer-events: auto; }
+
+        /* Ticker Top Bar */
+        #ticker-bar { position: absolute; top: 0; left: 0; width: 100%; background: #c0c0c0; border-bottom: 2px solid #808080; display: flex; padding: 2px 10px; box-sizing: border-box; font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: bold; z-index: 20; }
+        .ticker-item { margin-right: 20px; }
+
+        /* Start Menu Button */
+        #start-btn { position: absolute; bottom: 2px; left: 2px; height: 25px; pointer-events: auto; z-index: 40; }
+
+        /* Joysticks */
+        .joystick-base { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(192, 192, 192, 0.2); border: 2px solid rgba(192, 192, 192, 0.4); border-radius: 50%; pointer-events: auto; z-index: 30; }
+        #joystick-left { left: 40px; }
+        #joystick-right { right: 40px; }
+        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: #c0c0c0; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf; pointer-events: none; }
+
+        /* Progress Bars Override */
+        .status-bar { display: block !important; height: 12px !important; }
+        .status-bar-field { display: block !important; flex-grow: 0 !important; height: 100% !important; }
     </style>
 </head>
 <body>
-    <div id="ticker-container">
-        <div id="ticker-text">GALACTIC NEWS: LOYALTY SHIFTS REPORTED IN ALPHA CENTAURI... POPULATION GROWTH EXPLODING ON CYAN PLANETS... TAX REVENUE STABLE...</div>
+    <div id="ticker-bar">
+        <span class="ticker-item">CR: <span id="cr-val">1000</span></span>
+        <span class="ticker-item">POP: <span id="pop-val">0</span></span>
+        <span class="ticker-item" style="flex-grow: 1; text-align: right;" id="timer">05:00</span>
     </div>
-    <div id="joystick-container">
-        <div id="joystick-knob"></div>
+
+    <div id="canvas-container"></div>
+
+    <button id="start-btn" class="window">Start</button>
+
+    <div id="joystick-left" class="joystick-base">
+        <div id="knob-left" class="joystick-knob"></div>
     </div>
-    <div id="fire-button">FIRE</div>
+    <div id="joystick-right" class="joystick-base">
+        <div id="knob-right" class="joystick-knob"></div>
+    </div>
 
     <div id="ui-layer">
         <!-- Ship Comms Window -->
-        <div class="window" style="width: 250px; position: absolute; top: 10px; left: 10px;">
-            <div class="title-bar">
-                <div class="title-bar-text">Ship Comms</div>
-            </div>
+        <div class="window" style="width: 220px; position: absolute; top: 40px; left: 10px;">
+            <div class="title-bar"><div class="title-bar-text">Ship Comms</div></div>
             <div class="window-body">
-                <p>System: Alpha Centauri</p>
-                <p>Time Remaining: <span id="timer">05:00</span></p>
-                <p>Credits: <span id="credits">1000</span></p>
-                <p>Population: <span id="population">0</span></p>
-                <hr>
-                <p>Shields: <span id="shields-val">100</span>%</p>
-                <div class="status-bar" style="width: 100%; height: 10px;">
-                    <div id="shields-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #0000ff;"></div>
-                </div>
-                <p>Hull: <span id="hp-val">100</span>%</p>
-                <div class="status-bar" style="width: 100%; height: 10px;">
-                    <div id="hp-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #00ff00;"></div>
-                </div>
-                <div id="planet-loyalty-container" style="margin-top: 10px;"></div>
+                <p>Shields: <span id="shields-txt">100</span>%</p>
+                <div class="status-bar"><div id="shields-bar" class="status-bar-field" style="width: 100%; background: #000080;"></div></div>
+                <p>Hull: <span id="hull-txt">100</span>%</p>
+                <div class="status-bar"><div id="hull-bar" class="status-bar-field" style="width: 100%; background: #008000;"></div></div>
+                <div id="loyalty-list" style="margin-top: 10px; font-size: 10px;"></div>
             </div>
         </div>
 
-        <!-- Shop Window (Hidden by default) -->
-        <div id="shop-window" class="window" style="width: 250px; position: absolute; top: 10px; right: 10px; display: none;">
-            <div class="title-bar">
-                <div class="title-bar-text">Starbase Shop</div>
-            </div>
+        <!-- Starbase Shop -->
+        <div id="shop-window" class="window" style="width: 250px; position: absolute; top: 40px; right: 10px; display: none;">
+            <div class="title-bar"><div class="title-bar-text">Starbase Shop</div></div>
             <div class="window-body">
-                <p>Upgrade your Path Captain Vessel:</p>
-                <button id="upgrade-speed" style="width: 100%; margin-bottom: 5px;">Thrust +10% (500 Cr)</button>
-                <button id="upgrade-shields" style="width: 100%; margin-bottom: 5px;">Shield Cap +20% (800 Cr)</button>
-                <button id="upgrade-damage" style="width: 100%; margin-bottom: 5px;">Laser Power +15% (1000 Cr)</button>
-                <p style="font-size: 10px; color: #666;">(Orbit Starbase to trade)</p>
+                <button id="up-speed" style="width:100%; margin-bottom:4px;">Thrust Lvl 1 (500 Cr)</button>
+                <button id="up-shields" style="width:100%; margin-bottom:4px;">Shields Lvl 1 (800 Cr)</button>
+                <button id="up-damage" style="width:100%;">Lasers Lvl 1 (1000 Cr)</button>
             </div>
         </div>
 
-        <!-- Game Over Window (Hidden by default) -->
-        <div id="game-over-window" class="window" style="width: 300px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;">
-            <div class="title-bar">
-                <div class="title-bar-text">Mission Debrief</div>
-            </div>
-            <div class="window-body" style="text-align: center;">
-                <h2 id="win-loss-text">MISSION COMPLETE</h2>
-                <p>Final Populations:</p>
-                <p>The Player's Path: <span id="final-pop-player">0</span></p>
-                <p>The Rival's Path: <span id="final-pop-rival">0</span></p>
-                <button onclick="location.reload()">RE-COMMISSION SHIP</button>
+        <!-- Win/Loss -->
+        <div id="end-screen" class="window" style="width: 300px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; text-align: center;">
+            <div class="title-bar"><div class="title-bar-text">Mission End</div></div>
+            <div class="window-body">
+                <h1 id="result-msg">VICTORY</h1>
+                <p>The Galaxy has been unified.</p>
+                <button onclick="location.reload()">New Mission</button>
             </div>
         </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
-
+    <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
     <script type="module">
         import * as THREE from 'three';
 
-        // --- AUDIO ENGINE (8-bit) ---
+        // --- AUDIO ---
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioCtx();
-        function playBlip(freq, duration, type='square') {
+        function sfx(f, d, t='square', ramp=true) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+            if(ramp) o.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + d);
+            g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // --- SCENE SETUP ---
+        // --- SCENE ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-
         const aspect = window.innerWidth / window.innerHeight;
         const viewSize = 1000;
-        const camera = new THREE.OrthographicCamera(
-            -viewSize * aspect / 2, viewSize * aspect / 2,
-            viewSize / 2, -viewSize / 2,
-            0.1, 1000
-        );
+        const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 1000);
         camera.position.z = 10;
-
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- CRT SHADER (Scanlines) ---
+        const scanlineCanvas = document.createElement('canvas');
+        const scanlineCtx = scanlineCanvas.getContext('2d');
+        function updateScanlines() {
+            scanlineCanvas.width = window.innerWidth; scanlineCanvas.height = window.innerHeight;
+            scanlineCtx.fillStyle = 'rgba(18, 16, 16, 0.1)';
+            for (let i = 0; i < scanlineCanvas.height; i += 4) scanlineCtx.fillRect(0, i, scanlineCanvas.width, 2);
+        }
+        updateScanlines();
+        scanlineCanvas.style.position = 'absolute'; scanlineCanvas.style.top = '0'; scanlineCanvas.style.left = '0'; scanlineCanvas.style.pointerEvents = 'none'; scanlineCanvas.style.zIndex = '50';
+        document.body.appendChild(scanlineCanvas);
+        renderer.domElement.style.filter = "contrast(1.2) brightness(1.1)";
 
         // --- GAME OBJECTS ---
+        const shipGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,15,0), new THREE.Vector3(-10,-10,0), new THREE.Vector3(10,-10,0), new THREE.Vector3(0,15,0)]);
+        const shipMat = new THREE.LineBasicMaterial({ color: 0x00ffff });
+        const playerShip = new THREE.LineLoop(shipGeom, shipMat);
+        scene.add(playerShip);
 
-        // Player Ship
-        const shipShape = new THREE.Shape();
-        shipShape.moveTo(0, 15);
-        shipShape.lineTo(-10, -10);
-        shipShape.lineTo(10, -10);
-        shipShape.lineTo(0, 15);
-        const shipGeometry = new THREE.BufferGeometry().setFromPoints(shipShape.getPoints());
-        const shipMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
-        const ship = new THREE.LineLoop(shipGeometry, shipMaterial);
+        const shieldGeom = new THREE.RingGeometry(22, 24, 32);
+        const shieldMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0 });
+        const playerShield = new THREE.Mesh(shieldGeom, shieldMat);
+        playerShip.add(playerShield);
 
-        const initialRotation = Math.atan2(-300, 200);
-        ship.rotation.z = initialRotation;
-        scene.add(ship);
+        const rivalMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        const rivalShip = new THREE.LineLoop(shipGeom, rivalMat);
+        rivalShip.position.set(-400, 400, 0);
+        scene.add(rivalShip);
 
-        // Rival Ship
-        const rivalMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        const rival = new THREE.LineLoop(shipGeometry, rivalMaterial);
-        rival.position.set(-400, 400, 0);
-        scene.add(rival);
-
-        // Starbase
-        const starbaseGeometry = new THREE.TorusGeometry(30, 5, 16, 32);
-        const starbaseMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-        const starbase = new THREE.Mesh(starbaseGeometry, starbaseMaterial);
-        starbase.position.set(0, 0, -2);
+        const starbase = new THREE.Mesh(new THREE.TorusGeometry(35, 4, 16, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
         scene.add(starbase);
 
         // --- STATE ---
-        let gameTime = 300; // 5 minutes
-        let isGameOver = false;
+        const gameState = { time: 300, credits: 1000, pop: 0, over: false };
+        const pState = { vel: new THREE.Vector2(), rot: Math.atan2(-300, 200), thrust: 0.5, hp: 100, sh: 100, shMax: 100, shDelay: 0, dmg: 10, dead: false, upLvl: {s:1, sh:1, d:1} };
+        const rState = { vel: new THREE.Vector2(), rot: 0, hp: 100, dead: false, target: null, flee: 0 };
+        const inputs = { left: { id: null, x: 0, y: 0 }, right: { id: null, active: false, lastFire: 0 } };
+        playerShip.rotation.z = pState.rot;
 
-        const player = {
-            velocity: new THREE.Vector2(0, 0),
-            rotation: initialRotation,
-            thrust: 0.5,
-            friction: 0.98,
-            maxRotationSpeed: 0.08,
-            hp: 100,
-            maxHp: 100,
-            shields: 100,
-            maxShields: 100,
-            flicker: 0,
-            damage: 10,
-            destroyed: false
-        };
-
-        const rivalState = {
-            velocity: new THREE.Vector2(0, 0),
-            rotation: 0,
-            hp: 100,
-            maxHp: 100,
-            flicker: 0,
-            targetPlanet: null,
-            fleeTime: 0,
-            destroyed: false
-        };
-
-        const economy = {
-            credits: 1000,
-            population: 0,
-            taxRate: 0.0001
-        };
-
-        // --- PLANETS ---
+        // --- PLANETS & DRONES ---
         class Planet {
-            constructor(x, y, radius, name) {
-                this.name = name;
-                this.loyalty = 0;
-                this.population = 0;
-                this.owner = 'neutral';
-                this.radius = radius;
-                this.captureRadius = 150;
-
-                const geometry = new THREE.CircleGeometry(radius, 32);
-                const material = new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 });
-                this.mesh = new THREE.Mesh(geometry, material);
+            constructor(x, y, r, name) {
+                this.name=name; this.loyalty=0; this.pop=0; this.owner='neutral'; this.radius=r;
+                this.mesh=new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 }));
                 this.mesh.position.set(x, y, -1);
-                scene.add(this.mesh);
-
-                const borderGeometry = new THREE.RingGeometry(radius, radius + 2, 32);
-                const borderMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
-                this.border = new THREE.Mesh(borderGeometry, borderMaterial);
+                this.border=new THREE.Mesh(new THREE.RingGeometry(r, r+3, 32), new THREE.MeshBasicMaterial({ color: 0x888888 }));
                 this.border.position.set(x, y, -0.9);
-                scene.add(this.border);
+                scene.add(this.mesh); scene.add(this.border);
             }
+            update() {
+                const dP = playerShip.position.distanceTo(this.mesh.position) < this.radius*2 && !pState.dead;
+                const dR = rivalShip.position.distanceTo(this.mesh.position) < this.radius*2 && !rState.dead;
+                if (dP && !dR) { this.loyalty = Math.min(100, this.loyalty + 0.1); if(this.loyalty===100 && this.owner!=='player') this.capture('player'); }
+                else if (dR && !dP) { this.loyalty = Math.max(-100, this.loyalty - 0.1); if(this.loyalty===-100 && this.owner!=='rival') this.capture('rival'); }
 
-            update(shipPos, rivalPos) {
-                const distPlayer = shipPos.distanceTo(this.mesh.position);
-                const distRival = rivalPos.distanceTo(this.mesh.position);
-
-                // Zero-Sum Conflict: Loyalty doesn't move if both are present
-                const playerPresent = distPlayer < this.captureRadius && !player.destroyed;
-                const rivalPresent = distRival < this.captureRadius && !rivalState.destroyed;
-
-                if (playerPresent && !rivalPresent) {
-                    if (this.owner !== 'player') {
-                        this.loyalty += 0.1;
-                        if (this.loyalty >= 100) { this.loyalty = 100; this.capture('player'); }
-                    }
-                } else if (rivalPresent && !playerPresent) {
-                    if (this.owner !== 'rival') {
-                        this.loyalty -= 0.1;
-                        if (this.loyalty <= -100) { this.loyalty = -100; this.capture('rival'); }
-                    }
-                }
-
-                if (this.owner === 'player') this.border.material.color.set(0x00ffff);
-                else if (this.owner === 'rival') this.border.material.color.set(0xff0000);
-                else if (this.loyalty > 0) this.border.material.color.setRGB(0, 0.5, 0.5);
-                else if (this.loyalty < 0) this.border.material.color.setRGB(0.5, 0, 0);
-                else this.border.material.color.set(0x888888);
-
-                if (Math.abs(this.loyalty) > 0) {
-                    if (this.population === 0) this.population = 100;
-                    this.population *= 1.0001;
-                }
+                this.border.material.color.set(this.owner==='player'?0x00ffff:(this.owner==='rival'?0xff0000:(this.loyalty>0?0x004444:(this.loyalty<0?0x440000:0x888888))));
+                if(Math.abs(this.loyalty)>0) { if(this.pop===0) this.pop=100; this.pop *= 1.0001; }
             }
-
-            capture(newOwner) {
-                this.owner = newOwner;
-                if (newOwner === 'player') { this.mesh.material.color.set(0x004444); }
-                else if (newOwner === 'rival') { this.mesh.material.color.set(0x440000); }
-                console.log(`${this.name} captured by ${newOwner}!`);
+            capture(o) {
+                this.owner=o; this.mesh.material.color.set(o==='player'?0x004444:0x440000);
+                sfx(600, 0.3, 'sine', false);
             }
         }
+        const planets = [new Planet(300, 200, 45, "Xylos"), new Planet(-250, -150, 35, "Ygor"), new Planet(100, -300, 55, "Zion")];
 
-        const planets = [
-            new Planet(300, 200, 40, "Xylos"),
-            new Planet(-250, -150, 30, "Ygor"),
-            new Planet(100, -300, 50, "Zion")
-        ];
+        const droneMesh = new THREE.InstancedMesh(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,2,0, -1,-1,0, 1,-1,0]), 3)), new THREE.MeshBasicMaterial({ color: 0xffff00 }), 100);
+        scene.add(droneMesh);
+        const drones = Array.from({length: 100}, () => ({ p: null, a: Math.random()*6.28, dist: 70+Math.random()*30, s: 0.02+Math.random()*0.02, pos: new THREE.Vector3(), state: 'ORBIT' }));
 
-        // --- DRONES ---
-        class DroneManager {
-            constructor(count) {
-                this.count = count;
-                const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,2,0, -1,-1,0, 1,-1,0]), 3));
-                const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                this.mesh = new THREE.InstancedMesh(geometry, material, count);
-                scene.add(this.mesh);
-                this.drones = Array.from({length: count}, () => ({ planet: null, angle: Math.random()*Math.PI*2, distance: 60+Math.random()*40, speed: 0.02+Math.random()*0.02, position: new THREE.Vector3() }));
-            }
-            update(shipPos, rivalPos) {
-                let idx = 0;
-                planets.forEach(p => {
-                    const owner = p.owner;
-                    if (owner === 'neutral') return;
-                    for (let i=0; i<5; i++) {
-                        if (idx >= this.count) break;
-                        const d = this.drones[idx++];
-                        d.planet = p;
-                        d.angle += d.speed;
-                        d.position.set(p.mesh.position.x + Math.cos(d.angle)*d.distance, p.mesh.position.y + Math.sin(d.angle)*d.distance, 0);
-
-                        // Intercept enemies
-                        const enemyPos = (owner === 'player') ? rivalPos : shipPos;
-                        if (enemyPos.distanceTo(p.mesh.position) < 300) {
-                            const chaseDir = new THREE.Vector3().subVectors(enemyPos, d.position).normalize();
-                            d.position.add(chaseDir.multiplyScalar(3));
-                        }
-                        this.mesh.setMatrixAt(idx-1, new THREE.Matrix4().setPosition(d.position));
-                    }
-                });
-                // Hide unassigned drones by scaling them to 0
-                const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
-                for (let i = idx; i < this.count; i++) {
-                    this.mesh.setMatrixAt(i, hideMatrix);
-                }
-                this.mesh.instanceMatrix.needsUpdate = true;
-            }
-        }
-        const droneManager = new DroneManager(50);
-
-        // --- COMBAT & PROJECTILES ---
-        const projectiles = [];
-        const particles = [];
-        function fireProjectile(owner, customShip) {
-            if (customShip.parent === null) return;
-            const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,20,0)]);
-            const mat = new THREE.LineBasicMaterial({ color: owner==='player'?0x00ffff:0xffaaaa });
-            const mesh = new THREE.LineSegments(geom, mat);
-            mesh.position.copy(customShip.position);
-            mesh.rotation.copy(customShip.rotation);
-            projectiles.push({ owner, mesh, velocity: new THREE.Vector2(-Math.sin(customShip.rotation.z)*15, Math.cos(customShip.rotation.z)*15), life: 120 });
-            scene.add(mesh);
-            playBlip(440, 0.1);
+        // --- PROJECTILES & PARTICLES ---
+        const projectiles = [], particles = [];
+        function fire(o, ship, dmg) {
+            if (ship.parent === null) return;
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 10), new THREE.MeshBasicMaterial({ color: o==='player'?0x00ffff:0xffaaaa }));
+            m.position.copy(ship.position); m.rotation.copy(ship.rotation);
+            projectiles.push({ o, m, v: new THREE.Vector2(-Math.sin(ship.rotation.z)*15, Math.cos(ship.rotation.z)*15), life: 100, dmg });
+            scene.add(m); sfx(400, 0.05);
+            // Recoil
+            const rec = new THREE.Vector2(Math.sin(ship.rotation.z)*0.5, -Math.cos(ship.rotation.z)*0.5);
+            if(o==='player') pState.vel.add(rec); else rState.vel.add(rec);
         }
 
-        function createExplosion(x, y, color) {
-            for (let i=0; i<20; i++) {
-                const geom = new THREE.BoxGeometry(2,2,2);
-                const mat = new THREE.MeshBasicMaterial({ color });
-                const mesh = new THREE.Mesh(geom, mat);
-                mesh.position.set(x, y, 0);
-                particles.push({ mesh, velocity: new THREE.Vector2((Math.random()-0.5)*10, (Math.random()-0.5)*10), life: 60 });
-                scene.add(mesh);
+        function explode(x, y, color) {
+            for(let i=0; i<15; i++) {
+                const m = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({ color }));
+                m.position.set(x, y, 0);
+                particles.push({ m, v: new THREE.Vector2((Math.random()-0.5)*12, (Math.random()-0.5)*12), life: 50 });
+                scene.add(m);
             }
-            playBlip(100, 0.5, 'sawtooth');
+            sfx(100, 0.4, 'sawtooth');
         }
 
         // --- CONTROLS ---
-        const keys = {};
-        const touchState = { isThrusting: false, rotation: 0, joystickTouchId: null, joystickCenterX: 0, joystickCenterY: 0 };
-        window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') fireProjectile('player', ship); });
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        const joyL = document.getElementById('joystick-left'), knobL = document.getElementById('knob-left');
+        const joyR = document.getElementById('joystick-right'), knobR = document.getElementById('knob-right');
 
-        const joystick = document.getElementById('joystick-container');
-        const knob = document.getElementById('joystick-knob');
-        const fireBtn = document.getElementById('fire-button');
+        const handleTouch = (e, isStart) => {
+            for(let t of e.changedTouches) {
+                const x = t.clientX, y = t.clientY;
+                if (x < window.innerWidth/2) {
+                    if (isStart) inputs.left.id = t.identifier;
+                    if (t.identifier === inputs.left.id) {
+                        const r = joyL.getBoundingClientRect(), dx = x-(r.left+60), dy = y-(r.top+60), d = Math.sqrt(dx*dx+dy*dy), m = Math.min(d, 50);
+                        const cDx = (dx/d)*m, cDy = (dy/d)*m;
+                        knobL.style.transform = `translate(calc(-50% + ${cDx}px), calc(-50% + ${cDy}px))`;
+                        // Deadzone 10% (5px of 50px)
+                        inputs.left.x = Math.abs(cDx) > 5 ? cDx/50 : 0;
+                        inputs.left.y = Math.abs(cDy) > 5 ? cDy/50 : 0;
+                    }
+                } else {
+                    if (isStart) { inputs.right.id = t.identifier; inputs.right.active = true; fire('player', playerShip, pState.dmg); }
+                }
+            }
+        };
+        const endTouch = (e) => {
+            for(let t of e.changedTouches) {
+                if(t.identifier === inputs.left.id) { inputs.left.id=null; inputs.left.x=0; inputs.left.y=0; knobL.style.transform='translate(-50%,-50%)'; }
+                if(t.identifier === inputs.right.id) { inputs.right.id=null; inputs.right.active=false; }
+            }
+        };
+        window.addEventListener('touchstart', e => handleTouch(e, true), {passive:false});
+        window.addEventListener('touchmove', e => handleTouch(e, false), {passive:false});
+        window.addEventListener('touchend', endTouch);
 
-        joystick.addEventListener('touchstart', e => { const t = e.changedTouches[0]; touchState.joystickTouchId = t.identifier; const r = joystick.getBoundingClientRect(); touchState.joystickCenterX = r.left + r.width/2; touchState.joystickCenterY = r.top + r.height/2; }, {passive:false});
-        window.addEventListener('touchmove', e => { for (let t of e.changedTouches) { if (t.identifier === touchState.joystickTouchId) { e.preventDefault(); const dx = t.clientX - touchState.joystickCenterX, dy = t.clientY - touchState.joystickCenterY, dist = Math.sqrt(dx*dx+dy*dy), max = 60; const cDx = (dx/dist)*Math.min(dist,max), cDy = (dy/dist)*Math.min(dist,max); knob.style.transform = `translate(calc(-50% + ${cDx}px), calc(-50% + ${cDy}px))`; touchState.rotation = -cDx/max; touchState.isThrusting = cDy < -20; } } }, {passive:false});
-        window.addEventListener('touchend', e => { for (let t of e.changedTouches) { if (t.identifier === touchState.joystickTouchId) { touchState.joystickTouchId = null; touchState.rotation = 0; touchState.isThrusting = false; knob.style.transform = 'translate(-50%, -50%)'; } } }, {passive:false});
-        fireBtn.addEventListener('touchstart', e => { e.preventDefault(); fireProjectile('player', ship); fireBtn.style.background = 'rgba(255, 0, 0, 0.6)'; }, {passive:false});
-        fireBtn.addEventListener('touchend', () => fireBtn.style.background = 'rgba(255, 0, 0, 0.3)');
+        // --- SHOP & UI ---
+        const loyaltyList = document.getElementById('loyalty-list');
+        planets.forEach(p => { const d = document.createElement('div'); d.innerHTML = `<div>${p.name}</div><div class="status-bar"><div id="loy-${p.name}" class="status-bar-field" style="width:0%; background:#000080;"></div></div>`; loyaltyList.appendChild(d); });
 
-        // --- UI & SHOP ---
-        const loyaltyContainer = document.getElementById('planet-loyalty-container');
-        planets.forEach(p => { const div = document.createElement('div'); div.style.marginBottom = '10px'; div.innerHTML = `<div style="font-size: 10px;">${p.name}</div><div class="status-bar" style="width: 100%; height: 10px;"><div id="loyalty-${p.name}" class="status-bar-field" style="width: 0%; height: 100%; background: #000080;"></div></div>`; loyaltyContainer.appendChild(div); });
+        const buy = (id, cost, level, nextCost, key, factor) => {
+            const btn = document.getElementById(id);
+            btn.onclick = () => {
+                if(gameState.credits >= cost) {
+                    gameState.credits -= cost; pState.upLvl[key]++;
+                    const nCost = Math.floor(cost * 1.5);
+                    btn.innerText = `${btn.innerText.split('(')[0]}Lvl ${pState.upLvl[key]} (${nCost} Cr)`;
+                    if(key==='s') pState.thrust *= 1.2;
+                    if(key==='sh') { pState.shMax += 50; pState.sh = pState.shMax; }
+                    if(key==='d') pState.dmg += 10;
+                    sfx(800, 0.1, 'sine', false);
+                }
+            };
+        };
+        buy('up-speed', 500, 1, 750, 's'); buy('up-shields', 800, 1, 1200, 'sh'); buy('up-damage', 1000, 1, 1500, 'd');
 
-        document.getElementById('upgrade-speed').onclick = () => { if (economy.credits >= 500) { economy.credits -= 500; player.thrust *= 1.1; playBlip(880, 0.1); } };
-        document.getElementById('upgrade-shields').onclick = () => { if (economy.credits >= 800) { economy.credits -= 800; player.maxShields += 20; player.shields = player.maxShields; playBlip(880, 0.1); } };
-        document.getElementById('upgrade-damage').onclick = () => { if (economy.credits >= 1000) { economy.credits -= 1000; player.damage += 5; playBlip(880, 0.1); } };
+        setInterval(() => {
+            if(gameState.over) return; gameState.time--;
+            if(gameState.time<=0) { gameState.over=true; document.getElementById('end-screen').style.display='block'; }
+            const m=Math.floor(gameState.time/60), s=gameState.time%60; document.getElementById('timer').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }, 1000);
 
-        setInterval(() => { if (isGameOver) return; gameTime--; if (gameTime <= 0) endGame(); const m = Math.floor(gameTime/60), s = gameTime%60; document.getElementById('timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }, 1000);
+        // --- LOOP ---
+        function loop() {
+            requestAnimationFrame(loop);
+            if(gameState.over) return;
 
-        function endGame() {
-            isGameOver = true;
-            document.getElementById('game-over-window').style.display = 'block';
-            let playerPop = 0, rivalPop = 0;
-            planets.forEach(p => { if (p.owner === 'player') playerPop += p.population; else if (p.owner === 'rival') rivalPop += p.population; });
-            document.getElementById('final-pop-player').innerText = Math.floor(playerPop);
-            document.getElementById('final-pop-rival').innerText = Math.floor(rivalPop);
-            document.getElementById('win-loss-text').innerText = playerPop > rivalPop ? "VICTORY ACHIEVED" : "PATH DEFEATED";
-        }
-
-        // --- GAME LOOP ---
-        function animate() {
-            requestAnimationFrame(animate);
-            if (isGameOver) return;
-
-            // Player Physics
-            if (!player.destroyed) {
-                if (keys['KeyA']) player.rotation += player.maxRotationSpeed;
-                if (keys['KeyD']) player.rotation -= player.maxRotationSpeed;
-                if (Math.abs(touchState.rotation) > 0.1) player.rotation += touchState.rotation * player.maxRotationSpeed * 2;
-                ship.rotation.z = player.rotation;
-                if (keys['KeyW'] || touchState.isThrusting) { player.velocity.x -= Math.sin(player.rotation) * player.thrust; player.velocity.y += Math.cos(player.rotation) * player.thrust; }
-                player.velocity.multiplyScalar(player.friction);
-                ship.position.x += player.velocity.x; ship.position.y += player.velocity.y;
+            // Physics (Snappy Rotation 360/s = ~0.1 rad/frame)
+            if(!pState.dead) {
+                if(Math.abs(inputs.left.x)>0) pState.rot -= inputs.left.x * 0.15;
+                playerShip.rotation.z = pState.rot;
+                if(inputs.left.y < -0.2) { pState.vel.x -= Math.sin(pState.rot)*pState.thrust; pState.vel.y += Math.cos(pState.rot)*pState.thrust; }
+                pState.vel.multiplyScalar(0.98);
+                playerShip.position.x += pState.vel.x; playerShip.position.y += pState.vel.y;
+                if(inputs.right.active && Date.now()-inputs.right.lastFire > 200) { fire('player', playerShip, pState.dmg); inputs.right.lastFire = Date.now(); }
             }
 
             // Rival AI
-            if (!rivalState.destroyed) {
-                if (rivalState.fleeTime > 0) {
-                    rivalState.fleeTime--;
-                    const flee = new THREE.Vector2().subVectors(rival.position, ship.position).normalize();
-                    rivalState.velocity.add(flee.multiplyScalar(0.4));
-                    rival.rotation.z = Math.atan2(-flee.x, flee.y);
-                } else {
-                    if (!rivalState.targetPlanet || rivalState.targetPlanet.owner === 'rival') rivalState.targetPlanet = planets.find(p => p.owner !== 'rival');
-                    if (rivalState.targetPlanet) {
-                        const seek = new THREE.Vector2().subVectors(rivalState.targetPlanet.mesh.position, rival.position).normalize();
-                        rivalState.velocity.add(seek.multiplyScalar(0.3));
-                        rival.rotation.z = Math.atan2(-seek.x, seek.y);
-                    }
+            if(!rState.dead) {
+                if(rState.flee > 0) { rState.flee--; const f = new THREE.Vector2().subVectors(rivalShip.position, playerShip.position).normalize(); rState.vel.add(f.multiplyScalar(0.4)); }
+                else {
+                    if(!rState.target || rState.target.owner==='rival') rState.target = planets.find(p=>p.owner!=='rival');
+                    if(rState.target) { const s = new THREE.Vector2().subVectors(rState.target.mesh.position, rivalShip.position).normalize(); rState.vel.add(s.multiplyScalar(0.3)); rivalShip.rotation.z = Math.atan2(-s.x, s.y); }
                 }
-                rivalState.velocity.multiplyScalar(0.98);
-                rival.position.x += rivalState.velocity.x; rival.position.y += rivalState.velocity.y;
-                if (Math.random() < 0.01 && rival.position.distanceTo(ship.position) < 400) fireProjectile('rival', rival);
+                rState.vel.multiplyScalar(0.98); rivalShip.position.x += rState.vel.x; rivalShip.position.y += rState.vel.y;
+                if(Math.random()<0.01 && rivalShip.position.distanceTo(playerShip.position)<400) fire('rival', rivalShip, 10);
             }
 
-            // Update Systems
-            droneManager.update(ship.position, rival.position);
+            // Update Objects
             let totalPop = 0;
             planets.forEach(p => {
-                const oldLoyalty = p.loyalty;
-                p.update(ship.position, rival.position);
-                if (p.owner === 'player') totalPop += p.population;
-                if (p.loyalty > oldLoyalty && p.owner !== 'player' && ship.position.distanceTo(p.mesh.position) < p.captureRadius) economy.credits -= 0.2;
-                const bar = document.getElementById(`loyalty-${p.name}`);
-                if (bar) { bar.style.width = `${Math.abs(p.loyalty)}%`; bar.style.background = p.loyalty > 0 ? '#000080' : '#800000'; }
+                p.update(); totalPop += (p.owner==='player'?p.pop:0);
+                const b = document.getElementById(`loy-${p.name}`);
+                b.style.width = `${Math.abs(p.loyalty)}%`; b.style.background = p.loyalty > 0 ? '#000080' : '#800000';
             });
-            economy.population = totalPop;
-            economy.credits += totalPop * economy.taxRate;
-            document.getElementById('credits').innerText = Math.floor(economy.credits);
-            document.getElementById('population').innerText = Math.floor(economy.population);
+            gameState.pop = totalPop; gameState.credits += totalPop * 0.0001;
+            document.getElementById('cr-val').innerText = Math.floor(gameState.credits);
+            document.getElementById('pop-val').innerText = Math.floor(gameState.pop);
+            document.getElementById('shields-txt').innerText = Math.floor(pState.sh);
+            document.getElementById('shields-bar').style.width = `${(pState.sh/pState.shMax)*100}%`;
+            document.getElementById('hull-txt').innerText = Math.floor(pState.hp);
+            document.getElementById('hull-bar').style.width = `${pState.hp}%`;
+            document.getElementById('shop-window').style.display = playerShip.position.distanceTo(starbase.position)<150 ? 'block' : 'none';
 
-            // Starbase Shop Trigger
-            document.getElementById('shop-window').style.display = ship.position.distanceTo(starbase.position) < 150 ? 'block' : 'none';
-
-            // Particles
-            for (let i=particles.length-1; i>=0; i--) {
-                const p = particles[i]; p.mesh.position.x += p.velocity.x; p.mesh.position.y += p.velocity.y; p.life--;
-                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i,1); }
-            }
+            // Drones
+            let dIdx = 0;
+            planets.forEach(p => {
+                if(p.owner==='neutral') return;
+                for(let i=0; i<5; i++) {
+                    const d = drones[dIdx++]; d.p = p; d.a += d.s;
+                    const oX = p.mesh.position.x + Math.cos(d.a)*d.dist, oY = p.mesh.position.y + Math.sin(d.a)*d.dist;
+                    d.pos.set(oX, oY, 0);
+                    const enemy = (p.owner==='player'?rivalShip:playerShip);
+                    const enemyState = (p.owner==='player'?rState:pState);
+                    if(!enemyState.dead && enemy.position.distanceTo(p.mesh.position)<300) {
+                        d.pos.add(new THREE.Vector3().subVectors(enemy.position, d.pos).normalize().multiplyScalar(4));
+                        // Papercut damage
+                        if(d.pos.distanceTo(enemy.position) < 20) {
+                            if(enemyState.sh > 0) enemyState.sh -= 0.1; else enemyState.hp -= 0.1;
+                        }
+                    }
+                    droneMesh.setMatrixAt(dIdx-1, new THREE.Matrix4().setPosition(d.pos));
+                }
+            });
+            droneMesh.instanceMatrix.needsUpdate = true;
 
             // Projectiles
-            for (let i=projectiles.length-1; i>=0; i--) {
-                const pr = projectiles[i]; pr.mesh.position.x += pr.velocity.x; pr.mesh.position.y += pr.velocity.y; pr.life--;
+            for(let i=projectiles.length-1; i>=0; i--) {
+                const pr = projectiles[i]; pr.m.position.x += pr.v.x; pr.m.position.y += pr.v.y; pr.life--;
                 let hit = false;
-                if (pr.owner === 'rival' && !player.destroyed && pr.mesh.position.distanceTo(ship.position) < 20) {
-                    player.shields -= 10; if (player.shields < 0) { player.hp += player.shields; player.shields = 0; }
-                    player.flicker = 2; hit = true; playBlip(220, 0.1, 'sawtooth');
-                    if (player.hp <= 0) { player.destroyed = true; createExplosion(ship.position.x, ship.position.y, 0x00ffff); scene.remove(ship); setTimeout(endGame, 2000); }
-                } else if (pr.owner === 'player' && !rivalState.destroyed && pr.mesh.position.distanceTo(rival.position) < 20) {
-                    rivalState.hp -= player.damage; rivalState.flicker = 2; rivalState.fleeTime = 180; hit = true; playBlip(220, 0.1, 'sawtooth');
-                    if (rivalState.hp <= 0) { rivalState.destroyed = true; createExplosion(rival.position.x, rival.position.y, 0xff0000); scene.remove(rival); }
+                if(pr.o==='rival' && !pState.dead && pr.m.position.distanceTo(playerShip.position)<25) {
+                    if(pState.sh > 0) { pState.sh -= pr.dmg; playerShield.material.opacity = 0.8; } else { pState.hp -= pr.dmg; }
+                    pState.shDelay = 180; hit = true; sfx(200, 0.1, 'sawtooth');
+                    if(pState.hp <= 0) { pState.dead=true; explode(playerShip.position.x, playerShip.position.y, 0x00ffff); scene.remove(playerShip); setTimeout(()=> {gameState.over=true; document.getElementById('end-screen').style.display='block'; document.getElementById('result-msg').innerText='PATH TERMINATED';}, 2000); }
+                } else if(pr.o==='player' && !rState.dead && pr.m.position.distanceTo(rivalShip.position)<25) {
+                    rState.hp -= pr.dmg; rState.flee = 180; hit = true; sfx(200, 0.1, 'sawtooth');
+                    if(rState.hp <= 0) { rState.dead=true; explode(rivalShip.position.x, rivalShip.position.y, 0xff0000); scene.remove(rivalShip); }
                 }
-                if (pr.life <= 0 || hit) { scene.remove(pr.mesh); projectiles.splice(i,1); }
+                if(pr.life<=0 || hit) { scene.remove(pr.m); pr.m.geometry.dispose(); projectiles.splice(i, 1); }
+            }
+            if(pState.shDelay > 0) pState.shDelay--; else pState.sh = Math.min(pState.shMax, pState.sh + 0.1);
+            playerShield.material.opacity = Math.max(0, playerShield.material.opacity - 0.05);
+
+            // Particles
+            for(let i=particles.length-1; i>=0; i--) {
+                const pt = particles[i]; pt.m.position.x += pt.v.x; pt.m.position.y += pt.v.y; pt.life--;
+                if(pt.life<=0) { scene.remove(pt.m); pt.m.geometry.dispose(); particles.splice(i, 1); }
             }
 
-            // VFX
-            if (player.flicker > 0) { ship.material.color.set(0xffffff); player.flicker--; } else { ship.material.color.set(0x00ffff); player.shields = Math.min(player.maxShields, player.shields + 0.05); }
-            if (rivalState.flicker > 0) { rival.material.color.set(0xffffff); rivalState.flicker--; } else { rival.material.color.set(0xff0000); }
-
-            document.getElementById('shields-val').innerText = Math.floor(player.shields);
-            document.getElementById('shields-bar').style.width = `${(player.shields/player.maxShields)*100}%`;
-            document.getElementById('hp-val').innerText = Math.floor(player.hp);
-            document.getElementById('hp-bar').style.width = `${player.hp}%`;
-
             renderer.render(scene, camera);
+            scanlineCtx.drawImage(renderer.domElement, 0, 0); // Not efficient but works for "Vibe"
         }
-        window.addEventListener('resize', () => { const a = window.innerWidth / window.innerHeight; camera.left = -viewSize*a/2; camera.right = viewSize*a/2; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-        animate();
+        loop();
+        window.addEventListener('resize', () => { const a = window.innerWidth / window.innerHeight; camera.left = -viewSize*a/2; camera.right = viewSize*a/2; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); updateScanlines(); });
     </script>
 </body>
 </html>
