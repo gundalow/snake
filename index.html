@@ -193,8 +193,13 @@
         const scene = new THREE.Scene();
         const getSidebarW = () => window.innerWidth < 600 ? 50 : 70;
         const aspect = (window.innerWidth - getSidebarW()) / window.innerHeight;
-        const viewSize = 1000;
-        const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 2000);
+        const viewSize = 1200;
+        function getCameraBounds(a) {
+            if (a > 1) return { l: -viewSize * a / 2, r: viewSize * a / 2, t: viewSize / 2, b: -viewSize / 2 };
+            else return { l: -viewSize / 2, r: viewSize / 2, t: (viewSize / a) / 2, b: -(viewSize / a) / 2 };
+        }
+        const bounds = getCameraBounds(aspect);
+        const camera = new THREE.OrthographicCamera(bounds.l, bounds.r, bounds.t, bounds.b, 0.1, 2000);
         camera.position.set(0, 0, 1000);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -306,9 +311,9 @@
             return p;
         }
 
-        createPlanet(800, 600, 60, "Xylos");
-        createPlanet(-1000, -800, 50, "Ygor");
-        createPlanet(2000, -500, 70, "Zion");
+        createPlanet(400, 400, 60, "Xylos");
+        createPlanet(-400, 300, 50, "Ygor");
+        createPlanet(100, -500, 70, "Zion");
         createPlanet(0, 0, 80, "Home");
 
         // --- UI LOGIC ---
@@ -903,7 +908,8 @@
         window.addEventListener('resize', () => {
             const sidebarW = getSidebarW();
             const a = (window.innerWidth - sidebarW) / window.innerHeight;
-            camera.left = -viewSize*a/2; camera.right = viewSize*a/2;
+            const b = getCameraBounds(a);
+            camera.left = b.l; camera.right = b.r; camera.top = b.t; camera.bottom = b.b;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth - sidebarW, window.innerHeight);
         });
