@@ -11,6 +11,7 @@
             overflow: hidden;
             background-color: #000;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
         }
         #ticker-container {
             position: absolute;
@@ -87,7 +88,13 @@
             font-weight: bold;
             pointer-events: auto;
             z-index: 30;
-            user-select: none;
+        }
+        .status-bar {
+            display: block !important;
+        }
+        .status-bar-field {
+            display: block !important;
+            flex-grow: 0 !important;
         }
     </style>
 </head>
@@ -99,31 +106,56 @@
         <div id="joystick-knob"></div>
     </div>
     <div id="fire-button">FIRE</div>
+
     <div id="ui-layer">
-        <div class="window" style="width: 300px; position: absolute; top: 10px; left: 10px;">
+        <!-- Ship Comms Window -->
+        <div class="window" style="width: 250px; position: absolute; top: 10px; left: 10px;">
             <div class="title-bar">
                 <div class="title-bar-text">Ship Comms</div>
-                <div class="title-bar-controls">
-                    <button aria-label="Minimize"></button>
-                    <button aria-label="Maximize"></button>
-                    <button aria-label="Close"></button>
-                </div>
             </div>
             <div class="window-body">
                 <p>System: Alpha Centauri</p>
+                <p>Time Remaining: <span id="timer">05:00</span></p>
                 <p>Credits: <span id="credits">1000</span></p>
                 <p>Population: <span id="population">0</span></p>
+                <hr>
                 <p>Shields: <span id="shields-val">100</span>%</p>
-                <div class="status-bar" style="width: 100%; height: 10px; margin-bottom: 10px;">
+                <div class="status-bar" style="width: 100%; height: 10px;">
                     <div id="shields-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #0000ff;"></div>
                 </div>
                 <p>Hull: <span id="hp-val">100</span>%</p>
-                <div class="status-bar" style="width: 100%; height: 10px; margin-bottom: 10px;">
+                <div class="status-bar" style="width: 100%; height: 10px;">
                     <div id="hp-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #00ff00;"></div>
                 </div>
-                <div id="planet-loyalty-container">
-                    <!-- Loyalty bars will be injected here -->
-                </div>
+                <div id="planet-loyalty-container" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Shop Window (Hidden by default) -->
+        <div id="shop-window" class="window" style="width: 250px; position: absolute; top: 10px; right: 10px; display: none;">
+            <div class="title-bar">
+                <div class="title-bar-text">Starbase Shop</div>
+            </div>
+            <div class="window-body">
+                <p>Upgrade your Path Captain Vessel:</p>
+                <button id="upgrade-speed" style="width: 100%; margin-bottom: 5px;">Thrust +10% (500 Cr)</button>
+                <button id="upgrade-shields" style="width: 100%; margin-bottom: 5px;">Shield Cap +20% (800 Cr)</button>
+                <button id="upgrade-damage" style="width: 100%; margin-bottom: 5px;">Laser Power +15% (1000 Cr)</button>
+                <p style="font-size: 10px; color: #666;">(Orbit Starbase to trade)</p>
+            </div>
+        </div>
+
+        <!-- Game Over Window (Hidden by default) -->
+        <div id="game-over-window" class="window" style="width: 300px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;">
+            <div class="title-bar">
+                <div class="title-bar-text">Mission Debrief</div>
+            </div>
+            <div class="window-body" style="text-align: center;">
+                <h2 id="win-loss-text">MISSION COMPLETE</h2>
+                <p>Final Populations:</p>
+                <p>The Player's Path: <span id="final-pop-player">0</span></p>
+                <p>The Rival's Path: <span id="final-pop-rival">0</span></p>
+                <button onclick="location.reload()">RE-COMMISSION SHIP</button>
             </div>
         </div>
     </div>
@@ -139,11 +171,28 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // Scene Setup
+        // --- AUDIO ENGINE (8-bit) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioCtx();
+        function playBlip(freq, duration, type='square') {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
 
-        // Camera Setup
         const aspect = window.innerWidth / window.innerHeight;
         const viewSize = 1000;
         const camera = new THREE.OrthographicCamera(
@@ -157,240 +206,39 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // --- GAME OBJECTS ---
+
         // Player Ship
         const shipShape = new THREE.Shape();
         shipShape.moveTo(0, 15);
         shipShape.lineTo(-10, -10);
         shipShape.lineTo(10, -10);
         shipShape.lineTo(0, 15);
-
         const shipGeometry = new THREE.BufferGeometry().setFromPoints(shipShape.getPoints());
         const shipMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
         const ship = new THREE.LineLoop(shipGeometry, shipMaterial);
 
-        // Initial Rotation to face Xylos (300, 200)
         const initialRotation = Math.atan2(-300, 200);
         ship.rotation.z = initialRotation;
-
         scene.add(ship);
 
         // Rival Ship
-        const rivalShape = new THREE.Shape();
-        rivalShape.moveTo(0, 15);
-        rivalShape.lineTo(-10, -10);
-        rivalShape.lineTo(10, -10);
-        rivalShape.lineTo(0, 15);
-        const rivalGeometry = new THREE.BufferGeometry().setFromPoints(rivalShape.getPoints());
         const rivalMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        const rival = new THREE.LineLoop(rivalGeometry, rivalMaterial);
+        const rival = new THREE.LineLoop(shipGeometry, rivalMaterial);
         rival.position.set(-400, 400, 0);
         scene.add(rival);
 
-        const rivalState = {
-            velocity: new THREE.Vector2(0, 0),
-            rotation: 0,
-            hp: 100,
-            maxHp: 100,
-            flicker: 0,
-            targetPlanet: null,
-            fleeTime: 0
-        };
+        // Starbase
+        const starbaseGeometry = new THREE.TorusGeometry(30, 5, 16, 32);
+        const starbaseMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+        const starbase = new THREE.Mesh(starbaseGeometry, starbaseMaterial);
+        starbase.position.set(0, 0, -2);
+        scene.add(starbase);
 
-        // Planets
-        class Planet {
-            constructor(x, y, radius, name) {
-                this.name = name;
-                this.loyalty = 0; // -100 to 100
-                this.population = 0;
-                this.owner = 'neutral'; // 'neutral', 'player', 'rival'
-                this.radius = radius;
-                this.captureRadius = 150;
+        // --- STATE ---
+        let gameTime = 300; // 5 minutes
+        let isGameOver = false;
 
-                const geometry = new THREE.CircleGeometry(radius, 32);
-                const material = new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 });
-                this.mesh = new THREE.Mesh(geometry, material);
-                this.mesh.position.set(x, y, -1);
-                scene.add(this.mesh);
-
-                // Border
-                const borderGeometry = new THREE.RingGeometry(radius, radius + 2, 32);
-                const borderMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
-                this.border = new THREE.Mesh(borderGeometry, borderMaterial);
-                this.border.position.set(x, y, -0.9);
-                scene.add(this.border);
-            }
-
-            update(shipPos) {
-                const dist = shipPos.distanceTo(this.mesh.position);
-
-                // Loyalty Logic
-                if (dist < this.captureRadius) {
-                    if (this.owner !== 'player') {
-                        this.loyalty += 0.1; // Shift toward player
-                        if (this.loyalty >= 100) {
-                            this.loyalty = 100;
-                            this.capture('player');
-                        }
-                    }
-                }
-
-                // Visuals based on owner
-                if (this.owner === 'player') {
-                    this.border.material.color.set(0x00ffff);
-                } else if (this.owner === 'rival') {
-                    this.border.material.color.set(0xff0000);
-                } else if (this.loyalty > 0) {
-                    const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 0.8;
-                    this.border.material.color.setRGB(0, 0.5 * pulse, 0.5 * pulse);
-                } else if (this.loyalty < 0) {
-                    const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 0.8;
-                    this.border.material.color.setRGB(0.5 * pulse, 0, 0);
-                } else {
-                    this.border.material.color.set(0x888888);
-                }
-
-                // Population Growth
-                if (this.loyalty > 0) {
-                    if (this.population === 0) this.population = 100; // Initial seed
-                    this.population *= 1.0001; // Growth per frame
-                }
-            }
-
-            capture(newOwner) {
-                this.owner = newOwner;
-                if (newOwner === 'player') {
-                    this.mesh.material.color.set(0x004444);
-                    this.border.material.color.set(0x00ffff);
-                } else if (newOwner === 'rival') {
-                    this.mesh.material.color.set(0x440000);
-                    this.border.material.color.set(0xff0000);
-                }
-                console.log(`${this.name} captured by ${newOwner}!`);
-            }
-        }
-
-        const planets = [
-            new Planet(300, 200, 40, "Xylos"),
-            new Planet(-250, -150, 30, "Ygor"),
-            new Planet(100, -300, 50, "Zion")
-        ];
-
-        // Drone Manager
-        class DroneManager {
-            constructor(count) {
-                this.count = count;
-                const geometry = new THREE.BufferGeometry();
-                const vertices = new Float32Array([
-                    0, 2, 0,
-                    -1, -1, 0,
-                    1, -1, 0
-                ]);
-                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-                const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                this.mesh = new THREE.InstancedMesh(geometry, material, count);
-                scene.add(this.mesh);
-
-                this.drones = [];
-                for (let i = 0; i < count; i++) {
-                    this.drones.push({
-                        planet: null,
-                        angle: Math.random() * Math.PI * 2,
-                        distance: 60 + Math.random() * 40,
-                        speed: 0.02 + Math.random() * 0.02,
-                        position: new THREE.Vector3()
-                    });
-                }
-            }
-
-            update(shipPos) {
-                let droneIdx = 0;
-                planets.forEach(p => {
-                    if (p.owner === 'player') {
-                        // Assign 5 drones to this planet if not already assigned
-                        let assignedCount = 0;
-                        for (let i = 0; i < this.count && assignedCount < 5; i++) {
-                            const d = this.drones[i];
-                            if (d.planet === null || d.planet === p) {
-                                d.planet = p;
-                                assignedCount++;
-
-                                // Orbit logic
-                                d.angle += d.speed;
-                                const targetX = p.mesh.position.x + Math.cos(d.angle) * d.distance;
-                                const targetY = p.mesh.position.y + Math.sin(d.angle) * d.distance;
-
-                                d.position.set(targetX, targetY, 0);
-
-                                // Intercept logic
-                                const distToShip = shipPos.distanceTo(p.mesh.position);
-                                if (distToShip < 300) {
-                                    const dirToShip = new THREE.Vector3().subVectors(shipPos, d.position).normalize();
-                                    d.position.add(dirToShip.multiplyScalar(3));
-                                }
-
-                                const matrix = new THREE.Matrix4();
-                                matrix.setPosition(d.position);
-                                this.mesh.setMatrixAt(i, matrix);
-                            }
-                        }
-                    }
-                });
-                this.mesh.instanceMatrix.needsUpdate = true;
-            }
-        }
-
-        const droneManager = new DroneManager(100);
-
-        // Initialize UI Loyalty Bars
-        const loyaltyContainer = document.getElementById('planet-loyalty-container');
-        planets.forEach(p => {
-            const div = document.createElement('div');
-            div.style.marginBottom = '10px';
-            div.innerHTML = `
-                <div style="font-size: 10px;">${p.name}</div>
-                <div class="status-bar" style="width: 100%; height: 15px;">
-                    <div id="loyalty-${p.name}" class="status-bar-field" style="width: 0%; height: 100%; background: #000080;"></div>
-                </div>
-            `;
-            loyaltyContainer.appendChild(div);
-        });
-
-        // Economy State
-        const economy = {
-            credits: 1000,
-            population: 0,
-            taxRate: 0.0001
-        };
-
-        // Projectiles
-        const projectiles = [];
-        function fireProjectile(owner = 'player', customShip = ship) {
-            const points = [
-                new THREE.Vector3(0, 0, 0),
-                new THREE.Vector3(0, 20, 0)
-            ];
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: owner === 'player' ? 0xffffff : 0xffaaaa });
-            const projectile = new THREE.LineSegments(geometry, material);
-
-            projectile.position.copy(customShip.position);
-            projectile.rotation.copy(customShip.rotation);
-
-            const velocity = new THREE.Vector2(
-                -Math.sin(customShip.rotation.z) * 15,
-                Math.cos(customShip.rotation.z) * 15
-            );
-
-            projectiles.push({
-                owner: owner,
-                mesh: projectile,
-                velocity: velocity,
-                life: 120 // 2 seconds at 60fps
-            });
-            scene.add(projectile);
-        }
-
-        // Movement & Combat State
         const player = {
             velocity: new THREE.Vector2(0, 0),
             rotation: initialRotation,
@@ -401,242 +249,289 @@
             maxHp: 100,
             shields: 100,
             maxShields: 100,
-            flicker: 0
+            flicker: 0,
+            damage: 10,
+            destroyed: false
         };
 
-        const keys = {};
-        const touchState = {
-            isThrusting: false,
+        const rivalState = {
+            velocity: new THREE.Vector2(0, 0),
             rotation: 0,
-            joystickTouchId: null,
-            joystickCenterX: 0,
-            joystickCenterY: 0
+            hp: 100,
+            maxHp: 100,
+            flicker: 0,
+            targetPlanet: null,
+            fleeTime: 0,
+            destroyed: false
         };
 
-        window.addEventListener('keydown', (e) => {
-            keys[e.code] = true;
-            if (e.code === 'Space') fireProjectile();
-        });
-        window.addEventListener('keyup', (e) => keys[e.code] = false);
+        const economy = {
+            credits: 1000,
+            population: 0,
+            taxRate: 0.0001
+        };
 
-        // Virtual Joystick Logic
+        // --- PLANETS ---
+        class Planet {
+            constructor(x, y, radius, name) {
+                this.name = name;
+                this.loyalty = 0;
+                this.population = 0;
+                this.owner = 'neutral';
+                this.radius = radius;
+                this.captureRadius = 150;
+
+                const geometry = new THREE.CircleGeometry(radius, 32);
+                const material = new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 });
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.set(x, y, -1);
+                scene.add(this.mesh);
+
+                const borderGeometry = new THREE.RingGeometry(radius, radius + 2, 32);
+                const borderMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
+                this.border = new THREE.Mesh(borderGeometry, borderMaterial);
+                this.border.position.set(x, y, -0.9);
+                scene.add(this.border);
+            }
+
+            update(shipPos, rivalPos) {
+                const distPlayer = shipPos.distanceTo(this.mesh.position);
+                const distRival = rivalPos.distanceTo(this.mesh.position);
+
+                // Zero-Sum Conflict: Loyalty doesn't move if both are present
+                const playerPresent = distPlayer < this.captureRadius && !player.destroyed;
+                const rivalPresent = distRival < this.captureRadius && !rivalState.destroyed;
+
+                if (playerPresent && !rivalPresent) {
+                    if (this.owner !== 'player') {
+                        this.loyalty += 0.1;
+                        if (this.loyalty >= 100) { this.loyalty = 100; this.capture('player'); }
+                    }
+                } else if (rivalPresent && !playerPresent) {
+                    if (this.owner !== 'rival') {
+                        this.loyalty -= 0.1;
+                        if (this.loyalty <= -100) { this.loyalty = -100; this.capture('rival'); }
+                    }
+                }
+
+                if (this.owner === 'player') this.border.material.color.set(0x00ffff);
+                else if (this.owner === 'rival') this.border.material.color.set(0xff0000);
+                else if (this.loyalty > 0) this.border.material.color.setRGB(0, 0.5, 0.5);
+                else if (this.loyalty < 0) this.border.material.color.setRGB(0.5, 0, 0);
+                else this.border.material.color.set(0x888888);
+
+                if (Math.abs(this.loyalty) > 0) {
+                    if (this.population === 0) this.population = 100;
+                    this.population *= 1.0001;
+                }
+            }
+
+            capture(newOwner) {
+                this.owner = newOwner;
+                if (newOwner === 'player') { this.mesh.material.color.set(0x004444); }
+                else if (newOwner === 'rival') { this.mesh.material.color.set(0x440000); }
+                console.log(`${this.name} captured by ${newOwner}!`);
+            }
+        }
+
+        const planets = [
+            new Planet(300, 200, 40, "Xylos"),
+            new Planet(-250, -150, 30, "Ygor"),
+            new Planet(100, -300, 50, "Zion")
+        ];
+
+        // --- DRONES ---
+        class DroneManager {
+            constructor(count) {
+                this.count = count;
+                const geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,2,0, -1,-1,0, 1,-1,0]), 3));
+                const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                this.mesh = new THREE.InstancedMesh(geometry, material, count);
+                scene.add(this.mesh);
+                this.drones = Array.from({length: count}, () => ({ planet: null, angle: Math.random()*Math.PI*2, distance: 60+Math.random()*40, speed: 0.02+Math.random()*0.02, position: new THREE.Vector3() }));
+            }
+            update(shipPos, rivalPos) {
+                let idx = 0;
+                planets.forEach(p => {
+                    const owner = p.owner;
+                    if (owner === 'neutral') return;
+                    for (let i=0; i<5; i++) {
+                        if (idx >= this.count) break;
+                        const d = this.drones[idx++];
+                        d.planet = p;
+                        d.angle += d.speed;
+                        d.position.set(p.mesh.position.x + Math.cos(d.angle)*d.distance, p.mesh.position.y + Math.sin(d.angle)*d.distance, 0);
+
+                        // Intercept enemies
+                        const enemyPos = (owner === 'player') ? rivalPos : shipPos;
+                        if (enemyPos.distanceTo(p.mesh.position) < 300) {
+                            const chaseDir = new THREE.Vector3().subVectors(enemyPos, d.position).normalize();
+                            d.position.add(chaseDir.multiplyScalar(3));
+                        }
+                        this.mesh.setMatrixAt(idx-1, new THREE.Matrix4().setPosition(d.position));
+                    }
+                });
+                // Hide unassigned drones by scaling them to 0
+                const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+                for (let i = idx; i < this.count; i++) {
+                    this.mesh.setMatrixAt(i, hideMatrix);
+                }
+                this.mesh.instanceMatrix.needsUpdate = true;
+            }
+        }
+        const droneManager = new DroneManager(50);
+
+        // --- COMBAT & PROJECTILES ---
+        const projectiles = [];
+        const particles = [];
+        function fireProjectile(owner, customShip) {
+            if (customShip.parent === null) return;
+            const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,20,0)]);
+            const mat = new THREE.LineBasicMaterial({ color: owner==='player'?0x00ffff:0xffaaaa });
+            const mesh = new THREE.LineSegments(geom, mat);
+            mesh.position.copy(customShip.position);
+            mesh.rotation.copy(customShip.rotation);
+            projectiles.push({ owner, mesh, velocity: new THREE.Vector2(-Math.sin(customShip.rotation.z)*15, Math.cos(customShip.rotation.z)*15), life: 120 });
+            scene.add(mesh);
+            playBlip(440, 0.1);
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i=0; i<20; i++) {
+                const geom = new THREE.BoxGeometry(2,2,2);
+                const mat = new THREE.MeshBasicMaterial({ color });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.position.set(x, y, 0);
+                particles.push({ mesh, velocity: new THREE.Vector2((Math.random()-0.5)*10, (Math.random()-0.5)*10), life: 60 });
+                scene.add(mesh);
+            }
+            playBlip(100, 0.5, 'sawtooth');
+        }
+
+        // --- CONTROLS ---
+        const keys = {};
+        const touchState = { isThrusting: false, rotation: 0, joystickTouchId: null, joystickCenterX: 0, joystickCenterY: 0 };
+        window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') fireProjectile('player', ship); });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
         const joystick = document.getElementById('joystick-container');
         const knob = document.getElementById('joystick-knob');
         const fireBtn = document.getElementById('fire-button');
 
-        joystick.addEventListener('touchstart', (e) => {
-            const touch = e.changedTouches[0];
-            touchState.joystickTouchId = touch.identifier;
-            const rect = joystick.getBoundingClientRect();
-            touchState.joystickCenterX = rect.left + rect.width / 2;
-            touchState.joystickCenterY = rect.top + rect.height / 2;
-        }, { passive: false });
+        joystick.addEventListener('touchstart', e => { const t = e.changedTouches[0]; touchState.joystickTouchId = t.identifier; const r = joystick.getBoundingClientRect(); touchState.joystickCenterX = r.left + r.width/2; touchState.joystickCenterY = r.top + r.height/2; }, {passive:false});
+        window.addEventListener('touchmove', e => { for (let t of e.changedTouches) { if (t.identifier === touchState.joystickTouchId) { e.preventDefault(); const dx = t.clientX - touchState.joystickCenterX, dy = t.clientY - touchState.joystickCenterY, dist = Math.sqrt(dx*dx+dy*dy), max = 60; const cDx = (dx/dist)*Math.min(dist,max), cDy = (dy/dist)*Math.min(dist,max); knob.style.transform = `translate(calc(-50% + ${cDx}px), calc(-50% + ${cDy}px))`; touchState.rotation = -cDx/max; touchState.isThrusting = cDy < -20; } } }, {passive:false});
+        window.addEventListener('touchend', e => { for (let t of e.changedTouches) { if (t.identifier === touchState.joystickTouchId) { touchState.joystickTouchId = null; touchState.rotation = 0; touchState.isThrusting = false; knob.style.transform = 'translate(-50%, -50%)'; } } }, {passive:false});
+        fireBtn.addEventListener('touchstart', e => { e.preventDefault(); fireProjectile('player', ship); fireBtn.style.background = 'rgba(255, 0, 0, 0.6)'; }, {passive:false});
+        fireBtn.addEventListener('touchend', () => fireBtn.style.background = 'rgba(255, 0, 0, 0.3)');
 
-        window.addEventListener('touchmove', (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === touchState.joystickTouchId) {
-                    e.preventDefault();
-                    const dx = touch.clientX - touchState.joystickCenterX;
-                    const dy = touch.clientY - touchState.joystickCenterY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    const maxDist = 60;
+        // --- UI & SHOP ---
+        const loyaltyContainer = document.getElementById('planet-loyalty-container');
+        planets.forEach(p => { const div = document.createElement('div'); div.style.marginBottom = '10px'; div.innerHTML = `<div style="font-size: 10px;">${p.name}</div><div class="status-bar" style="width: 100%; height: 10px;"><div id="loyalty-${p.name}" class="status-bar-field" style="width: 0%; height: 100%; background: #000080;"></div></div>`; loyaltyContainer.appendChild(div); });
 
-                    const clampedDx = (dx / dist) * Math.min(dist, maxDist);
-                    const clampedDy = (dy / dist) * Math.min(dist, maxDist);
+        document.getElementById('upgrade-speed').onclick = () => { if (economy.credits >= 500) { economy.credits -= 500; player.thrust *= 1.1; playBlip(880, 0.1); } };
+        document.getElementById('upgrade-shields').onclick = () => { if (economy.credits >= 800) { economy.credits -= 800; player.maxShields += 20; player.shields = player.maxShields; playBlip(880, 0.1); } };
+        document.getElementById('upgrade-damage').onclick = () => { if (economy.credits >= 1000) { economy.credits -= 1000; player.damage += 5; playBlip(880, 0.1); } };
 
-                    knob.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`;
+        setInterval(() => { if (isGameOver) return; gameTime--; if (gameTime <= 0) endGame(); const m = Math.floor(gameTime/60), s = gameTime%60; document.getElementById('timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }, 1000);
 
-                    // Map to controls
-                    touchState.rotation = -clampedDx / maxDist; // Smooth rotation
-                    touchState.isThrusting = clampedDy < -20; // Thrust if pushed up
-                }
-            }
-        }, { passive: false });
+        function endGame() {
+            isGameOver = true;
+            document.getElementById('game-over-window').style.display = 'block';
+            let playerPop = 0, rivalPop = 0;
+            planets.forEach(p => { if (p.owner === 'player') playerPop += p.population; else if (p.owner === 'rival') rivalPop += p.population; });
+            document.getElementById('final-pop-player').innerText = Math.floor(playerPop);
+            document.getElementById('final-pop-rival').innerText = Math.floor(rivalPop);
+            document.getElementById('win-loss-text').innerText = playerPop > rivalPop ? "VICTORY ACHIEVED" : "PATH DEFEATED";
+        }
 
-        window.addEventListener('touchend', (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === touchState.joystickTouchId) {
-                    touchState.joystickTouchId = null;
-                    touchState.rotation = 0;
-                    touchState.isThrusting = false;
-                    knob.style.transform = `translate(-50%, -50%)`;
-                }
-            }
-        }, { passive: false });
-
-        fireBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            fireProjectile();
-            fireBtn.style.background = 'rgba(255, 0, 0, 0.6)';
-        }, { passive: false });
-
-        fireBtn.addEventListener('touchend', (e) => {
-            fireBtn.style.background = 'rgba(255, 0, 0, 0.3)';
-        }, { passive: false });
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            const aspect = window.innerWidth / window.innerHeight;
-            camera.left = -viewSize * aspect / 2;
-            camera.right = viewSize * aspect / 2;
-            camera.top = viewSize / 2;
-            camera.bottom = -viewSize / 2;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Game Loop
+        // --- GAME LOOP ---
         function animate() {
             requestAnimationFrame(animate);
+            if (isGameOver) return;
 
-            // Update Rival AI
-            const rivalPos = rival.position;
-            if (rivalState.fleeTime > 0) {
-                rivalState.fleeTime--;
-                // Flee from player
-                const fleeDir = new THREE.Vector2().subVectors(new THREE.Vector2(rival.position.x, rival.position.y), new THREE.Vector2(ship.position.x, ship.position.y)).normalize();
-                rivalState.velocity.add(fleeDir.multiplyScalar(0.4));
-                rival.rotation.z = Math.atan2(-fleeDir.x, fleeDir.y);
-            } else {
-                // Seek planet
-                if (!rivalState.targetPlanet || rivalState.targetPlanet.owner === 'rival') {
-                    rivalState.targetPlanet = planets.find(p => p.owner !== 'rival');
-                }
-                if (rivalState.targetPlanet) {
-                    const dirToPlanet = new THREE.Vector2().subVectors(new THREE.Vector2(rivalState.targetPlanet.mesh.position.x, rivalState.targetPlanet.mesh.position.y), new THREE.Vector2(rival.position.x, rival.position.y)).normalize();
-                    rivalState.velocity.add(dirToPlanet.multiplyScalar(0.3));
-                    rival.rotation.z = Math.atan2(-dirToPlanet.x, dirToPlanet.y);
-                }
-            }
-            rivalState.velocity.multiplyScalar(0.98);
-            rival.position.x += rivalState.velocity.x;
-            rival.position.y += rivalState.velocity.y;
-
-            // Rival Shoot
-            if (Math.random() < 0.01 && rivalPos.distanceTo(ship.position) < 400) {
-                fireProjectile('rival', rival);
+            // Player Physics
+            if (!player.destroyed) {
+                if (keys['KeyA']) player.rotation += player.maxRotationSpeed;
+                if (keys['KeyD']) player.rotation -= player.maxRotationSpeed;
+                if (Math.abs(touchState.rotation) > 0.1) player.rotation += touchState.rotation * player.maxRotationSpeed * 2;
+                ship.rotation.z = player.rotation;
+                if (keys['KeyW'] || touchState.isThrusting) { player.velocity.x -= Math.sin(player.rotation) * player.thrust; player.velocity.y += Math.cos(player.rotation) * player.thrust; }
+                player.velocity.multiplyScalar(player.friction);
+                ship.position.x += player.velocity.x; ship.position.y += player.velocity.y;
             }
 
-            // Update Drones
-            droneManager.update(ship.position);
+            // Rival AI
+            if (!rivalState.destroyed) {
+                if (rivalState.fleeTime > 0) {
+                    rivalState.fleeTime--;
+                    const flee = new THREE.Vector2().subVectors(rival.position, ship.position).normalize();
+                    rivalState.velocity.add(flee.multiplyScalar(0.4));
+                    rival.rotation.z = Math.atan2(-flee.x, flee.y);
+                } else {
+                    if (!rivalState.targetPlanet || rivalState.targetPlanet.owner === 'rival') rivalState.targetPlanet = planets.find(p => p.owner !== 'rival');
+                    if (rivalState.targetPlanet) {
+                        const seek = new THREE.Vector2().subVectors(rivalState.targetPlanet.mesh.position, rival.position).normalize();
+                        rivalState.velocity.add(seek.multiplyScalar(0.3));
+                        rival.rotation.z = Math.atan2(-seek.x, seek.y);
+                    }
+                }
+                rivalState.velocity.multiplyScalar(0.98);
+                rival.position.x += rivalState.velocity.x; rival.position.y += rivalState.velocity.y;
+                if (Math.random() < 0.01 && rival.position.distanceTo(ship.position) < 400) fireProjectile('rival', rival);
+            }
 
-            // Update Planets & Economy
+            // Update Systems
+            droneManager.update(ship.position, rival.position);
             let totalPop = 0;
             planets.forEach(p => {
                 const oldLoyalty = p.loyalty;
-
-                // Rival capture logic
-                const distToRival = rival.position.distanceTo(p.mesh.position);
-                if (distToRival < p.captureRadius && p.owner !== 'rival') {
-                    p.loyalty -= 0.1;
-                    if (p.loyalty <= -100) {
-                        p.loyalty = -100;
-                        p.capture('rival');
-                    }
-                }
-
-                p.update(ship.position);
-
-                if (p.owner === 'player') {
-                    totalPop += p.population;
-                }
-
-                // Drain credits if actively capturing
-                if (p.loyalty > oldLoyalty && p.owner !== 'player' && ship.position.distanceTo(p.mesh.position) < p.captureRadius) {
-                    economy.credits -= 0.2;
-                }
-
-                // Update UI
+                p.update(ship.position, rival.position);
+                if (p.owner === 'player') totalPop += p.population;
+                if (p.loyalty > oldLoyalty && p.owner !== 'player' && ship.position.distanceTo(p.mesh.position) < p.captureRadius) economy.credits -= 0.2;
                 const bar = document.getElementById(`loyalty-${p.name}`);
-                if (bar) bar.style.width = `${Math.abs(p.loyalty)}%`;
-                if (bar) bar.style.background = p.loyalty > 0 ? '#000080' : '#800000';
+                if (bar) { bar.style.width = `${Math.abs(p.loyalty)}%`; bar.style.background = p.loyalty > 0 ? '#000080' : '#800000'; }
             });
-
-            // Calculate Taxes
             economy.population = totalPop;
-            economy.credits += economy.population * economy.taxRate;
-
-            // Update Economy UI
+            economy.credits += totalPop * economy.taxRate;
             document.getElementById('credits').innerText = Math.floor(economy.credits);
             document.getElementById('population').innerText = Math.floor(economy.population);
 
-            // Handle Rotation
-            if (keys['KeyA']) player.rotation += player.maxRotationSpeed;
-            if (keys['KeyD']) player.rotation -= player.maxRotationSpeed;
-            if (Math.abs(touchState.rotation) > 0.1) {
-                player.rotation += touchState.rotation * player.maxRotationSpeed * 2;
-            }
-            ship.rotation.z = player.rotation;
+            // Starbase Shop Trigger
+            document.getElementById('shop-window').style.display = ship.position.distanceTo(starbase.position) < 150 ? 'block' : 'none';
 
-            // Handle Thrust
-            if (keys['KeyW'] || touchState.isThrusting) {
-                player.velocity.x -= Math.sin(player.rotation) * player.thrust;
-                player.velocity.y += Math.cos(player.rotation) * player.thrust;
+            // Particles
+            for (let i=particles.length-1; i>=0; i--) {
+                const p = particles[i]; p.mesh.position.x += p.velocity.x; p.mesh.position.y += p.velocity.y; p.life--;
+                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i,1); }
             }
 
-            // Apply Friction
-            player.velocity.multiplyScalar(player.friction);
-
-            // Update Position
-            ship.position.x += player.velocity.x;
-            ship.position.y += player.velocity.y;
-
-            // Update Projectiles & Combat
-            for (let i = projectiles.length - 1; i >= 0; i--) {
-                const proj = projectiles[i];
-                proj.mesh.position.x += proj.velocity.x;
-                proj.mesh.position.y += proj.velocity.y;
-                proj.life--;
-
-                // Collision Detection
+            // Projectiles
+            for (let i=projectiles.length-1; i>=0; i--) {
+                const pr = projectiles[i]; pr.mesh.position.x += pr.velocity.x; pr.mesh.position.y += pr.velocity.y; pr.life--;
                 let hit = false;
-                if (proj.owner === 'rival' && proj.mesh.position.distanceTo(ship.position) < 20) {
-                    player.shields -= 10;
-                    if (player.shields < 0) {
-                        player.hp += player.shields;
-                        player.shields = 0;
-                    }
-                    player.flicker = 2;
-                    hit = true;
-                } else if (proj.owner === 'player' && proj.mesh.position.distanceTo(rival.position) < 20) {
-                    rivalState.hp -= 10;
-                    rivalState.flicker = 2;
-                    rivalState.fleeTime = 180; // 3 seconds
-                    hit = true;
+                if (pr.owner === 'rival' && !player.destroyed && pr.mesh.position.distanceTo(ship.position) < 20) {
+                    player.shields -= 10; if (player.shields < 0) { player.hp += player.shields; player.shields = 0; }
+                    player.flicker = 2; hit = true; playBlip(220, 0.1, 'sawtooth');
+                    if (player.hp <= 0) { player.destroyed = true; createExplosion(ship.position.x, ship.position.y, 0x00ffff); scene.remove(ship); setTimeout(endGame, 2000); }
+                } else if (pr.owner === 'player' && !rivalState.destroyed && pr.mesh.position.distanceTo(rival.position) < 20) {
+                    rivalState.hp -= player.damage; rivalState.flicker = 2; rivalState.fleeTime = 180; hit = true; playBlip(220, 0.1, 'sawtooth');
+                    if (rivalState.hp <= 0) { rivalState.destroyed = true; createExplosion(rival.position.x, rival.position.y, 0xff0000); scene.remove(rival); }
                 }
-
-                if (proj.life <= 0 || hit) {
-                    scene.remove(proj.mesh);
-                    projectiles.splice(i, 1);
-                }
+                if (pr.life <= 0 || hit) { scene.remove(pr.mesh); projectiles.splice(i,1); }
             }
 
-            // Flicker Effect & HP Recovery
-            if (player.flicker > 0) {
-                ship.material.color.set(0xffffff);
-                player.flicker--;
-            } else {
-                ship.material.color.set(0x00ffff);
-                player.shields = Math.min(player.maxShields, player.shields + 0.05);
-            }
+            // VFX
+            if (player.flicker > 0) { ship.material.color.set(0xffffff); player.flicker--; } else { ship.material.color.set(0x00ffff); player.shields = Math.min(player.maxShields, player.shields + 0.05); }
+            if (rivalState.flicker > 0) { rival.material.color.set(0xffffff); rivalState.flicker--; } else { rival.material.color.set(0xff0000); }
 
-            if (rivalState.flicker > 0) {
-                rival.material.color.set(0xffffff);
-                rivalState.flicker--;
-            } else {
-                rival.material.color.set(0xff0000);
-            }
-
-            // Update UI Bars
             document.getElementById('shields-val').innerText = Math.floor(player.shields);
-            document.getElementById('shields-bar').style.width = `${player.shields}%`;
+            document.getElementById('shields-bar').style.width = `${(player.shields/player.maxShields)*100}%`;
             document.getElementById('hp-val').innerText = Math.floor(player.hp);
             document.getElementById('hp-bar').style.width = `${player.hp}%`;
 
             renderer.render(scene, camera);
         }
+        window.addEventListener('resize', () => { const a = window.innerWidth / window.innerHeight; camera.left = -viewSize*a/2; camera.right = viewSize*a/2; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
 </body>
