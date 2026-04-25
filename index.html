@@ -25,9 +25,9 @@
         .pod-fill { height: 100%; position: absolute; left: 0; top: 0; }
 
         /* Bottom Controls */
-        #bottom-overlay { position: absolute; bottom: 40px; left: 70px; right: 0; height: 140px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; align-items: flex-end; }
-        .joystick { width: 120px; height: 120px; background: rgba(255,255,255,0.4); border: 4px solid rgba(255,255,255,0.8); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .joy-knob { width: 50px; height: 50px; background: rgba(255,255,255,1); border: 2px solid #000; border-radius: 50%; position: absolute; box-shadow: 0 0 10px #fff; }
+        #bottom-overlay { position: absolute; bottom: 40px; left: 70px; right: 0; height: 140px; pointer-events: none; z-index: 150; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; align-items: flex-end; }
+        .joystick { width: 120px; height: 120px; flex: 0 0 120px; background: rgba(255,255,255,0.25); border: 4px solid rgba(255,255,255,0.7); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+        .joy-knob { width: 50px; height: 50px; background: rgba(255,255,255,1); border: 2px solid #000; border-radius: 50%; position: absolute; box-shadow: 0 0 15px #fff; }
         .joy-label { position: absolute; top: -25px; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
 
         /* Windows */
@@ -40,9 +40,9 @@
             #top-overlay { left: 50px; padding: 5px; }
             #ticker { font-size: 12px; max-width: 50%; }
             #pod-meters { transform: scale(0.8); transform-origin: top right; }
-            #bottom-overlay { left: 50px; bottom: 10px; padding: 0 10px; }
+            #bottom-overlay { left: 50px; bottom: 80px; padding: 0 10px; height: 110px; }
             .full-panel { left: 50px; padding: 10px; }
-            .joystick { width: 90px; height: 90px; }
+            .joystick { width: 90px; height: 90px; flex: 0 0 90px; }
             .joy-knob { width: 35px; height: 35px; }
             .joy-label { font-size: 12px; top: -20px; }
             #speed-val { font-size: 10px; margin: 0 5px; }
@@ -173,6 +173,8 @@
     <script type="module">
         import * as THREE from 'three';
 
+        const clock = new THREE.Clock();
+
         // --- AUDIO ---
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioCtx();
@@ -255,6 +257,10 @@
         }
 
         // --- OBJECTS ---
+        const projMatPlayer = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        const projMatRival = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const projGeom = new THREE.PlaneGeometry(2, 10);
+
         const shipGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,15,0), new THREE.Vector3(-10,-10,0), new THREE.Vector3(10,-10,0), new THREE.Vector3(0,15,0)]);
         const playerShip = new THREE.LineLoop(shipGeom, new THREE.LineBasicMaterial({ color: 0x00ffff }));
         const playerShieldMesh = new THREE.LineLoop(new THREE.CircleGeometry(25, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 }));
@@ -451,13 +457,13 @@
 
             if (stickL.active && e.pointerId === stickL.id) {
                 if (type === 'move') {
-                    const dx = e.clientX - (rectL.left + joySize);
-                    const dy = e.clientY - (rectL.top + joySize);
-                    const dist = Math.min(joyRange, Math.sqrt(dx*dx + dy*dy));
+                    const dx = e.clientX - (rectL.left + rectL.width/2);
+                    const dy = e.clientY - (rectL.top + rectL.height/2);
+                    const dist = Math.min(rectL.width/2, Math.sqrt(dx*dx + dy*dy));
                     const angle = Math.atan2(dy, dx);
-                    stickL.x = (Math.cos(angle) * dist) / joyRange;
-                    stickL.y = (Math.sin(angle) * dist) / joyRange;
-                    knobL.style.transform = `translate(${stickL.x * (joySize - 20)}px, ${stickL.y * (joySize - 20)}px)`;
+                    stickL.x = (Math.cos(angle) * dist) / (rectL.width/2);
+                    stickL.y = (Math.sin(angle) * dist) / (rectL.width/2);
+                    knobL.style.transform = `translate(${stickL.x * (rectL.width/2 - 20)}px, ${stickL.y * (rectL.height/2 - 20)}px)`;
                 } else if (type === 'end') {
                     stickL.active = false; stickL.x = 0; stickL.y = 0;
                     knobL.style.transform = '';
@@ -466,13 +472,13 @@
 
             if (stickR.active && e.pointerId === stickR.id) {
                 if (type === 'move') {
-                    const dx = e.clientX - (rectR.left + joySize);
-                    const dy = e.clientY - (rectR.top + joySize);
-                    const dist = Math.min(joyRange, Math.sqrt(dx*dx + dy*dy));
+                    const dx = e.clientX - (rectR.left + rectR.width/2);
+                    const dy = e.clientY - (rectR.top + rectR.height/2);
+                    const dist = Math.min(rectR.width/2, Math.sqrt(dx*dx + dy*dy));
                     const angle = Math.atan2(dy, dx);
-                    stickR.x = (Math.cos(angle) * dist) / joyRange;
-                    stickR.y = (Math.sin(angle) * dist) / joyRange;
-                    knobR.style.transform = `translate(${stickR.x * (joySize - 20)}px, ${stickR.y * (joySize - 20)}px)`;
+                    stickR.x = (Math.cos(angle) * dist) / (rectR.width/2);
+                    stickR.y = (Math.sin(angle) * dist) / (rectR.width/2);
+                    knobR.style.transform = `translate(${stickR.x * (rectR.width/2 - 20)}px, ${stickR.y * (rectR.height/2 - 20)}px)`;
                 } else if (type === 'end') {
                     stickR.active = false; stickR.x = 0; stickR.y = 0;
                     knobR.style.transform = '';
@@ -508,14 +514,12 @@
         function fireWeapon(isPlayer = true) {
             const ship = isPlayer ? playerShip : rivalShip;
             const state = isPlayer ? pState : rState;
-            const color = isPlayer ? 0x00ffff : 0xff0000;
+            const mat = isPlayer ? projMatPlayer : projMatRival;
 
             if(state.charge < 5) return;
             state.charge -= 5;
 
-            const geom = new THREE.PlaneGeometry(2, 10);
-            const mat = new THREE.MeshBasicMaterial({ color: color });
-            const m = new THREE.Mesh(geom, mat);
+            const m = new THREE.Mesh(projGeom, mat);
             m.position.copy(ship.position);
             m.rotation.z = ship.rotation.z;
             scene.add(m);
@@ -524,7 +528,7 @@
                 mesh: m,
                 owner: isPlayer ? 'player' : 'rival',
                 velocity: new THREE.Vector2(-Math.sin(m.rotation.z), Math.cos(m.rotation.z)).multiplyScalar(15),
-                life: 100
+                life: 2.0 // 2 seconds
             });
             sfx(isPlayer ? 440 : 220, 0.05, 'square');
 
@@ -575,13 +579,16 @@
             if (pState.hp <= 0 || pState.pop >= 10000000) return;
             requestAnimationFrame(update);
 
+            const dt = clock.getDelta();
+            const fpsScale = dt * 60; // Normalize to 60fps
+
             // Red Alert Logic
             if(redAlert > 0) {
-                redAlert--;
-                camera.zoom = Math.max(0.5, camera.zoom - 0.01);
+                redAlert -= fpsScale;
+                camera.zoom = Math.max(0.5, camera.zoom - 0.01 * fpsScale);
                 document.getElementById('crt-overlay').style.background = `rgba(255, 0, 0, ${Math.sin(Date.now()*0.01)*0.05 + 0.05})`;
             } else {
-                camera.zoom = Math.min(1, camera.zoom + 0.01);
+                camera.zoom = Math.min(1, camera.zoom + 0.01 * fpsScale);
                 document.getElementById('crt-overlay').style.background = '';
             }
             camera.updateProjectionMatrix();
@@ -590,15 +597,15 @@
             let diff = pState.targetRot - pState.rot;
             while(diff < -Math.PI) diff += Math.PI * 2;
             while(diff > Math.PI) diff -= Math.PI * 2;
-            pState.rot += diff * 0.1;
+            pState.rot += diff * 0.1 * fpsScale;
             playerShip.rotation.z = pState.rot;
 
             // Input Logic: Dual-Stick + Keyboard
-            if (pCooldown > 0) pCooldown--;
+            if (pCooldown > 0) pCooldown -= dt;
 
             // Rotation
-            if (keys['KeyA']) pState.targetRot += 0.05;
-            if (keys['KeyD']) pState.targetRot -= 0.05;
+            if (keys['KeyA']) pState.targetRot += 0.05 * fpsScale;
+            if (keys['KeyD']) pState.targetRot -= 0.05 * fpsScale;
 
             if (stickL.active) {
                 const deadzone = 0.1;
@@ -616,7 +623,7 @@
             }
 
             if (thrustMag > 0) {
-                const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower);
+                const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower * fpsScale);
                 pState.vel.add(thrust);
             }
 
@@ -624,14 +631,14 @@
             if ((keys['Space'] || stickR.active) && pCooldown <= 0) {
                 if (!stickR.active || (Math.abs(stickR.x) > 0.5 || Math.abs(stickR.y) > 0.5)) {
                     fireWeapon(true);
-                    pCooldown = 10;
+                    pCooldown = 0.16; // ~10 frames at 60fps
                 }
             }
 
             // Movement
-            pState.vel.multiplyScalar(0.98);
-            playerShip.position.x += pState.vel.x;
-            playerShip.position.y += pState.vel.y;
+            pState.vel.multiplyScalar(Math.pow(0.98, fpsScale));
+            playerShip.position.x += pState.vel.x * fpsScale;
+            playerShip.position.y += pState.vel.y * fpsScale;
 
             // Camera follow
             camera.position.x = playerShip.position.x;
@@ -640,9 +647,9 @@
             // Projectiles & Collision
             for(let i=projectiles.length-1; i>=0; i--) {
                 const pr = projectiles[i];
-                pr.mesh.position.x += pr.velocity.x;
-                pr.mesh.position.y += pr.velocity.y;
-                pr.life--;
+                pr.mesh.position.x += pr.velocity.x * fpsScale;
+                pr.mesh.position.y += pr.velocity.y * fpsScale;
+                pr.life -= dt;
 
                 // Collision with Rival
                 if (pr.owner === 'player' && pr.mesh.position.distanceTo(rivalShip.position) < 20 && rState.hp > 0) {
@@ -678,38 +685,46 @@
 
                 if(pr.life <= 0) {
                     scene.remove(pr.mesh);
-                    pr.mesh.geometry.dispose();
+                    // Geometry and Material are now shared and reused
                     projectiles.splice(i, 1);
                 }
             }
 
             // Update Particles
-            for(let i=particles.length-1; i>=0; i--) {
-                const p = particles[i];
-                p.pos.add(p.vel);
-                p.life--;
-                if(p.life <= 0) particles.splice(i, 1);
+            for(let i=0; i<1000; i++) {
+                if (i < particles.length) {
+                    const p = particles[i];
+                    p.pos.add(p.vel.clone().multiplyScalar(fpsScale));
+                    p.life -= fpsScale;
 
-                dummy.position.copy(p.pos);
-                dummy.scale.setScalar(p.life/50);
-                dummy.updateMatrix();
-                partMesh.setMatrixAt(i, dummy.matrix);
+                    dummy.position.copy(p.pos);
+                    dummy.scale.setScalar(p.life/50);
+                    dummy.updateMatrix();
+                    partMesh.setMatrixAt(i, dummy.matrix);
+                } else {
+                    dummy.position.set(0, 0, -5000);
+                    dummy.updateMatrix();
+                    partMesh.setMatrixAt(i, dummy.matrix);
+                }
+            }
+            for(let i=particles.length-1; i>=0; i--) {
+                if(particles[i].life <= 0) particles.splice(i, 1);
             }
             partMesh.instanceMatrix.needsUpdate = true;
 
             // Charge Recharge
-            if(pState.speed === 0) pState.charge = Math.min(100, pState.charge + 0.2);
-            else pState.charge = Math.min(100, pState.charge + 0.05);
+            if(pState.speed === 0) pState.charge = Math.min(100, pState.charge + 0.2 * fpsScale);
+            else pState.charge = Math.min(100, pState.charge + 0.05 * fpsScale);
 
             // Update Rival AI
-            if (rCooldown > 0) rCooldown--;
+            if (rCooldown > 0) rCooldown -= dt;
             if (rState.hp > 0) {
                 // Firing logic
                 if (rCooldown <= 0 && rivalShip.position.distanceTo(playerShip.position) < 400) {
                     rState.rot = Math.atan2(-(playerShip.position.x - rivalShip.position.x), playerShip.position.y - rivalShip.position.y);
                     rivalShip.rotation.z = rState.rot;
                     fireWeapon(false);
-                    rCooldown = 20;
+                    rCooldown = 0.33; // ~20 frames
                 }
 
                 if (rState.state === 'SEARCH' || !rState.targetPlanet) {
@@ -734,17 +749,17 @@
                     let rDiff = targetAngle - rState.rot;
                     while(rDiff < -Math.PI) rDiff += Math.PI * 2;
                     while(rDiff > Math.PI) rDiff -= Math.PI * 2;
-                    rState.rot += rDiff * 0.05;
+                    rState.rot += rDiff * 0.05 * fpsScale;
                     rivalShip.rotation.z = rState.rot;
 
                     if (dToP > rState.targetPlanet.r + 100) {
-                        const rThrust = new THREE.Vector2(-Math.sin(rState.rot), Math.cos(rState.rot)).multiplyScalar(0.2);
+                        const rThrust = new THREE.Vector2(-Math.sin(rState.rot), Math.cos(rState.rot)).multiplyScalar(0.2 * fpsScale);
                         rState.vel.add(rThrust);
                     } else {
                         // Orbiting / Capturing
-                        rState.vel.multiplyScalar(0.95);
+                        rState.vel.multiplyScalar(Math.pow(0.95, fpsScale));
                         if (rState.targetPlanet.owner !== 'rival') {
-                            rState.targetPlanet.loyalty -= 0.15; // Rival captures faster
+                            rState.targetPlanet.loyalty -= 0.15 * fpsScale; // Rival captures faster
                             if (rState.targetPlanet.loyalty <= -100) {
                                 rState.targetPlanet.loyalty = -100;
                                 rState.targetPlanet.owner = 'rival';
@@ -757,16 +772,16 @@
                         }
                     }
                 }
-                rState.vel.multiplyScalar(0.98);
-                rivalShip.position.x += rState.vel.x;
-                rivalShip.position.y += rState.vel.y;
+                rState.vel.multiplyScalar(Math.pow(0.98, fpsScale));
+                rivalShip.position.x += rState.vel.x * fpsScale;
+                rivalShip.position.y += rState.vel.y * fpsScale;
             }
 
             // Economy: Total Population & Tax
             let totalPop = 0;
             planets.forEach(p => { if(p.owner === 'player') totalPop += p.pop; });
             pState.pop = totalPop;
-            pState.credits += totalPop * 0.00001; // Tax
+            pState.credits += totalPop * 0.00001 * fpsScale; // Tax
 
             // Update Planets
             planets.forEach(p => {
@@ -777,7 +792,7 @@
                 if(dist < p.r + 150) {
                     // Capture logic
                     if(p.owner !== 'player') {
-                        p.loyalty += 0.1;
+                        p.loyalty += 0.1 * fpsScale;
                         if(p.loyalty >= 100) {
                             p.loyalty = 100;
                             p.owner = 'player';
@@ -793,7 +808,7 @@
                         addComm(`Entering orbit around ${p.name}`);
                         updateOrbitUI();
                     }
-                    pState.vel.multiplyScalar(0.9);
+                    pState.vel.multiplyScalar(Math.pow(0.9, fpsScale));
                 }
             });
 
@@ -840,8 +855,8 @@
                         const angle = Math.atan2(d.pos.y - d.parent.group.position.y, d.pos.x - d.parent.group.position.x);
                         const orbitRadius = d.parent.r + 30;
 
-                        d.pos.x = d.parent.group.position.x + Math.cos(angle + 0.02) * orbitRadius;
-                        d.pos.y = d.parent.group.position.y + Math.sin(angle + 0.02) * orbitRadius;
+                        d.pos.x = d.parent.group.position.x + Math.cos(angle + 0.02 * fpsScale) * orbitRadius;
+                        d.pos.y = d.parent.group.position.y + Math.sin(angle + 0.02 * fpsScale) * orbitRadius;
                         d.rot = angle + Math.PI/2;
 
                         // Check for intruders
@@ -854,13 +869,13 @@
                         const targetState = d.parent.owner === 'player' ? rState : pState;
 
                         const angle = Math.atan2(target.position.y - d.pos.y, target.position.x - d.pos.x);
-                        d.pos.x += Math.cos(angle) * 3;
-                        d.pos.y += Math.sin(angle) * 3;
+                        d.pos.x += Math.cos(angle) * 3 * fpsScale;
+                        d.pos.y += Math.sin(angle) * 3 * fpsScale;
                         d.rot = angle + Math.PI/2;
 
                         // Collision with target
                         if (d.pos.distanceTo(target.position) < 20) {
-                            targetState.hp -= 0.5;
+                            targetState.hp -= 0.5 * fpsScale;
                             if (target === playerShip) triggerRedAlert();
                             d.active = false;
                             explode(d.pos, 0xffff00);
