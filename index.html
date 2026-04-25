@@ -204,11 +204,47 @@
         };
 
         const keys = {};
+        const touchState = {
+            isThrusting: false,
+            rotation: 0, // -1 for left, 1 for right
+            startX: 0,
+            startY: 0
+        };
+
         window.addEventListener('keydown', (e) => {
             keys[e.code] = true;
             if (e.code === 'Space') fireProjectile();
         });
         window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // Touch Controls
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState.startX = touch.clientX;
+            touchState.startY = touch.clientY;
+            touchState.isThrusting = true; // Any touch starts thrusting for simplicity
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const dx = touch.clientX - touchState.startX;
+
+            // Map horizontal movement to rotation
+            if (dx > 20) touchState.rotation = -1;
+            else if (dx < -20) touchState.rotation = 1;
+            else touchState.rotation = 0;
+
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            // Tap to fire
+            const duration = Date.now() - touchState.startTime;
+            fireProjectile();
+
+            touchState.isThrusting = false;
+            touchState.rotation = 0;
+        }, { passive: false });
 
         // Resize handler
         window.addEventListener('resize', () => {
@@ -252,12 +288,12 @@
             document.getElementById('population').innerText = Math.floor(economy.population);
 
             // Handle Rotation
-            if (keys['KeyA']) player.rotation += player.maxRotationSpeed;
-            if (keys['KeyD']) player.rotation -= player.maxRotationSpeed;
+            if (keys['KeyA'] || touchState.rotation > 0) player.rotation += player.maxRotationSpeed;
+            if (keys['KeyD'] || touchState.rotation < 0) player.rotation -= player.maxRotationSpeed;
             ship.rotation.z = player.rotation;
 
             // Handle Thrust
-            if (keys['KeyW']) {
+            if (keys['KeyW'] || touchState.isThrusting) {
                 player.velocity.x -= Math.sin(player.rotation) * player.thrust;
                 player.velocity.y += Math.cos(player.rotation) * player.thrust;
             }
