@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Warpath Android</title>
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; color: #fff; }
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        #canvas-container { position: absolute; top: 0; left: 70px; width: calc(100% - 70px); height: 100%; z-index: 0; }
 
         /* Left Panel Selectors */
-        #sidebar { width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 20; border-right: 1px solid #444; }
+        #sidebar { width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 20; border-right: 1px solid #444; }
         .panel-btn { width: 50px; height: 50px; margin: 10px 0; border-radius: 50%; background: #444; border: 3px solid #888; color: #fff; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .panel-btn.active { border-color: #f00; background: #222; box-shadow: 0 0 10px #f00; }
 
@@ -25,13 +25,33 @@
         .pod-fill { height: 100%; position: absolute; left: 0; top: 0; }
 
         /* Bottom Controls */
-        #bottom-overlay { position: absolute; bottom: 0; left: 70px; right: 0; height: 120px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 0 20px 10px 20px; box-sizing: border-box; align-items: flex-end; }
-        .joystick { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; }
-        .joy-knob { width: 40px; height: 40px; background: rgba(255,255,255,0.8); border-radius: 50%; position: absolute; }
+        #bottom-overlay { position: absolute; bottom: 40px; left: 70px; right: 0; height: 140px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; align-items: flex-end; }
+        .joystick { width: 120px; height: 120px; background: rgba(255,255,255,0.4); border: 4px solid rgba(255,255,255,0.8); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .joy-knob { width: 50px; height: 50px; background: rgba(255,255,255,1); border: 2px solid #000; border-radius: 50%; position: absolute; box-shadow: 0 0 10px #fff; }
         .joy-label { position: absolute; top: -25px; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
 
         /* Windows */
         .full-panel { position: absolute; top: 0; left: 70px; right: 0; bottom: 0; background: #000; z-index: 15; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+
+        @media (max-width: 600px) {
+            #sidebar { width: 50px; }
+            .panel-btn { width: 40px; height: 40px; font-size: 18px; margin: 5px 0; }
+            #canvas-container { left: 50px; width: calc(100% - 50px); }
+            #top-overlay { left: 50px; padding: 5px; }
+            #ticker { font-size: 12px; max-width: 50%; }
+            #pod-meters { transform: scale(0.8); transform-origin: top right; }
+            #bottom-overlay { left: 50px; bottom: 10px; padding: 0 10px; }
+            .full-panel { left: 50px; padding: 10px; }
+            .joystick { width: 90px; height: 90px; }
+            .joy-knob { width: 35px; height: 35px; }
+            .joy-label { font-size: 12px; top: -20px; }
+            #speed-val { font-size: 10px; margin: 0 5px; }
+            #speed-ctrl button { width: 25px; }
+
+            #planet-name { font-size: 24px; margin: 10px 0; }
+            #orbit-tabs button { min-width: 60px; padding: 5px 2px; font-size: 10px; }
+            .orbit-panel button { width: 100% !important; margin: 5px 0; }
+        }
         .window-body { height: calc(100% - 30px); overflow-y: auto; }
 
         /* CRT Filter */
@@ -169,13 +189,14 @@
 
         // --- SCENE SETUP ---
         const scene = new THREE.Scene();
-        const aspect = (window.innerWidth - 70) / window.innerHeight;
+        const getSidebarW = () => window.innerWidth < 600 ? 50 : 70;
+        const aspect = (window.innerWidth - getSidebarW()) / window.innerHeight;
         const viewSize = 1000;
         const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 2000);
         camera.position.set(0, 0, 1000);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth - 70, window.innerHeight);
+        renderer.setSize(window.innerWidth - getSidebarW(), window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // --- GAME STATE ---
@@ -425,15 +446,18 @@
                 }
             }
 
+            const joySize = window.innerWidth < 600 ? 50 : 60;
+            const joyRange = window.innerWidth < 600 ? 40 : 50;
+
             if (stickL.active && e.pointerId === stickL.id) {
                 if (type === 'move') {
-                    const dx = e.clientX - (rectL.left + 50);
-                    const dy = e.clientY - (rectL.top + 50);
-                    const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+                    const dx = e.clientX - (rectL.left + joySize);
+                    const dy = e.clientY - (rectL.top + joySize);
+                    const dist = Math.min(joyRange, Math.sqrt(dx*dx + dy*dy));
                     const angle = Math.atan2(dy, dx);
-                    stickL.x = (Math.cos(angle) * dist) / 50;
-                    stickL.y = (Math.sin(angle) * dist) / 50;
-                    knobL.style.transform = `translate(${stickL.x * 30}px, ${stickL.y * 30}px)`;
+                    stickL.x = (Math.cos(angle) * dist) / joyRange;
+                    stickL.y = (Math.sin(angle) * dist) / joyRange;
+                    knobL.style.transform = `translate(${stickL.x * (joySize - 20)}px, ${stickL.y * (joySize - 20)}px)`;
                 } else if (type === 'end') {
                     stickL.active = false; stickL.x = 0; stickL.y = 0;
                     knobL.style.transform = '';
@@ -442,13 +466,13 @@
 
             if (stickR.active && e.pointerId === stickR.id) {
                 if (type === 'move') {
-                    const dx = e.clientX - (rectR.left + 50);
-                    const dy = e.clientY - (rectR.top + 50);
-                    const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+                    const dx = e.clientX - (rectR.left + joySize);
+                    const dy = e.clientY - (rectR.top + joySize);
+                    const dist = Math.min(joyRange, Math.sqrt(dx*dx + dy*dy));
                     const angle = Math.atan2(dy, dx);
-                    stickR.x = (Math.cos(angle) * dist) / 50;
-                    stickR.y = (Math.sin(angle) * dist) / 50;
-                    knobR.style.transform = `translate(${stickR.x * 30}px, ${stickR.y * 30}px)`;
+                    stickR.x = (Math.cos(angle) * dist) / joyRange;
+                    stickR.y = (Math.sin(angle) * dist) / joyRange;
+                    knobR.style.transform = `translate(${stickR.x * (joySize - 20)}px, ${stickR.y * (joySize - 20)}px)`;
                 } else if (type === 'end') {
                     stickR.active = false; stickR.x = 0; stickR.y = 0;
                     knobR.style.transform = '';
@@ -862,10 +886,11 @@
         update();
 
         window.addEventListener('resize', () => {
-            const a = (window.innerWidth - 70) / window.innerHeight;
+            const sidebarW = getSidebarW();
+            const a = (window.innerWidth - sidebarW) / window.innerHeight;
             camera.left = -viewSize*a/2; camera.right = viewSize*a/2;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth - 70, window.innerHeight);
+            renderer.setSize(window.innerWidth - sidebarW, window.innerHeight);
         });
 
     </script>
