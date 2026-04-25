@@ -67,6 +67,14 @@
                 <p>System: Alpha Centauri</p>
                 <p>Credits: <span id="credits">1000</span></p>
                 <p>Population: <span id="population">0</span></p>
+                <p>Shields: <span id="shields-val">100</span>%</p>
+                <div class="status-bar" style="width: 100%; height: 10px; margin-bottom: 10px;">
+                    <div id="shields-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #0000ff;"></div>
+                </div>
+                <p>Hull: <span id="hp-val">100</span>%</p>
+                <div class="status-bar" style="width: 100%; height: 10px; margin-bottom: 10px;">
+                    <div id="hp-bar" class="status-bar-field" style="width: 100%; height: 100%; background: #00ff00;"></div>
+                </div>
                 <div id="planet-loyalty-container">
                     <!-- Loyalty bars will be injected here -->
                 </div>
@@ -120,6 +128,28 @@
 
         scene.add(ship);
 
+        // Rival Ship
+        const rivalShape = new THREE.Shape();
+        rivalShape.moveTo(0, 15);
+        rivalShape.lineTo(-10, -10);
+        rivalShape.lineTo(10, -10);
+        rivalShape.lineTo(0, 15);
+        const rivalGeometry = new THREE.BufferGeometry().setFromPoints(rivalShape.getPoints());
+        const rivalMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        const rival = new THREE.LineLoop(rivalGeometry, rivalMaterial);
+        rival.position.set(-400, 400, 0);
+        scene.add(rival);
+
+        const rivalState = {
+            velocity: new THREE.Vector2(0, 0),
+            rotation: 0,
+            hp: 100,
+            maxHp: 100,
+            flicker: 0,
+            targetPlanet: null,
+            fleeTime: 0
+        };
+
         // Planets
         class Planet {
             constructor(x, y, radius, name) {
@@ -166,6 +196,9 @@
                 } else if (this.loyalty > 0) {
                     const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 0.8;
                     this.border.material.color.setRGB(0, 0.5 * pulse, 0.5 * pulse);
+                } else if (this.loyalty < 0) {
+                    const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 0.8;
+                    this.border.material.color.setRGB(0.5 * pulse, 0, 0);
                 } else {
                     this.border.material.color.set(0x888888);
                 }
@@ -182,6 +215,9 @@
                 if (newOwner === 'player') {
                     this.mesh.material.color.set(0x004444);
                     this.border.material.color.set(0x00ffff);
+                } else if (newOwner === 'rival') {
+                    this.mesh.material.color.set(0x440000);
+                    this.border.material.color.set(0xff0000);
                 }
                 console.log(`${this.name} captured by ${newOwner}!`);
             }
@@ -282,24 +318,25 @@
 
         // Projectiles
         const projectiles = [];
-        function fireProjectile() {
+        function fireProjectile(owner = 'player', customShip = ship) {
             const points = [
                 new THREE.Vector3(0, 0, 0),
                 new THREE.Vector3(0, 20, 0)
             ];
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+            const material = new THREE.LineBasicMaterial({ color: owner === 'player' ? 0xffffff : 0xffaaaa });
             const projectile = new THREE.LineSegments(geometry, material);
 
-            projectile.position.copy(ship.position);
-            projectile.rotation.copy(ship.rotation);
+            projectile.position.copy(customShip.position);
+            projectile.rotation.copy(customShip.rotation);
 
             const velocity = new THREE.Vector2(
-                -Math.sin(ship.rotation.z) * 15,
-                Math.cos(ship.rotation.z) * 15
+                -Math.sin(customShip.rotation.z) * 15,
+                Math.cos(customShip.rotation.z) * 15
             );
 
             projectiles.push({
+                owner: owner,
                 mesh: projectile,
                 velocity: velocity,
                 life: 120 // 2 seconds at 60fps
@@ -307,13 +344,18 @@
             scene.add(projectile);
         }
 
-        // Movement State
+        // Movement & Combat State
         const player = {
             velocity: new THREE.Vector2(0, 0),
             rotation: initialRotation,
             thrust: 0.5,
             friction: 0.98,
-            maxRotationSpeed: 0.08
+            maxRotationSpeed: 0.08,
+            hp: 100,
+            maxHp: 100,
+            shields: 100,
+            maxShields: 100,
+            flicker: 0
         };
 
         const keys = {};
@@ -335,6 +377,7 @@
             const touch = e.touches[0];
             touchState.startX = touch.clientX;
             touchState.startY = touch.clientY;
+            touchState.startTime = Date.now();
             touchState.isThrusting = true; // Any touch starts thrusting for simplicity
         }, { passive: false });
 
@@ -352,7 +395,6 @@
 
         window.addEventListener('touchend', (e) => {
             // Tap to fire
-            const duration = Date.now() - touchState.startTime;
             fireProjectile();
 
             touchState.isThrusting = false;
@@ -374,6 +416,34 @@
         function animate() {
             requestAnimationFrame(animate);
 
+            // Update Rival AI
+            const rivalPos = rival.position;
+            if (rivalState.fleeTime > 0) {
+                rivalState.fleeTime--;
+                // Flee from player
+                const fleeDir = new THREE.Vector2().subVectors(new THREE.Vector2(rival.position.x, rival.position.y), new THREE.Vector2(ship.position.x, ship.position.y)).normalize();
+                rivalState.velocity.add(fleeDir.multiplyScalar(0.4));
+                rival.rotation.z = Math.atan2(-fleeDir.x, fleeDir.y);
+            } else {
+                // Seek planet
+                if (!rivalState.targetPlanet || rivalState.targetPlanet.owner === 'rival') {
+                    rivalState.targetPlanet = planets.find(p => p.owner !== 'rival');
+                }
+                if (rivalState.targetPlanet) {
+                    const dirToPlanet = new THREE.Vector2().subVectors(new THREE.Vector2(rivalState.targetPlanet.mesh.position.x, rivalState.targetPlanet.mesh.position.y), new THREE.Vector2(rival.position.x, rival.position.y)).normalize();
+                    rivalState.velocity.add(dirToPlanet.multiplyScalar(0.3));
+                    rival.rotation.z = Math.atan2(-dirToPlanet.x, dirToPlanet.y);
+                }
+            }
+            rivalState.velocity.multiplyScalar(0.98);
+            rival.position.x += rivalState.velocity.x;
+            rival.position.y += rivalState.velocity.y;
+
+            // Rival Shoot
+            if (Math.random() < 0.01 && rivalPos.distanceTo(ship.position) < 400) {
+                fireProjectile('rival', rival);
+            }
+
             // Update Drones
             droneManager.update(ship.position);
 
@@ -381,6 +451,17 @@
             let totalPop = 0;
             planets.forEach(p => {
                 const oldLoyalty = p.loyalty;
+
+                // Rival capture logic
+                const distToRival = rival.position.distanceTo(p.mesh.position);
+                if (distToRival < p.captureRadius && p.owner !== 'rival') {
+                    p.loyalty -= 0.1;
+                    if (p.loyalty <= -100) {
+                        p.loyalty = -100;
+                        p.capture('rival');
+                    }
+                }
+
                 p.update(ship.position);
 
                 if (p.owner === 'player') {
@@ -394,7 +475,8 @@
 
                 // Update UI
                 const bar = document.getElementById(`loyalty-${p.name}`);
-                if (bar) bar.style.width = `${Math.max(0, p.loyalty)}%`;
+                if (bar) bar.style.width = `${Math.abs(p.loyalty)}%`;
+                if (bar) bar.style.background = p.loyalty > 0 ? '#000080' : '#800000';
             });
 
             // Calculate Taxes
@@ -423,18 +505,57 @@
             ship.position.x += player.velocity.x;
             ship.position.y += player.velocity.y;
 
-            // Update Projectiles
+            // Update Projectiles & Combat
             for (let i = projectiles.length - 1; i >= 0; i--) {
-                const p = projectiles[i];
-                p.mesh.position.x += p.velocity.x;
-                p.mesh.position.y += p.velocity.y;
-                p.life--;
+                const proj = projectiles[i];
+                proj.mesh.position.x += proj.velocity.x;
+                proj.mesh.position.y += proj.velocity.y;
+                proj.life--;
 
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
+                // Collision Detection
+                let hit = false;
+                if (proj.owner === 'rival' && proj.mesh.position.distanceTo(ship.position) < 20) {
+                    player.shields -= 10;
+                    if (player.shields < 0) {
+                        player.hp += player.shields;
+                        player.shields = 0;
+                    }
+                    player.flicker = 2;
+                    hit = true;
+                } else if (proj.owner === 'player' && proj.mesh.position.distanceTo(rival.position) < 20) {
+                    rivalState.hp -= 10;
+                    rivalState.flicker = 2;
+                    rivalState.fleeTime = 180; // 3 seconds
+                    hit = true;
+                }
+
+                if (proj.life <= 0 || hit) {
+                    scene.remove(proj.mesh);
                     projectiles.splice(i, 1);
                 }
             }
+
+            // Flicker Effect & HP Recovery
+            if (player.flicker > 0) {
+                ship.material.color.set(0xffffff);
+                player.flicker--;
+            } else {
+                ship.material.color.set(0x00ffff);
+                player.shields = Math.min(player.maxShields, player.shields + 0.05);
+            }
+
+            if (rivalState.flicker > 0) {
+                rival.material.color.set(0xffffff);
+                rivalState.flicker--;
+            } else {
+                rival.material.color.set(0xff0000);
+            }
+
+            // Update UI Bars
+            document.getElementById('shields-val').innerText = Math.floor(player.shields);
+            document.getElementById('shields-bar').style.width = `${player.shields}%`;
+            document.getElementById('hp-val').innerText = Math.floor(player.hp);
+            document.getElementById('hp-bar').style.width = `${player.hp}%`;
 
             renderer.render(scene, camera);
         }
