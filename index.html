@@ -113,6 +113,11 @@
         const shipGeometry = new THREE.BufferGeometry().setFromPoints(shipShape.getPoints());
         const shipMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
         const ship = new THREE.LineLoop(shipGeometry, shipMaterial);
+
+        // Initial Rotation to face Xylos (300, 200)
+        const initialRotation = Math.atan2(-300, 200);
+        ship.rotation.z = initialRotation;
+
         scene.add(ship);
 
         // Planets
@@ -305,7 +310,7 @@
         // Movement State
         const player = {
             velocity: new THREE.Vector2(0, 0),
-            rotation: 0,
+            rotation: initialRotation,
             thrust: 0.5,
             friction: 0.98,
             maxRotationSpeed: 0.08
