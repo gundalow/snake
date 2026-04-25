@@ -26,8 +26,9 @@
 
         /* Bottom Controls */
         #bottom-overlay { position: absolute; bottom: 0; left: 70px; right: 0; height: 120px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 0 20px 10px 20px; box-sizing: border-box; align-items: flex-end; }
-        .joystick { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; pointer-events: auto; }
-        .joy-knob { width: 40px; height: 40px; background: rgba(255,255,255,0.5); border-radius: 50%; position: absolute; top: 30px; left: 30px; }
+        .joystick { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; }
+        .joy-knob { width: 40px; height: 40px; background: rgba(255,255,255,0.8); border-radius: 50%; position: absolute; }
+        .joy-label { position: absolute; top: -25px; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
 
         /* Windows */
         .full-panel { position: absolute; top: 0; left: 70px; right: 0; bottom: 0; background: #000; z-index: 15; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
@@ -70,7 +71,10 @@
         <div id="crt-overlay"></div>
 
         <div id="bottom-overlay">
-            <div id="joy-left" class="joystick"><div class="joy-knob" id="knob-left"></div></div>
+            <div id="joy-left" class="joystick">
+                <div class="joy-label">NAV</div>
+                <div class="joy-knob" id="knob-left"></div>
+            </div>
             <div id="extra-ctrls" style="pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 5px;">
                 <div id="speed-ctrl" style="display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #888; padding: 2px 5px; border-radius: 5px;">
                     <button id="speed-down" style="width: 30px;">-</button>
@@ -81,7 +85,10 @@
                     <div id="wpn-label" style="font-size: 10px;">PHASER</div>
                 </div>
             </div>
-            <div id="joy-right" class="joystick" style="background: rgba(255,0,0,0.1); border-color: rgba(255,0,0,0.3);"><div class="joy-knob" id="knob-right" style="background: rgba(255,0,0,0.5);"></div></div>
+            <div id="joy-right" class="joystick" style="background: rgba(255,0,0,0.2); border-color: rgba(255,0,0,0.5);">
+                <div class="joy-label">FIRE</div>
+                <div class="joy-knob" id="knob-right" style="background: rgba(255,0,0,0.8);"></div>
+            </div>
         </div>
 
         <!-- Panels -->
@@ -401,6 +408,11 @@
         let stickL = { active: false, id: -1, x: 0, y: 0 };
         let stickR = { active: false, id: -1, x: 0, y: 0 };
 
+        // --- KEYBOARD ---
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.code] = true; });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
         function handlePointer(e, type) {
             const rectL = joyL.getBoundingClientRect();
             const rectR = joyR.getBoundingClientRect();
@@ -557,19 +569,36 @@
             pState.rot += diff * 0.1;
             playerShip.rotation.z = pState.rot;
 
-            // Dual-Stick Logic
+            // Input Logic: Dual-Stick + Keyboard
             if (pCooldown > 0) pCooldown--;
+
+            // Rotation
+            if (keys['KeyA']) pState.targetRot += 0.05;
+            if (keys['KeyD']) pState.targetRot -= 0.05;
+
             if (stickL.active) {
                 const deadzone = 0.1;
                 if (Math.abs(stickL.x) > deadzone || Math.abs(stickL.y) > deadzone) {
                     pState.targetRot = Math.atan2(-stickL.x, -stickL.y);
-                    const thrustMag = Math.sqrt(stickL.x*stickL.x + stickL.y*stickL.y);
-                    const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower);
-                    pState.vel.add(thrust);
                 }
             }
-            if (stickR.active) {
-                if (pCooldown <= 0 && (Math.abs(stickR.x) > 0.5 || Math.abs(stickR.y) > 0.5)) {
+
+            // Thrust
+            let thrustMag = 0;
+            if (keys['KeyW']) thrustMag = 1;
+            if (stickL.active) {
+                const mag = Math.sqrt(stickL.x*stickL.x + stickL.y*stickL.y);
+                if (mag > 0.1) thrustMag = Math.max(thrustMag, mag);
+            }
+
+            if (thrustMag > 0) {
+                const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower);
+                pState.vel.add(thrust);
+            }
+
+            // Firing
+            if ((keys['Space'] || stickR.active) && pCooldown <= 0) {
+                if (!stickR.active || (Math.abs(stickR.x) > 0.5 || Math.abs(stickR.y) > 0.5)) {
                     fireWeapon(true);
                     pCooldown = 10;
                 }
