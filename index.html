@@ -3,80 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warpath Classic</title>
+    <title>Warpath Android</title>
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .window { pointer-events: auto; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; color: #fff; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
 
-        /* Ticker Top Bar */
-        #ticker-bar { position: absolute; top: 0; left: 0; width: 100%; background: #c0c0c0; border-bottom: 2px solid #808080; display: flex; padding: 2px 10px; box-sizing: border-box; font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: bold; z-index: 20; }
-        .ticker-item { margin-right: 20px; }
+        /* Left Panel Selectors */
+        #sidebar { width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 20; border-right: 1px solid #444; }
+        .panel-btn { width: 50px; height: 50px; margin: 10px 0; border-radius: 50%; background: #444; border: 3px solid #888; color: #fff; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .panel-btn.active { border-color: #f00; background: #222; box-shadow: 0 0 10px #f00; }
 
-        /* Start Menu Button */
-        #start-btn { position: absolute; bottom: 2px; left: 2px; height: 25px; pointer-events: auto; z-index: 40; }
+        /* Top Overlay */
+        #top-overlay { position: absolute; top: 0; left: 70px; right: 0; height: 60px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 5px 15px; box-sizing: border-box; }
+        #ticker { color: #f88; font-family: 'Courier New', Courier, monospace; font-size: 14px; white-space: nowrap; overflow: hidden; max-width: 60%; }
+        #pod-meters { display: flex; flex-direction: column; align-items: flex-end; }
+        .pod-row { display: flex; align-items: center; margin-bottom: 2px; }
+        .pod-label { font-size: 10px; margin-right: 5px; width: 40px; text-align: right; }
+        .pod-bar { width: 80px; height: 8px; background: #222; border: 1px solid #666; position: relative; }
+        .pod-fill { height: 100%; position: absolute; left: 0; top: 0; }
 
-        /* Joysticks */
-        .joystick-base { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(192, 192, 192, 0.2); border: 2px solid rgba(192, 192, 192, 0.4); border-radius: 50%; pointer-events: auto; z-index: 30; }
-        #joystick-left { left: 40px; }
-        #joystick-right { right: 40px; }
-        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: #c0c0c0; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf; pointer-events: none; }
+        /* Bottom Controls */
+        #bottom-overlay { position: absolute; bottom: 0; left: 70px; right: 0; height: 120px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 0 20px 10px 20px; box-sizing: border-box; align-items: flex-end; }
+        .joystick { width: 100px; height: 100px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; pointer-events: auto; }
+        .joy-knob { width: 40px; height: 40px; background: rgba(255,255,255,0.5); border-radius: 50%; position: absolute; top: 30px; left: 30px; }
 
-        /* Progress Bars Override */
-        .status-bar { display: block !important; height: 12px !important; }
-        .status-bar-field { display: block !important; flex-grow: 0 !important; height: 100% !important; }
+        /* Windows */
+        .full-panel { position: absolute; top: 0; left: 70px; right: 0; bottom: 0; background: #000; z-index: 15; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .window-body { height: calc(100% - 30px); overflow-y: auto; }
+
+        /* CRT Filter */
+        #crt-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 3px 100%; }
+
     </style>
 </head>
 <body>
-    <div id="ticker-bar">
-        <span class="ticker-item">CR: <span id="cr-val">1000</span></span>
-        <span class="ticker-item">POP: <span id="pop-val">0</span></span>
-        <span class="ticker-item" style="flex-grow: 1; text-align: right;" id="timer">05:00</span>
-    </div>
-
-    <div id="canvas-container"></div>
-
-    <button id="start-btn" class="window">Start</button>
-
-    <div id="joystick-left" class="joystick-base">
-        <div id="knob-left" class="joystick-knob"></div>
-    </div>
-    <div id="joystick-right" class="joystick-base">
-        <div id="knob-right" class="joystick-knob"></div>
-    </div>
-
-    <div id="ui-layer">
-        <!-- Ship Comms Window -->
-        <div class="window" style="width: 220px; position: absolute; top: 40px; left: 10px;">
-            <div class="title-bar"><div class="title-bar-text">Ship Comms</div></div>
-            <div class="window-body">
-                <p>Shields: <span id="shields-txt">100</span>%</p>
-                <div class="status-bar"><div id="shields-bar" class="status-bar-field" style="width: 100%; background: #000080;"></div></div>
-                <p>Hull: <span id="hull-txt">100</span>%</p>
-                <div class="status-bar"><div id="hull-bar" class="status-bar-field" style="width: 100%; background: #008000;"></div></div>
-                <div id="loyalty-list" style="margin-top: 10px; font-size: 10px;"></div>
+    <div id="game-container">
+        <div id="mission-debrief" class="window" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; display: none; width: 300px;">
+            <div class="title-bar"><div class="title-bar-text">MISSION DEBRIEF</div></div>
+            <div class="window-body" style="text-align: center;">
+                <h2 id="debrief-status">MISSION COMPLETE</h2>
+                <p id="debrief-msg"></p>
+                <button onclick="location.reload()">RESTART PATH</button>
             </div>
         </div>
 
-        <!-- Starbase Shop -->
-        <div id="shop-window" class="window" style="width: 250px; position: absolute; top: 40px; right: 10px; display: none;">
-            <div class="title-bar"><div class="title-bar-text">Starbase Shop</div></div>
-            <div class="window-body">
-                <button id="up-speed" style="width:100%; margin-bottom:4px;">Thrust Lvl 1 (500 Cr)</button>
-                <button id="up-shields" style="width:100%; margin-bottom:4px;">Shields Lvl 1 (800 Cr)</button>
-                <button id="up-damage" style="width:100%;">Lasers Lvl 1 (1000 Cr)</button>
+        <div id="sidebar">
+            <div id="btn-comm" class="panel-btn">C</div>
+            <div id="btn-galaxy" class="panel-btn">G</div>
+            <div id="btn-orbit" class="panel-btn">O</div>
+            <div id="btn-tactical" class="panel-btn active">T</div>
+        </div>
+
+        <div id="top-overlay">
+            <div id="ticker">LOYALTY SHIFTS IN ALPHA CENTAURI... POPULATION GROWTH REPORTED...</div>
+            <div id="pod-meters">
+                <div class="pod-row"><span class="pod-label">ENERGY</span><div class="pod-bar"><div id="fill-energy" class="pod-fill" style="width: 100%; background: #f00;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">CHARGE</span><div class="pod-bar"><div id="fill-charge" class="pod-fill" style="width: 100%; background: #00f;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">CARGO</span><div class="pod-bar"><div id="fill-cargo" class="pod-fill" style="width: 0%; background: #f0f;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">SHIELD</span><div class="pod-bar"><div id="fill-shield" class="pod-fill" style="width: 100%; background: #0ff;"></div></div></div>
             </div>
         </div>
 
-        <!-- Win/Loss -->
-        <div id="end-screen" class="window" style="width: 300px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; text-align: center;">
-            <div class="title-bar"><div class="title-bar-text">Mission End</div></div>
-            <div class="window-body">
-                <h1 id="result-msg">VICTORY</h1>
-                <p>The Galaxy has been unified.</p>
-                <button onclick="location.reload()">New Mission</button>
+        <div id="canvas-container"></div>
+        <div id="crt-overlay"></div>
+
+        <div id="bottom-overlay">
+            <div id="joy-left" class="joystick"><div class="joy-knob" id="knob-left"></div></div>
+            <div id="extra-ctrls" style="pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <div id="speed-ctrl" style="display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #888; padding: 2px 5px; border-radius: 5px;">
+                    <button id="speed-down" style="width: 30px;">-</button>
+                    <span id="speed-val" style="margin: 0 10px; font-size: 12px; font-family: monospace;">SPD 1</span>
+                    <button id="speed-up" style="width: 30px;">+</button>
+                </div>
+                <div id="wpn-selector" style="background: rgba(128, 0, 128, 0.5); border: 1px solid #a0a; padding: 5px; border-radius: 5px; cursor: pointer; text-align: center;">
+                    <div id="wpn-label" style="font-size: 10px;">PHASER</div>
+                </div>
+            </div>
+            <div id="joy-right" class="joystick" style="background: rgba(255,0,0,0.1); border-color: rgba(255,0,0,0.3);"><div class="joy-knob" id="knob-right" style="background: rgba(255,0,0,0.5);"></div></div>
+        </div>
+
+        <!-- Panels -->
+        <div id="panel-comm" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">COMMUNICATIONS</div></div>
+            <div class="window-body" id="comm-log">
+                <p>[HINT] Tap a panel selector on the left to switch views.</p>
+                <p>[HINT] Flick the tactical screen to navigate your ship.</p>
+            </div>
+        </div>
+
+        <div id="panel-galaxy" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">GALAXY MAP</div></div>
+            <div class="window-body" style="background: #000; position: relative;">
+                <canvas id="galaxy-map-canvas" style="width: 100%; height: 300px; border: 1px solid #444;"></canvas>
+                <div id="player-stats">
+                    <h3>CAPTAIN STATUS</h3>
+                    <p>CREDITS: <span id="galaxy-credits">1000</span></p>
+                    <p>POPULATION: <span id="galaxy-pop">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-orbit" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">ORBITAL SERVICES</div></div>
+            <div class="window-body" id="orbit-content">
+                <div style="text-align: center;">
+                    <h2 id="planet-name">DEEP SPACE</h2>
+                    <p id="planet-owner">NO PLANET IN ORBIT</p>
+                    <div id="orbit-tabs" style="display: flex; justify-content: center; margin-bottom: 10px;">
+                        <button id="tab-scan" class="active">SCAN</button>
+                        <button id="tab-shop">SHOP</button>
+                        <button id="tab-invest">INVEST</button>
+                        <button id="tab-dock">DOCK</button>
+                    </div>
+                    <hr>
+                    <div id="orbit-scan" class="orbit-panel">
+                        <div id="planet-stats-display" style="display: none;">
+                            <p>ORE: <span id="stat-ore">0</span> Kg</p>
+                            <p>POP: <span id="stat-pop">0</span></p>
+                            <button id="btn-mine" style="width: 150px; height: 40px;">MINE ORE</button>
+                            <button id="btn-sell" style="width: 150px; height: 40px;">SELL CARGO</button>
+                        </div>
+                    </div>
+                    <div id="orbit-shop" class="orbit-panel" style="display: none;">
+                        <p>Starbase Inventory:</p>
+                        <button class="buy-btn" id="buy-thrust">THRUST UPGRADE (<span id="cost-thrust">500</span> Cr)</button>
+                        <button class="buy-btn" id="buy-shield">SHIELD CAPACITY (<span id="cost-shield">800</span> Cr)</button>
+                        <button class="buy-btn" id="buy-damage">PHASER DAMAGE (<span id="cost-damage">1000</span> Cr)</button>
+                    </div>
+                    <div id="orbit-invest" class="orbit-panel" style="display: none;">
+                        <p>Invest in development:</p>
+                        <button class="invest-btn" data-cat="Industry">INDUSTRY (50,000 Cr)</button>
+                        <button class="invest-btn" data-cat="Defense">DEFENSE (50,000 Cr)</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -99,258 +160,685 @@
             o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // --- SCENE ---
+        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
-        const aspect = window.innerWidth / window.innerHeight;
+        const aspect = (window.innerWidth - 70) / window.innerHeight;
         const viewSize = 1000;
-        const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 1000);
-        camera.position.z = 10;
+        const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 2000);
+        camera.position.set(0, 0, 1000);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(window.innerWidth - 70, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // --- CRT SHADER (Scanlines) ---
-        const scanlineCanvas = document.createElement('canvas');
-        const scanlineCtx = scanlineCanvas.getContext('2d');
-        function updateScanlines() {
-            scanlineCanvas.width = window.innerWidth; scanlineCanvas.height = window.innerHeight;
-            scanlineCtx.fillStyle = 'rgba(18, 16, 16, 0.1)';
-            for (let i = 0; i < scanlineCanvas.height; i += 4) scanlineCtx.fillRect(0, i, scanlineCanvas.width, 2);
-        }
-        updateScanlines();
-        scanlineCanvas.style.position = 'absolute'; scanlineCanvas.style.top = '0'; scanlineCanvas.style.left = '0'; scanlineCanvas.style.pointerEvents = 'none'; scanlineCanvas.style.zIndex = '50';
-        document.body.appendChild(scanlineCanvas);
-        renderer.domElement.style.filter = "contrast(1.2) brightness(1.1)";
+        // --- GAME STATE ---
+        const pState = {
+            pos: new THREE.Vector3(0, 0, 0),
+            vel: new THREE.Vector2(0, 0),
+            rot: Math.atan2(-800, 600),
+            targetRot: Math.atan2(-800, 600),
+            speed: 1,
+            maxSpeed: 5,
+            energy: 100,
+            charge: 100,
+            cargo: 0,
+            shields: [100],
+            credits: 1000,
+            pop: 0,
+            weapon: 'PHASER',
+            orbiting: null,
+            targetPlanet: null,
+            hp: 100,
+            thrustPower: 0.5,
+            dmgPower: 10
+        };
 
-        // --- GAME OBJECTS ---
+        const rState = {
+            pos: new THREE.Vector3(1000, -1000, 0),
+            vel: new THREE.Vector2(0, 0),
+            rot: 0,
+            state: 'SEARCH', // SEARCH, CONVERT, DEFEND
+            targetPlanet: null,
+            hp: 100,
+            shields: [100]
+        };
+
+        const worldSize = 5000;
+        const planets = [];
+
+        // --- DRONES ---
+        const maxDrones = 1000;
+        const droneGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,3,0), new THREE.Vector3(-2,-2,0), new THREE.Vector3(2,-2,0), new THREE.Vector3(0,3,0)]);
+        const droneMesh = new THREE.InstancedMesh(droneGeom, new THREE.MeshBasicMaterial({ color: 0xffff00 }), maxDrones);
+        scene.add(droneMesh);
+        const droneData = [];
+        const dummy = new THREE.Object3D();
+
+        for (let i = 0; i < maxDrones; i++) {
+            droneData.push({
+                active: false,
+                parent: null,
+                pos: new THREE.Vector3(),
+                vel: new THREE.Vector3(),
+                rot: 0,
+                state: 'ORBIT',
+                hp: 1
+            });
+        }
+
+        // --- OBJECTS ---
         const shipGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,15,0), new THREE.Vector3(-10,-10,0), new THREE.Vector3(10,-10,0), new THREE.Vector3(0,15,0)]);
-        const shipMat = new THREE.LineBasicMaterial({ color: 0x00ffff });
-        const playerShip = new THREE.LineLoop(shipGeom, shipMat);
+        const playerShip = new THREE.LineLoop(shipGeom, new THREE.LineBasicMaterial({ color: 0x00ffff }));
+        const playerShieldMesh = new THREE.LineLoop(new THREE.CircleGeometry(25, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 }));
+        playerShip.add(playerShieldMesh);
         scene.add(playerShip);
 
-        const shieldGeom = new THREE.RingGeometry(22, 24, 32);
-        const shieldMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0 });
-        const playerShield = new THREE.Mesh(shieldGeom, shieldMat);
-        playerShip.add(playerShield);
-
-        const rivalMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        const rivalShip = new THREE.LineLoop(shipGeom, rivalMat);
-        rivalShip.position.set(-400, 400, 0);
+        const rivalShip = new THREE.LineLoop(shipGeom, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+        const rivalShieldMesh = new THREE.LineLoop(new THREE.CircleGeometry(25, 32), new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 }));
+        rivalShip.add(rivalShieldMesh);
+        rivalShip.position.set(1000, -1000, 0);
         scene.add(rivalShip);
 
-        const starbase = new THREE.Mesh(new THREE.TorusGeometry(35, 4, 16, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
-        scene.add(starbase);
+        function createPlanet(x, y, r, name) {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.6 }));
+            const border = new THREE.Mesh(new THREE.RingGeometry(r, r+5, 32), new THREE.MeshBasicMaterial({ color: 0x888888 }));
+            const aura = new THREE.Mesh(new THREE.RingGeometry(r+10, r+40, 32), new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.1 }));
+            group.add(mesh, border, aura);
+            group.position.set(x, y, -10);
+            scene.add(group);
+            const p = { group, mesh, border, aura, r, name, loyalty: 0, owner: 'neutral', pop: 0, ore: 1000,
+                update: function() {
+                    this.aura.material.color.set(this.owner === 'player' ? 0x00ff00 : (this.owner === 'rival' ? 0xff0000 : 0xffff00));
+                    if(this.owner !== 'neutral') {
+                        if(this.pop === 0) this.pop = 100;
+                        this.pop *= 1.0001;
 
-        // --- STATE ---
-        const gameState = { time: 300, credits: 1000, pop: 0, over: false };
-        const pState = { vel: new THREE.Vector2(), rot: Math.atan2(-300, 200), thrust: 0.5, hp: 100, sh: 100, shMax: 100, shDelay: 0, dmg: 10, dead: false, upLvl: {s:1, sh:1, d:1} };
-        const rState = { vel: new THREE.Vector2(), rot: 0, hp: 100, dead: false, target: null, flee: 0 };
-        const inputs = { left: { id: null, x: 0, y: 0 }, right: { id: null, active: false, lastFire: 0 } };
-        playerShip.rotation.z = pState.rot;
-
-        // --- PLANETS & DRONES ---
-        class Planet {
-            constructor(x, y, r, name) {
-                this.name=name; this.loyalty=0; this.pop=0; this.owner='neutral'; this.radius=r;
-                this.mesh=new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 }));
-                this.mesh.position.set(x, y, -1);
-                this.border=new THREE.Mesh(new THREE.RingGeometry(r, r+3, 32), new THREE.MeshBasicMaterial({ color: 0x888888 }));
-                this.border.position.set(x, y, -0.9);
-                scene.add(this.mesh); scene.add(this.border);
-            }
-            update() {
-                const dP = playerShip.position.distanceTo(this.mesh.position) < this.radius*2 && !pState.dead;
-                const dR = rivalShip.position.distanceTo(this.mesh.position) < this.radius*2 && !rState.dead;
-                if (dP && !dR) { this.loyalty = Math.min(100, this.loyalty + 0.1); if(this.loyalty===100 && this.owner!=='player') this.capture('player'); }
-                else if (dR && !dP) { this.loyalty = Math.max(-100, this.loyalty - 0.1); if(this.loyalty===-100 && this.owner!=='rival') this.capture('rival'); }
-
-                this.border.material.color.set(this.owner==='player'?0x00ffff:(this.owner==='rival'?0xff0000:(this.loyalty>0?0x004444:(this.loyalty<0?0x440000:0x888888))));
-                if(Math.abs(this.loyalty)>0) { if(this.pop===0) this.pop=100; this.pop *= 1.0001; }
-            }
-            capture(o) {
-                this.owner=o; this.mesh.material.color.set(o==='player'?0x004444:0x440000);
-                sfx(600, 0.3, 'sine', false);
-            }
-        }
-        const planets = [new Planet(300, 200, 45, "Xylos"), new Planet(-250, -150, 35, "Ygor"), new Planet(100, -300, 55, "Zion")];
-
-        const droneMesh = new THREE.InstancedMesh(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,2,0, -1,-1,0, 1,-1,0]), 3)), new THREE.MeshBasicMaterial({ color: 0xffff00 }), 100);
-        scene.add(droneMesh);
-        const drones = Array.from({length: 100}, () => ({ p: null, a: Math.random()*6.28, dist: 70+Math.random()*30, s: 0.02+Math.random()*0.02, pos: new THREE.Vector3(), state: 'ORBIT' }));
-
-        // --- PROJECTILES & PARTICLES ---
-        const projectiles = [], particles = [];
-        function fire(o, ship, dmg) {
-            if (ship.parent === null) return;
-            const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 10), new THREE.MeshBasicMaterial({ color: o==='player'?0x00ffff:0xffaaaa }));
-            m.position.copy(ship.position); m.rotation.copy(ship.rotation);
-            projectiles.push({ o, m, v: new THREE.Vector2(-Math.sin(ship.rotation.z)*15, Math.cos(ship.rotation.z)*15), life: 100, dmg });
-            scene.add(m); sfx(400, 0.05);
-            // Recoil
-            const rec = new THREE.Vector2(Math.sin(ship.rotation.z)*0.5, -Math.cos(ship.rotation.z)*0.5);
-            if(o==='player') pState.vel.add(rec); else rState.vel.add(rec);
-        }
-
-        function explode(x, y, color) {
-            for(let i=0; i<15; i++) {
-                const m = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({ color }));
-                m.position.set(x, y, 0);
-                particles.push({ m, v: new THREE.Vector2((Math.random()-0.5)*12, (Math.random()-0.5)*12), life: 50 });
-                scene.add(m);
-            }
-            sfx(100, 0.4, 'sawtooth');
-        }
-
-        // --- CONTROLS ---
-        const joyL = document.getElementById('joystick-left'), knobL = document.getElementById('knob-left');
-        const joyR = document.getElementById('joystick-right'), knobR = document.getElementById('knob-right');
-
-        const handleTouch = (e, isStart) => {
-            for(let t of e.changedTouches) {
-                const x = t.clientX, y = t.clientY;
-                if (x < window.innerWidth/2) {
-                    if (isStart) inputs.left.id = t.identifier;
-                    if (t.identifier === inputs.left.id) {
-                        const r = joyL.getBoundingClientRect(), dx = x-(r.left+60), dy = y-(r.top+60), d = Math.sqrt(dx*dx+dy*dy), m = Math.min(d, 50);
-                        const cDx = (dx/d)*m, cDy = (dy/d)*m;
-                        knobL.style.transform = `translate(calc(-50% + ${cDx}px), calc(-50% + ${cDy}px))`;
-                        // Deadzone 10% (5px of 50px)
-                        inputs.left.x = Math.abs(cDx) > 5 ? cDx/50 : 0;
-                        inputs.left.y = Math.abs(cDy) > 5 ? cDy/50 : 0;
-                    }
-                } else {
-                    if (isStart) { inputs.right.id = t.identifier; inputs.right.active = true; fire('player', playerShip, pState.dmg); }
-                }
-            }
-        };
-        const endTouch = (e) => {
-            for(let t of e.changedTouches) {
-                if(t.identifier === inputs.left.id) { inputs.left.id=null; inputs.left.x=0; inputs.left.y=0; knobL.style.transform='translate(-50%,-50%)'; }
-                if(t.identifier === inputs.right.id) { inputs.right.id=null; inputs.right.active=false; }
-            }
-        };
-        window.addEventListener('touchstart', e => handleTouch(e, true), {passive:false});
-        window.addEventListener('touchmove', e => handleTouch(e, false), {passive:false});
-        window.addEventListener('touchend', endTouch);
-
-        // --- SHOP & UI ---
-        const loyaltyList = document.getElementById('loyalty-list');
-        planets.forEach(p => { const d = document.createElement('div'); d.innerHTML = `<div>${p.name}</div><div class="status-bar"><div id="loy-${p.name}" class="status-bar-field" style="width:0%; background:#000080;"></div></div>`; loyaltyList.appendChild(d); });
-
-        const buy = (id, cost, level, nextCost, key, factor) => {
-            const btn = document.getElementById(id);
-            btn.onclick = () => {
-                if(gameState.credits >= cost) {
-                    gameState.credits -= cost; pState.upLvl[key]++;
-                    const nCost = Math.floor(cost * 1.5);
-                    btn.innerText = `${btn.innerText.split('(')[0]}Lvl ${pState.upLvl[key]} (${nCost} Cr)`;
-                    if(key==='s') pState.thrust *= 1.2;
-                    if(key==='sh') { pState.shMax += 50; pState.sh = pState.shMax; }
-                    if(key==='d') pState.dmg += 10;
-                    sfx(800, 0.1, 'sine', false);
-                }
-            };
-        };
-        buy('up-speed', 500, 1, 750, 's'); buy('up-shields', 800, 1, 1200, 'sh'); buy('up-damage', 1000, 1, 1500, 'd');
-
-        setInterval(() => {
-            if(gameState.over) return; gameState.time--;
-            if(gameState.time<=0) { gameState.over=true; document.getElementById('end-screen').style.display='block'; }
-            const m=Math.floor(gameState.time/60), s=gameState.time%60; document.getElementById('timer').innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        }, 1000);
-
-        // --- LOOP ---
-        function loop() {
-            requestAnimationFrame(loop);
-            if(gameState.over) return;
-
-            // Physics (Snappy Rotation 360/s = ~0.1 rad/frame)
-            if(!pState.dead) {
-                if(Math.abs(inputs.left.x)>0) pState.rot -= inputs.left.x * 0.15;
-                playerShip.rotation.z = pState.rot;
-                if(inputs.left.y < -0.2) { pState.vel.x -= Math.sin(pState.rot)*pState.thrust; pState.vel.y += Math.cos(pState.rot)*pState.thrust; }
-                pState.vel.multiplyScalar(0.98);
-                playerShip.position.x += pState.vel.x; playerShip.position.y += pState.vel.y;
-                if(inputs.right.active && Date.now()-inputs.right.lastFire > 200) { fire('player', playerShip, pState.dmg); inputs.right.lastFire = Date.now(); }
-            }
-
-            // Rival AI
-            if(!rState.dead) {
-                if(rState.flee > 0) { rState.flee--; const f = new THREE.Vector2().subVectors(rivalShip.position, playerShip.position).normalize(); rState.vel.add(f.multiplyScalar(0.4)); }
-                else {
-                    if(!rState.target || rState.target.owner==='rival') rState.target = planets.find(p=>p.owner!=='rival');
-                    if(rState.target) { const s = new THREE.Vector2().subVectors(rState.target.mesh.position, rivalShip.position).normalize(); rState.vel.add(s.multiplyScalar(0.3)); rivalShip.rotation.z = Math.atan2(-s.x, s.y); }
-                }
-                rState.vel.multiplyScalar(0.98); rivalShip.position.x += rState.vel.x; rivalShip.position.y += rState.vel.y;
-                if(Math.random()<0.01 && rivalShip.position.distanceTo(playerShip.position)<400) fire('rival', rivalShip, 10);
-            }
-
-            // Update Objects
-            let totalPop = 0;
-            planets.forEach(p => {
-                p.update(); totalPop += (p.owner==='player'?p.pop:0);
-                const b = document.getElementById(`loy-${p.name}`);
-                b.style.width = `${Math.abs(p.loyalty)}%`; b.style.background = p.loyalty > 0 ? '#000080' : '#800000';
-            });
-            gameState.pop = totalPop; gameState.credits += totalPop * 0.0001;
-            document.getElementById('cr-val').innerText = Math.floor(gameState.credits);
-            document.getElementById('pop-val').innerText = Math.floor(gameState.pop);
-            document.getElementById('shields-txt').innerText = Math.floor(pState.sh);
-            document.getElementById('shields-bar').style.width = `${(pState.sh/pState.shMax)*100}%`;
-            document.getElementById('hull-txt').innerText = Math.floor(pState.hp);
-            document.getElementById('hull-bar').style.width = `${pState.hp}%`;
-            document.getElementById('shop-window').style.display = playerShip.position.distanceTo(starbase.position)<150 ? 'block' : 'none';
-
-            // Drones
-            let dIdx = 0;
-            planets.forEach(p => {
-                if(p.owner==='neutral') return;
-                for(let i=0; i<5; i++) {
-                    const d = drones[dIdx++]; d.p = p; d.a += d.s;
-                    const oX = p.mesh.position.x + Math.cos(d.a)*d.dist, oY = p.mesh.position.y + Math.sin(d.a)*d.dist;
-                    d.pos.set(oX, oY, 0);
-                    const enemy = (p.owner==='player'?rivalShip:playerShip);
-                    const enemyState = (p.owner==='player'?rState:pState);
-                    if(!enemyState.dead && enemy.position.distanceTo(p.mesh.position)<300) {
-                        d.pos.add(new THREE.Vector3().subVectors(enemy.position, d.pos).normalize().multiplyScalar(4));
-                        // Papercut damage
-                        if(d.pos.distanceTo(enemy.position) < 20) {
-                            if(enemyState.sh > 0) enemyState.sh -= 0.1; else enemyState.hp -= 0.1;
+                        // Spawn drones
+                        let activeDrones = droneData.filter(d => d.active && d.parent === this).length;
+                        if (activeDrones < 10) {
+                            let d = droneData.find(d => !d.active);
+                            if (d) {
+                                d.active = true;
+                                d.parent = this;
+                                d.pos.copy(this.group.position).add(new THREE.Vector3(Math.random()*100-50, Math.random()*100-50, 0));
+                                d.state = 'ORBIT';
+                            }
                         }
                     }
-                    droneMesh.setMatrixAt(dIdx-1, new THREE.Matrix4().setPosition(d.pos));
+                }
+            };
+            planets.push(p);
+            return p;
+        }
+
+        createPlanet(800, 600, 60, "Xylos");
+        createPlanet(-1000, -800, 50, "Ygor");
+        createPlanet(2000, -500, 70, "Zion");
+        createPlanet(0, 0, 80, "Home");
+
+        // --- UI LOGIC ---
+        const panels = ['comm', 'galaxy', 'orbit', 'tactical'];
+        function showPanel(id) {
+            panels.forEach(p => {
+                const el = document.getElementById('panel-' + p);
+                if(el) el.style.display = (p === id ? 'block' : 'none');
+                const btn = document.getElementById('btn-' + p);
+                if(btn) btn.classList.toggle('active', p === id);
+            });
+            if(id === 'tactical') renderer.domElement.style.display = 'block';
+            sfx(800, 0.05, 'sine', false);
+        }
+
+        document.getElementById('btn-comm').onclick = () => showPanel('comm');
+        document.getElementById('btn-galaxy').onclick = () => { showPanel('galaxy'); drawGalaxyMap(); };
+        document.getElementById('btn-orbit').onclick = () => showPanel('orbit');
+
+        function drawGalaxyMap() {
+            const canvas = document.getElementById('galaxy-map-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            planets.forEach(p => {
+                const x = (p.group.position.x / 5000 + 0.5) * canvas.width;
+                const y = (p.group.position.y / 5000 + 0.5) * canvas.height;
+                ctx.fillStyle = p.owner === 'player' ? '#0ff' : (p.owner === 'rival' ? '#f00' : '#888');
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.fillText(p.name, x + 8, y + 4);
+            });
+
+            // Player position
+            const px = (playerShip.position.x / 5000 + 0.5) * canvas.width;
+            const py = (playerShip.position.y / 5000 + 0.5) * canvas.height;
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(px - 3, py - 3, 6, 6);
+        }
+        document.getElementById('btn-tactical').onclick = () => showPanel('tactical');
+
+        // Orbital Tabs
+        const orbitTabs = ['scan', 'shop', 'invest', 'dock'];
+        function showOrbitTab(id) {
+            orbitTabs.forEach(t => {
+                const el = document.getElementById('orbit-' + t);
+                if(el) el.style.display = (t === id ? 'block' : 'none');
+            });
+            sfx(600, 0.02, 'sine');
+        }
+        document.getElementById('tab-scan').onclick = () => showOrbitTab('scan');
+        document.getElementById('tab-shop').onclick = () => showOrbitTab('shop');
+        document.getElementById('tab-invest').onclick = () => showOrbitTab('invest');
+
+        // Shop logic
+        const shopState = { thrust: 500, shield: 800, damage: 1000 };
+        document.getElementById('buy-thrust').onclick = () => {
+            if(pState.credits >= shopState.thrust) {
+                pState.credits -= shopState.thrust;
+                pState.thrustPower += 0.2;
+                shopState.thrust = Math.floor(shopState.thrust * 1.5);
+                document.getElementById('cost-thrust').innerText = shopState.thrust;
+                sfx(1200, 0.1, 'sine');
+            }
+        };
+        document.getElementById('buy-shield').onclick = () => {
+            if(pState.credits >= shopState.shield) {
+                pState.credits -= shopState.shield;
+                pState.shields[0] = Math.min(200, pState.shields[0] + 50);
+                shopState.shield = Math.floor(shopState.shield * 1.5);
+                document.getElementById('cost-shield').innerText = shopState.shield;
+                sfx(1200, 0.1, 'sine');
+            }
+        };
+        document.getElementById('buy-damage').onclick = () => {
+            if(pState.credits >= shopState.damage) {
+                pState.credits -= shopState.damage;
+                pState.dmgPower += 5;
+                shopState.damage = Math.floor(shopState.damage * 1.5);
+                document.getElementById('cost-damage').innerText = shopState.damage;
+                sfx(1200, 0.1, 'sine');
+            }
+        };
+
+        document.getElementById('btn-mine').onclick = () => {
+            if(pState.orbiting && pState.orbiting.ore > 0 && pState.cargo < 100) {
+                pState.orbiting.ore -= 10;
+                pState.cargo += 10;
+                sfx(200, 0.1, 'sawtooth');
+                updateOrbitUI();
+            }
+        };
+
+        document.getElementById('btn-sell').onclick = () => {
+            if(pState.orbiting && pState.cargo > 0) {
+                pState.credits += pState.cargo * 10;
+                pState.cargo = 0;
+                sfx(1000, 0.2, 'sine');
+                updateOrbitUI();
+            }
+        };
+
+        document.getElementById('speed-up').onclick = () => { if(pState.speed < pState.maxSpeed) pState.speed++; updateSpeedUI(); };
+        document.getElementById('speed-down').onclick = () => { if(pState.speed > 0) pState.speed--; updateSpeedUI(); };
+        function updateSpeedUI() { document.getElementById('speed-val').innerText = 'SPD ' + pState.speed; sfx(600, 0.02, 'sine'); }
+
+        const weapons = ['PHASER', 'TORPEDO', 'NAV'];
+        let wpnIdx = 0;
+        document.getElementById('wpn-selector').onclick = () => {
+            wpnIdx = (wpnIdx + 1) % weapons.length;
+            pState.weapon = weapons[wpnIdx];
+            document.getElementById('wpn-label').innerText = pState.weapon;
+            sfx(800, 0.05);
+        };
+
+        // --- CONTROLS: Dual-Stick ---
+        const joyL = document.getElementById('joy-left');
+        const joyR = document.getElementById('joy-right');
+        const knobL = document.getElementById('knob-left');
+        const knobR = document.getElementById('knob-right');
+        let stickL = { active: false, id: -1, x: 0, y: 0 };
+        let stickR = { active: false, id: -1, x: 0, y: 0 };
+
+        function handlePointer(e, type) {
+            const rectL = joyL.getBoundingClientRect();
+            const rectR = joyR.getBoundingClientRect();
+
+            if (type === 'start') {
+                if (e.clientX >= rectL.left && e.clientX <= rectL.right && e.clientY >= rectL.top && e.clientY <= rectL.bottom) {
+                    stickL.active = true; stickL.id = e.pointerId;
+                } else if (e.clientX >= rectR.left && e.clientX <= rectR.right && e.clientY >= rectR.top && e.clientY <= rectR.bottom) {
+                    stickR.active = true; stickR.id = e.pointerId;
+                }
+            }
+
+            if (stickL.active && e.pointerId === stickL.id) {
+                if (type === 'move') {
+                    const dx = e.clientX - (rectL.left + 50);
+                    const dy = e.clientY - (rectL.top + 50);
+                    const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+                    const angle = Math.atan2(dy, dx);
+                    stickL.x = (Math.cos(angle) * dist) / 50;
+                    stickL.y = (Math.sin(angle) * dist) / 50;
+                    knobL.style.transform = `translate(${stickL.x * 30}px, ${stickL.y * 30}px)`;
+                } else if (type === 'end') {
+                    stickL.active = false; stickL.x = 0; stickL.y = 0;
+                    knobL.style.transform = '';
+                }
+            }
+
+            if (stickR.active && e.pointerId === stickR.id) {
+                if (type === 'move') {
+                    const dx = e.clientX - (rectR.left + 50);
+                    const dy = e.clientY - (rectR.top + 50);
+                    const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+                    const angle = Math.atan2(dy, dx);
+                    stickR.x = (Math.cos(angle) * dist) / 50;
+                    stickR.y = (Math.sin(angle) * dist) / 50;
+                    knobR.style.transform = `translate(${stickR.x * 30}px, ${stickR.y * 30}px)`;
+                } else if (type === 'end') {
+                    stickR.active = false; stickR.x = 0; stickR.y = 0;
+                    knobR.style.transform = '';
+                }
+            }
+        }
+
+        window.addEventListener('pointerdown', e => handlePointer(e, 'start'));
+        window.addEventListener('pointermove', e => handlePointer(e, 'move'));
+        window.addEventListener('pointerup', e => handlePointer(e, 'end'));
+        window.addEventListener('pointercancel', e => handlePointer(e, 'end'));
+
+        const projectiles = [];
+        let pCooldown = 0;
+        let rCooldown = 0;
+        const particles = [];
+        const partGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,0), new THREE.Vector3(-1,-1,0), new THREE.Vector3(1,-1,0)]);
+        const partMesh = new THREE.InstancedMesh(partGeom, new THREE.MeshBasicMaterial({ color: 0xffffff }), 1000);
+        scene.add(partMesh);
+
+        function explode(pos, color) {
+            for(let i=0; i<20; i++) {
+                particles.push({
+                    pos: pos.clone(),
+                    vel: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).multiplyScalar(5),
+                    life: 50,
+                    color: color
+                });
+            }
+            sfx(100, 0.2, 'sawtooth');
+        }
+
+        function fireWeapon(isPlayer = true) {
+            const ship = isPlayer ? playerShip : rivalShip;
+            const state = isPlayer ? pState : rState;
+            const color = isPlayer ? 0x00ffff : 0xff0000;
+
+            if(state.charge < 5) return;
+            state.charge -= 5;
+
+            const geom = new THREE.PlaneGeometry(2, 10);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            const m = new THREE.Mesh(geom, mat);
+            m.position.copy(ship.position);
+            m.rotation.z = ship.rotation.z;
+            scene.add(m);
+
+            projectiles.push({
+                mesh: m,
+                owner: isPlayer ? 'player' : 'rival',
+                velocity: new THREE.Vector2(-Math.sin(m.rotation.z), Math.cos(m.rotation.z)).multiplyScalar(15),
+                life: 100
+            });
+            sfx(isPlayer ? 440 : 220, 0.05, 'square');
+
+            if(isPlayer) pState.vel.add(new THREE.Vector2(Math.sin(m.rotation.z), -Math.cos(m.rotation.z)).multiplyScalar(0.5));
+        }
+
+        function addComm(msg) {
+            const log = document.getElementById('comm-log');
+            const p = document.createElement('p');
+            p.innerText = `> ${msg}`;
+            log.prepend(p);
+        }
+
+        // --- RED ALERT ---
+        let redAlert = 0;
+        function triggerRedAlert() {
+            if(redAlert <= 0) sfx(100, 0.5, 'sawtooth');
+            redAlert = 600; // 10 seconds
+        }
+
+        // --- MISSION LOGIC ---
+        let missionTime = 300; // 5 minutes
+        setInterval(() => {
+            if(missionTime > 0) missionTime--;
+            else checkGameOver('TIME EXPIRED');
+        }, 1000);
+
+        function checkGameOver(reason) {
+            const debrief = document.getElementById('mission-debrief');
+            const status = document.getElementById('debrief-status');
+            const msg = document.getElementById('debrief-msg');
+            debrief.style.display = 'block';
+
+            if (pState.pop >= 10000000) {
+                status.innerText = "VICTORY";
+                msg.innerText = "The Galaxy has been United under your Path. Population: 10M+";
+            } else if (pState.hp <= 0) {
+                status.innerText = "DEFEATED";
+                msg.innerText = "Your ship was destroyed. The Path has failed.";
+            } else {
+                status.innerText = "MISSION END";
+                msg.innerText = `Reason: ${reason}. Final Population: ${Math.floor(pState.pop)}`;
+            }
+        }
+
+        // --- LOOP ---
+        function update() {
+            if (pState.hp <= 0 || pState.pop >= 10000000) return;
+            requestAnimationFrame(update);
+
+            // Red Alert Logic
+            if(redAlert > 0) {
+                redAlert--;
+                camera.zoom = Math.max(0.5, camera.zoom - 0.01);
+                document.getElementById('crt-overlay').style.background = `rgba(255, 0, 0, ${Math.sin(Date.now()*0.01)*0.05 + 0.05})`;
+            } else {
+                camera.zoom = Math.min(1, camera.zoom + 0.01);
+                document.getElementById('crt-overlay').style.background = '';
+            }
+            camera.updateProjectionMatrix();
+
+            // Snappy Rotation
+            let diff = pState.targetRot - pState.rot;
+            while(diff < -Math.PI) diff += Math.PI * 2;
+            while(diff > Math.PI) diff -= Math.PI * 2;
+            pState.rot += diff * 0.1;
+            playerShip.rotation.z = pState.rot;
+
+            // Dual-Stick Logic
+            if (pCooldown > 0) pCooldown--;
+            if (stickL.active) {
+                const deadzone = 0.1;
+                if (Math.abs(stickL.x) > deadzone || Math.abs(stickL.y) > deadzone) {
+                    pState.targetRot = Math.atan2(-stickL.x, -stickL.y);
+                    const thrustMag = Math.sqrt(stickL.x*stickL.x + stickL.y*stickL.y);
+                    const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower);
+                    pState.vel.add(thrust);
+                }
+            }
+            if (stickR.active) {
+                if (pCooldown <= 0 && (Math.abs(stickR.x) > 0.5 || Math.abs(stickR.y) > 0.5)) {
+                    fireWeapon(true);
+                    pCooldown = 10;
+                }
+            }
+
+            // Movement
+            pState.vel.multiplyScalar(0.98);
+            playerShip.position.x += pState.vel.x;
+            playerShip.position.y += pState.vel.y;
+
+            // Camera follow
+            camera.position.x = playerShip.position.x;
+            camera.position.y = playerShip.position.y;
+
+            // Projectiles & Collision
+            for(let i=projectiles.length-1; i>=0; i--) {
+                const pr = projectiles[i];
+                pr.mesh.position.x += pr.velocity.x;
+                pr.mesh.position.y += pr.velocity.y;
+                pr.life--;
+
+                // Collision with Rival
+                if (pr.owner === 'player' && pr.mesh.position.distanceTo(rivalShip.position) < 20 && rState.hp > 0) {
+                    if(rState.shields[0] > 0) rState.shields[0] -= pState.dmgPower;
+                    else rState.hp -= pState.dmgPower;
+                    rivalShip.material.color.set(0xffffff);
+                    setTimeout(() => rivalShip.material.color.set(0xff0000), 50);
+                    pr.life = 0;
+                    if(rState.hp <= 0) explode(rivalShip.position, 0xff0000);
+                }
+
+                // Collision with Player
+                if (pr.owner === 'rival' && pr.mesh.position.distanceTo(playerShip.position) < 20 && pState.hp > 0) {
+                    if(pState.shields[0] > 0) pState.shields[0] -= 10;
+                    else pState.hp -= 10;
+                    playerShip.material.color.set(0xffffff);
+                    setTimeout(() => playerShip.material.color.set(0x00ffff), 50);
+                    triggerRedAlert();
+                    pr.life = 0;
+                    if(pState.hp <= 0) explode(playerShip.position, 0x00ffff);
+                }
+
+                // Collision with Drones
+                for(let j=0; j<maxDrones; j++) {
+                    const d = droneData[j];
+                    if(d.active && pr.mesh.position.distanceTo(d.pos) < 15) {
+                        d.active = false;
+                        explode(d.pos, 0xffff00);
+                        pr.life = 0;
+                        break;
+                    }
+                }
+
+                if(pr.life <= 0) {
+                    scene.remove(pr.mesh);
+                    pr.mesh.geometry.dispose();
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.pos.add(p.vel);
+                p.life--;
+                if(p.life <= 0) particles.splice(i, 1);
+
+                dummy.position.copy(p.pos);
+                dummy.scale.setScalar(p.life/50);
+                dummy.updateMatrix();
+                partMesh.setMatrixAt(i, dummy.matrix);
+            }
+            partMesh.instanceMatrix.needsUpdate = true;
+
+            // Charge Recharge
+            if(pState.speed === 0) pState.charge = Math.min(100, pState.charge + 0.2);
+            else pState.charge = Math.min(100, pState.charge + 0.05);
+
+            // Update Rival AI
+            if (rCooldown > 0) rCooldown--;
+            if (rState.hp > 0) {
+                // Firing logic
+                if (rCooldown <= 0 && rivalShip.position.distanceTo(playerShip.position) < 400) {
+                    rState.rot = Math.atan2(-(playerShip.position.x - rivalShip.position.x), playerShip.position.y - rivalShip.position.y);
+                    rivalShip.rotation.z = rState.rot;
+                    fireWeapon(false);
+                    rCooldown = 20;
+                }
+
+                if (rState.state === 'SEARCH' || !rState.targetPlanet) {
+                    // Find closest non-rival planet
+                    let minDist = Infinity;
+                    planets.forEach(p => {
+                        if (p.owner !== 'rival') {
+                            const d = rivalShip.position.distanceTo(p.group.position);
+                            if (d < minDist) {
+                                minDist = d;
+                                rState.targetPlanet = p;
+                            }
+                        }
+                    });
+                    if (rState.targetPlanet) rState.state = 'CONVERT';
+                }
+
+                if (rState.targetPlanet) {
+                    const dToP = rivalShip.position.distanceTo(rState.targetPlanet.group.position);
+                    const targetAngle = Math.atan2(-(rState.targetPlanet.group.position.x - rivalShip.position.x), rState.targetPlanet.group.position.y - rivalShip.position.y);
+
+                    let rDiff = targetAngle - rState.rot;
+                    while(rDiff < -Math.PI) rDiff += Math.PI * 2;
+                    while(rDiff > Math.PI) rDiff -= Math.PI * 2;
+                    rState.rot += rDiff * 0.05;
+                    rivalShip.rotation.z = rState.rot;
+
+                    if (dToP > rState.targetPlanet.r + 100) {
+                        const rThrust = new THREE.Vector2(-Math.sin(rState.rot), Math.cos(rState.rot)).multiplyScalar(0.2);
+                        rState.vel.add(rThrust);
+                    } else {
+                        // Orbiting / Capturing
+                        rState.vel.multiplyScalar(0.95);
+                        if (rState.targetPlanet.owner !== 'rival') {
+                            rState.targetPlanet.loyalty -= 0.15; // Rival captures faster
+                            if (rState.targetPlanet.loyalty <= -100) {
+                                rState.targetPlanet.loyalty = -100;
+                                rState.targetPlanet.owner = 'rival';
+                                rState.targetPlanet.mesh.material.color.set(0x440000);
+                                addComm(`WARNING: ${rState.targetPlanet.name} has fallen to the Rival Path!`);
+                                rState.state = 'SEARCH';
+                            }
+                        } else {
+                            rState.state = 'SEARCH';
+                        }
+                    }
+                }
+                rState.vel.multiplyScalar(0.98);
+                rivalShip.position.x += rState.vel.x;
+                rivalShip.position.y += rState.vel.y;
+            }
+
+            // Economy: Total Population & Tax
+            let totalPop = 0;
+            planets.forEach(p => { if(p.owner === 'player') totalPop += p.pop; });
+            pState.pop = totalPop;
+            pState.credits += totalPop * 0.00001; // Tax
+
+            // Update Planets
+            planets.forEach(p => {
+                p.update();
+                const dist = playerShip.position.distanceTo(p.group.position);
+                const rivalDist = rivalShip.position.distanceTo(p.group.position);
+
+                if(dist < p.r + 150) {
+                    // Capture logic
+                    if(p.owner !== 'player') {
+                        p.loyalty += 0.1;
+                        if(p.loyalty >= 100) {
+                            p.loyalty = 100;
+                            p.owner = 'player';
+                            p.mesh.material.color.set(0x004400);
+                            addComm(`Planet ${p.name} aligned with your Path!`);
+                        }
+                    }
+                }
+
+                if(dist < p.r + 50) {
+                    if(pState.orbiting !== p) {
+                        pState.orbiting = p;
+                        addComm(`Entering orbit around ${p.name}`);
+                        updateOrbitUI();
+                    }
+                    pState.vel.multiplyScalar(0.9);
                 }
             });
+
+            function updateOrbitUI() {
+                const p = pState.orbiting;
+                if(!p) return;
+                document.getElementById('planet-name').innerText = p.name;
+                document.getElementById('planet-owner').innerText = `Path: ${p.owner.toUpperCase()}`;
+                document.getElementById('planet-stats-display').style.display = 'block';
+                document.getElementById('stat-ore').innerText = Math.floor(p.ore);
+                document.getElementById('stat-pop').innerText = Math.floor(p.pop);
+                document.getElementById('fill-cargo').style.width = pState.cargo + '%';
+            }
+
+            // Update Shield Visuals
+            playerShieldMesh.visible = pState.shields[0] > 0;
+            rivalShieldMesh.visible = rState.shields[0] > 0;
+            if(playerShieldMesh.visible) playerShieldMesh.material.opacity = pState.shields[0]/100 * 0.3;
+            if(rivalShieldMesh.visible) rivalShieldMesh.material.opacity = rState.shields[0]/100 * 0.3;
+
+            // Update UI
+            document.getElementById('fill-energy').style.width = Math.max(0, pState.hp) + '%';
+            document.getElementById('fill-charge').style.width = Math.max(0, pState.charge) + '%';
+            document.getElementById('fill-shield').style.width = Math.max(0, pState.shields[0]) + '%';
+
+            const galaxyCr = document.getElementById('galaxy-credits');
+            if(galaxyCr) galaxyCr.innerText = Math.floor(pState.credits);
+            const galaxyPop = document.getElementById('galaxy-pop');
+            if(galaxyPop) galaxyPop.innerText = Math.floor(pState.pop);
+
+            // Update Drones
+            for (let i = 0; i < maxDrones; i++) {
+                const d = droneData[i];
+                if (!d.active) {
+                    dummy.position.set(0, 0, -5000);
+                    dummy.updateMatrix();
+                    droneMesh.setMatrixAt(i, dummy.matrix);
+                    continue;
+                }
+
+                if (d.parent) {
+                    if (d.state === 'ORBIT') {
+                        const dist = d.pos.distanceTo(d.parent.group.position);
+                        const angle = Math.atan2(d.pos.y - d.parent.group.position.y, d.pos.x - d.parent.group.position.x);
+                        const orbitRadius = d.parent.r + 30;
+
+                        d.pos.x = d.parent.group.position.x + Math.cos(angle + 0.02) * orbitRadius;
+                        d.pos.y = d.parent.group.position.y + Math.sin(angle + 0.02) * orbitRadius;
+                        d.rot = angle + Math.PI/2;
+
+                        // Check for intruders
+                        const pDist = d.pos.distanceTo(playerShip.position);
+                        const rDist = d.pos.distanceTo(rivalShip.position);
+                        if (d.parent.owner === 'player' && rDist < 300) d.state = 'PURSUE';
+                        if (d.parent.owner === 'rival' && pDist < 300) d.state = 'PURSUE';
+                    } else if (d.state === 'PURSUE') {
+                        const target = d.parent.owner === 'player' ? rivalShip : playerShip;
+                        const targetState = d.parent.owner === 'player' ? rState : pState;
+
+                        const angle = Math.atan2(target.position.y - d.pos.y, target.position.x - d.pos.x);
+                        d.pos.x += Math.cos(angle) * 3;
+                        d.pos.y += Math.sin(angle) * 3;
+                        d.rot = angle + Math.PI/2;
+
+                        // Collision with target
+                        if (d.pos.distanceTo(target.position) < 20) {
+                            targetState.hp -= 0.5;
+                            if (target === playerShip) triggerRedAlert();
+                            d.active = false;
+                            explode(d.pos, 0xffff00);
+                        }
+
+                        if (d.pos.distanceTo(d.parent.group.position) > 600) d.state = 'ORBIT';
+                    }
+                }
+
+                dummy.position.copy(d.pos);
+                dummy.rotation.z = d.rot;
+                dummy.updateMatrix();
+                droneMesh.setMatrixAt(i, dummy.matrix);
+            }
             droneMesh.instanceMatrix.needsUpdate = true;
 
-            // Projectiles
-            for(let i=projectiles.length-1; i>=0; i--) {
-                const pr = projectiles[i]; pr.m.position.x += pr.v.x; pr.m.position.y += pr.v.y; pr.life--;
-                let hit = false;
-                if(pr.o==='rival' && !pState.dead && pr.m.position.distanceTo(playerShip.position)<25) {
-                    if(pState.sh > 0) { pState.sh -= pr.dmg; playerShield.material.opacity = 0.8; } else { pState.hp -= pr.dmg; }
-                    pState.shDelay = 180; hit = true; sfx(200, 0.1, 'sawtooth');
-                    if(pState.hp <= 0) { pState.dead=true; explode(playerShip.position.x, playerShip.position.y, 0x00ffff); scene.remove(playerShip); setTimeout(()=> {gameState.over=true; document.getElementById('end-screen').style.display='block'; document.getElementById('result-msg').innerText='PATH TERMINATED';}, 2000); }
-                } else if(pr.o==='player' && !rState.dead && pr.m.position.distanceTo(rivalShip.position)<25) {
-                    rState.hp -= pr.dmg; rState.flee = 180; hit = true; sfx(200, 0.1, 'sawtooth');
-                    if(rState.hp <= 0) { rState.dead=true; explode(rivalShip.position.x, rivalShip.position.y, 0xff0000); scene.remove(rivalShip); }
-                }
-                if(pr.life<=0 || hit) { scene.remove(pr.m); pr.m.geometry.dispose(); projectiles.splice(i, 1); }
-            }
-            if(pState.shDelay > 0) pState.shDelay--; else pState.sh = Math.min(pState.shMax, pState.sh + 0.1);
-            playerShield.material.opacity = Math.max(0, playerShield.material.opacity - 0.05);
-
-            // Particles
-            for(let i=particles.length-1; i>=0; i--) {
-                const pt = particles[i]; pt.m.position.x += pt.v.x; pt.m.position.y += pt.v.y; pt.life--;
-                if(pt.life<=0) { scene.remove(pt.m); pt.m.geometry.dispose(); particles.splice(i, 1); }
-            }
+            if(pState.pop >= 10000000) checkGameOver('POPULATION GOAL MET');
+            if(pState.hp <= 0) checkGameOver('SHIP DESTROYED');
 
             renderer.render(scene, camera);
-            scanlineCtx.drawImage(renderer.domElement, 0, 0); // Not efficient but works for "Vibe"
         }
-        loop();
-        window.addEventListener('resize', () => { const a = window.innerWidth / window.innerHeight; camera.left = -viewSize*a/2; camera.right = viewSize*a/2; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); updateScanlines(); });
+
+        update();
+
+        window.addEventListener('resize', () => {
+            const a = (window.innerWidth - 70) / window.innerHeight;
+            camera.left = -viewSize*a/2; camera.right = viewSize*a/2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 70, window.innerHeight);
+        });
+
     </script>
 </body>
 </html>
