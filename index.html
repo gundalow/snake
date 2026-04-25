@@ -12,6 +12,29 @@
             background-color: #000;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        #ticker-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #c0c0c0;
+            border-top: 2px solid #fff;
+            padding: 2px 10px;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 20;
+        }
+        #ticker-text {
+            display: inline-block;
+            animation: scroll-left 20s linear infinite;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
         #ui-layer {
             position: absolute;
             top: 0;
@@ -27,6 +50,9 @@
     </style>
 </head>
 <body>
+    <div id="ticker-container">
+        <div id="ticker-text">GALACTIC NEWS: LOYALTY SHIFTS REPORTED IN ALPHA CENTAURI... POPULATION GROWTH EXPLODING ON CYAN PLANETS... TAX REVENUE STABLE...</div>
+    </div>
     <div id="ui-layer">
         <div class="window" style="width: 300px; position: absolute; top: 10px; left: 10px;">
             <div class="title-bar">
@@ -93,8 +119,9 @@
         class Planet {
             constructor(x, y, radius, name) {
                 this.name = name;
-                this.loyalty = 0;
-                this.owner = 'neutral'; // 'neutral', 'player'
+                this.loyalty = 0; // -100 to 100
+                this.population = 0;
+                this.owner = 'neutral'; // 'neutral', 'player', 'rival'
                 this.radius = radius;
                 this.captureRadius = 150;
 
@@ -114,30 +141,44 @@
 
             update(shipPos) {
                 const dist = shipPos.distanceTo(this.mesh.position);
+
+                // Loyalty Logic
                 if (dist < this.captureRadius) {
                     if (this.owner !== 'player') {
-                        this.loyalty += 0.2;
+                        this.loyalty += 0.1; // Shift toward player
                         if (this.loyalty >= 100) {
                             this.loyalty = 100;
-                            this.capture();
+                            this.capture('player');
                         }
                     }
                 }
 
+                // Visuals based on owner
                 if (this.owner === 'player') {
                     this.border.material.color.set(0x00ffff);
+                } else if (this.owner === 'rival') {
+                    this.border.material.color.set(0xff0000);
                 } else if (this.loyalty > 0) {
-                    // Visual feedback for capturing
                     const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 0.8;
-                    this.border.material.color.setRGB(0.5 * pulse, 0.5 * pulse, 0.5 * pulse);
+                    this.border.material.color.setRGB(0, 0.5 * pulse, 0.5 * pulse);
+                } else {
+                    this.border.material.color.set(0x888888);
+                }
+
+                // Population Growth
+                if (this.loyalty > 0) {
+                    if (this.population === 0) this.population = 100; // Initial seed
+                    this.population *= 1.0001; // Growth per frame
                 }
             }
 
-            capture() {
-                this.owner = 'player';
-                this.mesh.material.color.set(0x004444);
-                this.border.material.color.set(0x00ffff);
-                console.log(`${this.name} captured!`);
+            capture(newOwner) {
+                this.owner = newOwner;
+                if (newOwner === 'player') {
+                    this.mesh.material.color.set(0x004444);
+                    this.border.material.color.set(0x00ffff);
+                }
+                console.log(`${this.name} captured by ${newOwner}!`);
             }
         }
 
@@ -146,6 +187,72 @@
             new Planet(-250, -150, 30, "Ygor"),
             new Planet(100, -300, 50, "Zion")
         ];
+
+        // Drone Manager
+        class DroneManager {
+            constructor(count) {
+                this.count = count;
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    0, 2, 0,
+                    -1, -1, 0,
+                    1, -1, 0
+                ]);
+                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                this.mesh = new THREE.InstancedMesh(geometry, material, count);
+                scene.add(this.mesh);
+
+                this.drones = [];
+                for (let i = 0; i < count; i++) {
+                    this.drones.push({
+                        planet: null,
+                        angle: Math.random() * Math.PI * 2,
+                        distance: 60 + Math.random() * 40,
+                        speed: 0.02 + Math.random() * 0.02,
+                        position: new THREE.Vector3()
+                    });
+                }
+            }
+
+            update(shipPos) {
+                let droneIdx = 0;
+                planets.forEach(p => {
+                    if (p.owner === 'player') {
+                        // Assign 5 drones to this planet if not already assigned
+                        let assignedCount = 0;
+                        for (let i = 0; i < this.count && assignedCount < 5; i++) {
+                            const d = this.drones[i];
+                            if (d.planet === null || d.planet === p) {
+                                d.planet = p;
+                                assignedCount++;
+
+                                // Orbit logic
+                                d.angle += d.speed;
+                                const targetX = p.mesh.position.x + Math.cos(d.angle) * d.distance;
+                                const targetY = p.mesh.position.y + Math.sin(d.angle) * d.distance;
+
+                                d.position.set(targetX, targetY, 0);
+
+                                // Intercept logic
+                                const distToShip = shipPos.distanceTo(p.mesh.position);
+                                if (distToShip < 300) {
+                                    const dirToShip = new THREE.Vector3().subVectors(shipPos, d.position).normalize();
+                                    d.position.add(dirToShip.multiplyScalar(3));
+                                }
+
+                                const matrix = new THREE.Matrix4();
+                                matrix.setPosition(d.position);
+                                this.mesh.setMatrixAt(i, matrix);
+                            }
+                        }
+                    }
+                });
+                this.mesh.instanceMatrix.needsUpdate = true;
+            }
+        }
+
+        const droneManager = new DroneManager(100);
 
         // Initialize UI Loyalty Bars
         const loyaltyContainer = document.getElementById('planet-loyalty-container');
@@ -164,7 +271,8 @@
         // Economy State
         const economy = {
             credits: 1000,
-            population: 0
+            population: 0,
+            taxRate: 0.0001
         };
 
         // Projectiles
@@ -261,27 +369,32 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Update Planets
+            // Update Drones
+            droneManager.update(ship.position);
+
+            // Update Planets & Economy
+            let totalPop = 0;
             planets.forEach(p => {
                 const oldLoyalty = p.loyalty;
-                const oldOwner = p.owner;
-
                 p.update(ship.position);
 
-                // Drain credits if capturing
-                if (p.loyalty > oldLoyalty && p.owner !== 'player') {
-                    economy.credits -= 0.5;
+                if (p.owner === 'player') {
+                    totalPop += p.population;
                 }
 
-                // Population growth
-                if (p.owner === 'player') {
-                    economy.population += 0.1;
+                // Drain credits if actively capturing
+                if (p.loyalty > oldLoyalty && p.owner !== 'player' && ship.position.distanceTo(p.mesh.position) < p.captureRadius) {
+                    economy.credits -= 0.2;
                 }
 
                 // Update UI
                 const bar = document.getElementById(`loyalty-${p.name}`);
-                if (bar) bar.style.width = `${p.loyalty}%`;
+                if (bar) bar.style.width = `${Math.max(0, p.loyalty)}%`;
             });
+
+            // Calculate Taxes
+            economy.population = totalPop;
+            economy.credits += economy.population * economy.taxRate;
 
             // Update Economy UI
             document.getElementById('credits').innerText = Math.floor(economy.credits);
