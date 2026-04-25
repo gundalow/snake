@@ -47,12 +47,58 @@
         .window {
             pointer-events: auto;
         }
+        #joystick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(192, 192, 192, 0.3);
+            border: 2px solid #c0c0c0;
+            border-radius: 50%;
+            pointer-events: auto;
+            z-index: 30;
+        }
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: #c0c0c0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf;
+        }
+        #fire-button {
+            position: absolute;
+            bottom: 40px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid #ff0000;
+            border-radius: 50%;
+            color: #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            pointer-events: auto;
+            z-index: 30;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
     <div id="ticker-container">
         <div id="ticker-text">GALACTIC NEWS: LOYALTY SHIFTS REPORTED IN ALPHA CENTAURI... POPULATION GROWTH EXPLODING ON CYAN PLANETS... TAX REVENUE STABLE...</div>
     </div>
+    <div id="joystick-container">
+        <div id="joystick-knob"></div>
+    </div>
+    <div id="fire-button">FIRE</div>
     <div id="ui-layer">
         <div class="window" style="width: 300px; position: absolute; top: 10px; left: 10px;">
             <div class="title-bar">
@@ -361,9 +407,10 @@
         const keys = {};
         const touchState = {
             isThrusting: false,
-            rotation: 0, // -1 for left, 1 for right
-            startX: 0,
-            startY: 0
+            rotation: 0,
+            joystickTouchId: null,
+            joystickCenterX: 0,
+            joystickCenterY: 0
         };
 
         window.addEventListener('keydown', (e) => {
@@ -372,33 +419,61 @@
         });
         window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-        // Touch Controls
-        window.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            touchState.startX = touch.clientX;
-            touchState.startY = touch.clientY;
-            touchState.startTime = Date.now();
-            touchState.isThrusting = true; // Any touch starts thrusting for simplicity
+        // Virtual Joystick Logic
+        const joystick = document.getElementById('joystick-container');
+        const knob = document.getElementById('joystick-knob');
+        const fireBtn = document.getElementById('fire-button');
+
+        joystick.addEventListener('touchstart', (e) => {
+            const touch = e.changedTouches[0];
+            touchState.joystickTouchId = touch.identifier;
+            const rect = joystick.getBoundingClientRect();
+            touchState.joystickCenterX = rect.left + rect.width / 2;
+            touchState.joystickCenterY = rect.top + rect.height / 2;
         }, { passive: false });
 
         window.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const dx = touch.clientX - touchState.startX;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.joystickTouchId) {
+                    e.preventDefault();
+                    const dx = touch.clientX - touchState.joystickCenterX;
+                    const dy = touch.clientY - touchState.joystickCenterY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const maxDist = 60;
 
-            // Map horizontal movement to rotation
-            if (dx > 20) touchState.rotation = -1;
-            else if (dx < -20) touchState.rotation = 1;
-            else touchState.rotation = 0;
+                    const clampedDx = (dx / dist) * Math.min(dist, maxDist);
+                    const clampedDy = (dy / dist) * Math.min(dist, maxDist);
 
+                    knob.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`;
+
+                    // Map to controls
+                    touchState.rotation = -clampedDx / maxDist; // Smooth rotation
+                    touchState.isThrusting = clampedDy < -20; // Thrust if pushed up
+                }
+            }
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
-            // Tap to fire
-            fireProjectile();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.joystickTouchId) {
+                    touchState.joystickTouchId = null;
+                    touchState.rotation = 0;
+                    touchState.isThrusting = false;
+                    knob.style.transform = `translate(-50%, -50%)`;
+                }
+            }
+        }, { passive: false });
 
-            touchState.isThrusting = false;
-            touchState.rotation = 0;
+        fireBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            fireProjectile();
+            fireBtn.style.background = 'rgba(255, 0, 0, 0.6)';
+        }, { passive: false });
+
+        fireBtn.addEventListener('touchend', (e) => {
+            fireBtn.style.background = 'rgba(255, 0, 0, 0.3)';
         }, { passive: false });
 
         // Resize handler
@@ -488,8 +563,11 @@
             document.getElementById('population').innerText = Math.floor(economy.population);
 
             // Handle Rotation
-            if (keys['KeyA'] || touchState.rotation > 0) player.rotation += player.maxRotationSpeed;
-            if (keys['KeyD'] || touchState.rotation < 0) player.rotation -= player.maxRotationSpeed;
+            if (keys['KeyA']) player.rotation += player.maxRotationSpeed;
+            if (keys['KeyD']) player.rotation -= player.maxRotationSpeed;
+            if (Math.abs(touchState.rotation) > 0.1) {
+                player.rotation += touchState.rotation * player.maxRotationSpeed * 2;
+            }
             ship.rotation.z = player.rotation;
 
             // Handle Thrust
