@@ -2,340 +2,918 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VibeSnake 2.5D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Warpath Android</title>
+    <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #050505;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none;
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none; color: #fff; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; }
+        #canvas-container { position: absolute; top: 0; left: 70px; width: calc(100% - 70px); height: 100%; z-index: 0; }
+
+        /* Left Panel Selectors */
+        #sidebar { width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 20; border-right: 1px solid #444; }
+        .panel-btn { width: 50px; height: 50px; margin: 10px 0; border-radius: 50%; background: #444; border: 3px solid #888; color: #fff; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .panel-btn.active { border-color: #f00; background: #222; box-shadow: 0 0 10px #f00; }
+
+        /* Top Overlay */
+        #top-overlay { position: absolute; top: 0; left: 70px; right: 0; height: 60px; pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 5px 15px; box-sizing: border-box; }
+        #ticker { color: #f88; font-family: 'Courier New', Courier, monospace; font-size: 14px; white-space: nowrap; overflow: hidden; max-width: 60%; }
+        #pod-meters { display: flex; flex-direction: column; align-items: flex-end; }
+        .pod-row { display: flex; align-items: center; margin-bottom: 2px; }
+        .pod-label { font-size: 10px; margin-right: 5px; width: 40px; text-align: right; }
+        .pod-bar { width: 80px; height: 8px; background: #222; border: 1px solid #666; position: relative; }
+        .pod-fill { height: 100%; position: absolute; left: 0; top: 0; }
+
+        /* Bottom Controls */
+        #bottom-overlay { position: absolute; bottom: 40px; left: 70px; right: 0; height: 140px; pointer-events: none; z-index: 150; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; align-items: flex-end; }
+        .joystick { width: 120px; height: 120px; flex: 0 0 120px; background: rgba(255,255,255,0.25); border: 4px solid rgba(255,255,255,0.7); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+        .joy-knob { width: 50px; height: 50px; background: rgba(255,255,255,1); border: 2px solid #000; border-radius: 50%; position: absolute; box-shadow: 0 0 15px #fff; }
+        .joy-label { position: absolute; top: -25px; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
+
+        /* Windows */
+        .full-panel { position: absolute; top: 0; left: 70px; right: 0; bottom: 0; background: #000; z-index: 15; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+
+        @media (max-width: 600px) {
+            #sidebar { width: 50px; }
+            .panel-btn { width: 40px; height: 40px; font-size: 18px; margin: 5px 0; }
+            #canvas-container { left: 50px; width: calc(100% - 50px); }
+            #top-overlay { left: 50px; padding: 5px; }
+            #ticker { font-size: 12px; max-width: 50%; }
+            #pod-meters { transform: scale(0.8); transform-origin: top right; }
+            #bottom-overlay { left: 50px; bottom: 80px; padding: 0 10px; height: 110px; }
+            .full-panel { left: 50px; padding: 10px; }
+            .joystick { width: 90px; height: 90px; flex: 0 0 90px; }
+            .joy-knob { width: 35px; height: 35px; }
+            .joy-label { font-size: 12px; top: -20px; }
+            #speed-val { font-size: 10px; margin: 0 5px; }
+            #speed-ctrl button { width: 25px; }
+
+            #planet-name { font-size: 24px; margin: 10px 0; }
+            #orbit-tabs button { min-width: 60px; padding: 5px 2px; font-size: 10px; }
+            .orbit-panel button { width: 100% !important; margin: 5px 0; }
         }
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #00ff88;
-            font-size: 24px;
-            text-shadow: 0 0 10px #00ff88;
-            pointer-events: none;
-            z-index: 10;
-        }
-        #game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ff3333;
-            font-size: 48px;
-            text-align: center;
-            display: none;
-            text-shadow: 0 0 20px #ff3333;
-            z-index: 20;
-        }
-        #restart-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 20px;
-            background: transparent;
-            color: #00ff88;
-            border: 2px solid #00ff88;
-            cursor: pointer;
-            pointer-events: auto;
-        }
+        .window-body { height: calc(100% - 30px); overflow-y: auto; }
+
+        /* CRT Filter */
+        #crt-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 3px 100%; }
+
     </style>
 </head>
 <body>
-    <div id="ui">Score: 0</div>
-    <div id="game-over">
-        GAME OVER
-        <br>
-        <button id="restart-btn" onclick="resetGame()">RESTART</button>
+    <div id="game-container">
+        <div id="mission-debrief" class="window" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; display: none; width: 300px;">
+            <div class="title-bar"><div class="title-bar-text">MISSION DEBRIEF</div></div>
+            <div class="window-body" style="text-align: center;">
+                <h2 id="debrief-status">MISSION COMPLETE</h2>
+                <p id="debrief-msg"></p>
+                <button onclick="location.reload()">RESTART PATH</button>
+            </div>
+        </div>
+
+        <div id="sidebar">
+            <div id="btn-comm" class="panel-btn">C</div>
+            <div id="btn-galaxy" class="panel-btn">G</div>
+            <div id="btn-orbit" class="panel-btn">O</div>
+            <div id="btn-tactical" class="panel-btn active">T</div>
+        </div>
+
+        <div id="top-overlay">
+            <div id="ticker">LOYALTY SHIFTS IN ALPHA CENTAURI... POPULATION GROWTH REPORTED...</div>
+            <div id="pod-meters">
+                <div class="pod-row"><span class="pod-label">ENERGY</span><div class="pod-bar"><div id="fill-energy" class="pod-fill" style="width: 100%; background: #f00;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">CHARGE</span><div class="pod-bar"><div id="fill-charge" class="pod-fill" style="width: 100%; background: #00f;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">CARGO</span><div class="pod-bar"><div id="fill-cargo" class="pod-fill" style="width: 0%; background: #f0f;"></div></div></div>
+                <div class="pod-row"><span class="pod-label">SHIELD</span><div class="pod-bar"><div id="fill-shield" class="pod-fill" style="width: 100%; background: #0ff;"></div></div></div>
+            </div>
+        </div>
+
+        <div id="canvas-container"></div>
+        <div id="crt-overlay"></div>
+
+        <div id="bottom-overlay">
+            <div id="joy-left" class="joystick">
+                <div class="joy-label">NAV</div>
+                <div class="joy-knob" id="knob-left"></div>
+            </div>
+            <div id="extra-ctrls" style="pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <div id="speed-ctrl" style="display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #888; padding: 2px 5px; border-radius: 5px;">
+                    <button id="speed-down" style="width: 30px;">-</button>
+                    <span id="speed-val" style="margin: 0 10px; font-size: 12px; font-family: monospace;">SPD 1</span>
+                    <button id="speed-up" style="width: 30px;">+</button>
+                </div>
+                <div id="wpn-selector" style="background: rgba(128, 0, 128, 0.5); border: 1px solid #a0a; padding: 5px; border-radius: 5px; cursor: pointer; text-align: center;">
+                    <div id="wpn-label" style="font-size: 10px;">PHASER</div>
+                </div>
+            </div>
+            <div id="joy-right" class="joystick" style="background: rgba(255,0,0,0.2); border-color: rgba(255,0,0,0.5);">
+                <div class="joy-label">FIRE</div>
+                <div class="joy-knob" id="knob-right" style="background: rgba(255,0,0,0.8);"></div>
+            </div>
+        </div>
+
+        <!-- Panels -->
+        <div id="panel-comm" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">COMMUNICATIONS</div></div>
+            <div class="window-body" id="comm-log">
+                <p>[HINT] Tap a panel selector on the left to switch views.</p>
+                <p>[HINT] Flick the tactical screen to navigate your ship.</p>
+            </div>
+        </div>
+
+        <div id="panel-galaxy" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">GALAXY MAP</div></div>
+            <div class="window-body" style="background: #000; position: relative;">
+                <canvas id="galaxy-map-canvas" style="width: 100%; height: 300px; border: 1px solid #444;"></canvas>
+                <div id="player-stats">
+                    <h3>CAPTAIN STATUS</h3>
+                    <p>CREDITS: <span id="galaxy-credits">1000</span></p>
+                    <p>POPULATION: <span id="galaxy-pop">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-orbit" class="full-panel window">
+            <div class="title-bar"><div class="title-bar-text">ORBITAL SERVICES</div></div>
+            <div class="window-body" id="orbit-content">
+                <div style="text-align: center;">
+                    <h2 id="planet-name">DEEP SPACE</h2>
+                    <p id="planet-owner">NO PLANET IN ORBIT</p>
+                    <div id="orbit-tabs" style="display: flex; justify-content: center; margin-bottom: 10px;">
+                        <button id="tab-scan" class="active">SCAN</button>
+                        <button id="tab-shop">SHOP</button>
+                        <button id="tab-invest">INVEST</button>
+                        <button id="tab-dock">DOCK</button>
+                    </div>
+                    <hr>
+                    <div id="orbit-scan" class="orbit-panel">
+                        <div id="planet-stats-display" style="display: none;">
+                            <p>ORE: <span id="stat-ore">0</span> Kg</p>
+                            <p>POP: <span id="stat-pop">0</span></p>
+                            <button id="btn-mine" style="width: 150px; height: 40px;">MINE ORE</button>
+                            <button id="btn-sell" style="width: 150px; height: 40px;">SELL CARGO</button>
+                        </div>
+                    </div>
+                    <div id="orbit-shop" class="orbit-panel" style="display: none;">
+                        <p>Starbase Inventory:</p>
+                        <button class="buy-btn" id="buy-thrust">THRUST UPGRADE (<span id="cost-thrust">500</span> Cr)</button>
+                        <button class="buy-btn" id="buy-shield">SHIELD CAPACITY (<span id="cost-shield">800</span> Cr)</button>
+                        <button class="buy-btn" id="buy-damage">PHASER DAMAGE (<span id="cost-damage">1000</span> Cr)</button>
+                    </div>
+                    <div id="orbit-invest" class="orbit-panel" style="display: none;">
+                        <p>Invest in development:</p>
+                        <button class="invest-btn" data-cat="Industry">INDUSTRY (50,000 Cr)</button>
+                        <button class="invest-btn" data-cat="Defense">DEFENSE (50,000 Cr)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
+    <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
     <script type="module">
         import * as THREE from 'three';
 
-        // Capacitor Haptics placeholder for browser testing
-        let Haptics = { impact: async () => {} };
-        let ImpactStyle = { Light: 'LIGHT', Heavy: 'HEAVY' };
+        const clock = new THREE.Clock();
 
-        // Attempt to load Capacitor Haptics
-        try {
-            const hapticsModule = await import('https://unpkg.com/@capacitor/haptics@6.0.0/dist/esm/index.js');
-            Haptics = hapticsModule.Haptics;
-            ImpactStyle = hapticsModule.ImpactStyle;
-        } catch (e) {
-            console.warn("Capacitor Haptics not loaded, using placeholder.");
+        // --- AUDIO ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioCtx();
+        function sfx(f, d, t='square', ramp=true) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+            if(ramp) o.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + d);
+            g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // Game Constants
-        const GRID_SIZE = 20;
-        const MOVE_SPEED = 300; // ms
-        const INITIAL_SNAKE = [{x: 10, z: 15}, {x: 10, z: 16}, {x: 10, z: 17}];
-
-        // Scene Setup
+        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-
-        // Camera Setup (Orthographic 2.5D)
-        const aspect = window.innerWidth / window.innerHeight;
-        const CAMERA_D = 30;
-        let d = CAMERA_D;
-        if (aspect < 1) d = CAMERA_D / aspect;
-        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-        camera.position.set(30, 30, 30);
-        camera.lookAt(0, 0, 0);
+        const getSidebarW = () => window.innerWidth < 600 ? 50 : 70;
+        const aspect = (window.innerWidth - getSidebarW()) / window.innerHeight;
+        const viewSize = 1200;
+        function getCameraBounds(a) {
+            if (a > 1) return { l: -viewSize * a / 2, r: viewSize * a / 2, t: viewSize / 2, b: -viewSize / 2 };
+            else return { l: -viewSize / 2, r: viewSize / 2, t: (viewSize / a) / 2, b: -(viewSize / a) / 2 };
+        }
+        const bounds = getCameraBounds(aspect);
+        const camera = new THREE.OrthographicCamera(bounds.l, bounds.r, bounds.t, bounds.b, 0.1, 2000);
+        camera.position.set(0, 0, 1000);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
+        renderer.setSize(window.innerWidth - getSidebarW(), window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
+        // --- GAME STATE ---
+        const pState = {
+            pos: new THREE.Vector3(0, 0, 0),
+            vel: new THREE.Vector2(0, 0),
+            rot: Math.atan2(-800, 600),
+            targetRot: Math.atan2(-800, 600),
+            speed: 1,
+            maxSpeed: 5,
+            energy: 100,
+            charge: 100,
+            cargo: 0,
+            shields: [100],
+            credits: 1000,
+            pop: 0,
+            weapon: 'PHASER',
+            orbiting: null,
+            targetPlanet: null,
+            hp: 100,
+            thrustPower: 0.5,
+            dmgPower: 10
+        };
 
-        const pointLight = new THREE.PointLight(0xffffff, 1);
-        pointLight.position.set(20, 30, 10);
-        scene.add(pointLight);
+        const rState = {
+            pos: new THREE.Vector3(1000, -1000, 0),
+            vel: new THREE.Vector2(0, 0),
+            rot: 0,
+            state: 'SEARCH', // SEARCH, CONVERT, DEFEND
+            targetPlanet: null,
+            hp: 100,
+            shields: [100]
+        };
 
-        // Grid
-        const gridHelper = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x444444, 0x222222);
-        scene.add(gridHelper);
+        const worldSize = 5000;
+        const planets = [];
 
-        // Materials
-        const snakeMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ff88,
-            emissive: 0x00ff88,
-            emissiveIntensity: 0.5
-        });
-        const foodMaterial = new THREE.MeshStandardMaterial({
-            color: 0xff3333,
-            emissive: 0xff3333,
-            emissiveIntensity: 0.5
-        });
-        const cubeGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+        // --- DRONES ---
+        const maxDrones = 1000;
+        const droneGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,3,0), new THREE.Vector3(-2,-2,0), new THREE.Vector3(2,-2,0), new THREE.Vector3(0,3,0)]);
+        const droneMesh = new THREE.InstancedMesh(droneGeom, new THREE.MeshBasicMaterial({ color: 0xffff00 }), maxDrones);
+        scene.add(droneMesh);
+        const droneData = [];
+        const dummy = new THREE.Object3D();
 
-        // Game State
-        let snake = [...INITIAL_SNAKE];
-        let direction = {x: 0, z: -1};
-        let nextDirection = {x: 0, z: -1};
-        let food = {x: 5, z: 5};
-        let score = 0;
-        let isGameOver = false;
-        let gameStarted = false;
-        let lastMoveTime = 0;
-
-        const snakeMeshes = [];
-        const foodMesh = new THREE.Mesh(cubeGeometry, foodMaterial);
-        scene.add(foodMesh);
-
-        function updateSnakeMeshes() {
-            snakeMeshes.forEach(m => scene.remove(m));
-            snakeMeshes.length = 0;
-
-            snake.forEach(pos => {
-                const mesh = new THREE.Mesh(cubeGeometry, snakeMaterial);
-                mesh.position.set(pos.x - GRID_SIZE/2 + 0.5, 0.5, pos.z - GRID_SIZE/2 + 0.5);
-                scene.add(mesh);
-                snakeMeshes.push(mesh);
+        for (let i = 0; i < maxDrones; i++) {
+            droneData.push({
+                active: false,
+                parent: null,
+                pos: new THREE.Vector3(),
+                vel: new THREE.Vector3(),
+                rot: 0,
+                state: 'ORBIT',
+                hp: 1
             });
         }
 
-        function updateFoodMesh() {
-            foodMesh.position.set(food.x - GRID_SIZE/2 + 0.5, 0.5, food.z - GRID_SIZE/2 + 0.5);
-        }
+        // --- OBJECTS ---
+        const projMatPlayer = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        const projMatRival = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const projGeom = new THREE.PlaneGeometry(2, 10);
 
-        function spawnFood(isInitial = false) {
-            if (isInitial) {
-                // Initial food: North of head (10, 15), at (10, 10)
-                // Not close to walls (margin 2)
-                food = { x: 10, z: 10 };
-                return;
-            }
+        const shipGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,15,0), new THREE.Vector3(-10,-10,0), new THREE.Vector3(10,-10,0), new THREE.Vector3(0,15,0)]);
+        const playerShip = new THREE.LineLoop(shipGeom, new THREE.LineBasicMaterial({ color: 0x00ffff }));
+        const playerShieldMesh = new THREE.LineLoop(new THREE.CircleGeometry(25, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 }));
+        playerShip.add(playerShieldMesh);
+        scene.add(playerShip);
 
-            const emptySlots = [];
-            for (let x = 0; x < GRID_SIZE; x++) {
-                for (let z = 0; z < GRID_SIZE; z++) {
-                    let occupied = false;
-                    for (let i = 0; i < snake.length; i++) {
-                        if (snake[i].x === x && snake[i].z === z) {
-                            occupied = true;
-                            break;
+        const rivalShip = new THREE.LineLoop(shipGeom, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+        const rivalShieldMesh = new THREE.LineLoop(new THREE.CircleGeometry(25, 32), new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 }));
+        rivalShip.add(rivalShieldMesh);
+        rivalShip.position.set(1000, -1000, 0);
+        scene.add(rivalShip);
+
+        function createPlanet(x, y, r, name) {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.6 }));
+            const border = new THREE.Mesh(new THREE.RingGeometry(r, r+5, 32), new THREE.MeshBasicMaterial({ color: 0x888888 }));
+            const aura = new THREE.Mesh(new THREE.RingGeometry(r+10, r+40, 32), new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.1 }));
+            group.add(mesh, border, aura);
+            group.position.set(x, y, -10);
+            scene.add(group);
+            const p = { group, mesh, border, aura, r, name, loyalty: 0, owner: 'neutral', pop: 0, ore: 1000,
+                update: function() {
+                    this.aura.material.color.set(this.owner === 'player' ? 0x00ff00 : (this.owner === 'rival' ? 0xff0000 : 0xffff00));
+                    if(this.owner !== 'neutral') {
+                        if(this.pop === 0) this.pop = 100;
+                        this.pop *= 1.0001;
+
+                        // Spawn drones
+                        let activeDrones = droneData.filter(d => d.active && d.parent === this).length;
+                        if (activeDrones < 10) {
+                            let d = droneData.find(d => !d.active);
+                            if (d) {
+                                d.active = true;
+                                d.parent = this;
+                                d.pos.copy(this.group.position).add(new THREE.Vector3(Math.random()*100-50, Math.random()*100-50, 0));
+                                d.state = 'ORBIT';
+                            }
                         }
                     }
-                    if (!occupied) {
-                        emptySlots.push({ x, z });
-                    }
                 }
-            }
-
-            if (emptySlots.length > 0) {
-                const randomIndex = Math.floor(Math.random() * emptySlots.length);
-                food = emptySlots[randomIndex];
-            }
+            };
+            planets.push(p);
+            return p;
         }
 
-        async function triggerHaptic(style) {
-            try {
-                await Haptics.impact({ style });
-            } catch (e) {
-                // Ignore if not on device
+        createPlanet(400, 400, 60, "Xylos");
+        createPlanet(-400, 300, 50, "Ygor");
+        createPlanet(100, -500, 70, "Zion");
+        createPlanet(0, 0, 80, "Home");
+
+        // --- UI LOGIC ---
+        const panels = ['comm', 'galaxy', 'orbit', 'tactical'];
+        function showPanel(id) {
+            panels.forEach(p => {
+                const el = document.getElementById('panel-' + p);
+                if(el) el.style.display = (p === id ? 'block' : 'none');
+                const btn = document.getElementById('btn-' + p);
+                if(btn) btn.classList.toggle('active', p === id);
+            });
+            if(id === 'tactical') renderer.domElement.style.display = 'block';
+            sfx(800, 0.05, 'sine', false);
+        }
+
+        document.getElementById('btn-comm').onclick = () => showPanel('comm');
+        document.getElementById('btn-galaxy').onclick = () => { showPanel('galaxy'); drawGalaxyMap(); };
+        document.getElementById('btn-orbit').onclick = () => showPanel('orbit');
+
+        function drawGalaxyMap() {
+            const canvas = document.getElementById('galaxy-map-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            planets.forEach(p => {
+                const x = (p.group.position.x / 5000 + 0.5) * canvas.width;
+                const y = (p.group.position.y / 5000 + 0.5) * canvas.height;
+                ctx.fillStyle = p.owner === 'player' ? '#0ff' : (p.owner === 'rival' ? '#f00' : '#888');
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.fillText(p.name, x + 8, y + 4);
+            });
+
+            // Player position
+            const px = (playerShip.position.x / 5000 + 0.5) * canvas.width;
+            const py = (playerShip.position.y / 5000 + 0.5) * canvas.height;
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(px - 3, py - 3, 6, 6);
+        }
+        document.getElementById('btn-tactical').onclick = () => showPanel('tactical');
+
+        // Orbital Tabs
+        const orbitTabs = ['scan', 'shop', 'invest', 'dock'];
+        function showOrbitTab(id) {
+            orbitTabs.forEach(t => {
+                const el = document.getElementById('orbit-' + t);
+                if(el) el.style.display = (t === id ? 'block' : 'none');
+            });
+            sfx(600, 0.02, 'sine');
+        }
+        document.getElementById('tab-scan').onclick = () => showOrbitTab('scan');
+        document.getElementById('tab-shop').onclick = () => showOrbitTab('shop');
+        document.getElementById('tab-invest').onclick = () => showOrbitTab('invest');
+
+        // Shop logic
+        const shopState = { thrust: 500, shield: 800, damage: 1000 };
+        document.getElementById('buy-thrust').onclick = () => {
+            if(pState.credits >= shopState.thrust) {
+                pState.credits -= shopState.thrust;
+                pState.thrustPower += 0.2;
+                shopState.thrust = Math.floor(shopState.thrust * 1.5);
+                document.getElementById('cost-thrust').innerText = shopState.thrust;
+                sfx(1200, 0.1, 'sine');
             }
-        }
-
-        function gameOver() {
-            isGameOver = true;
-            document.getElementById('game-over').style.display = 'block';
-            triggerHaptic(ImpactStyle.Heavy);
-        }
-
-        window.resetGame = function() {
-            // Initial position: South of center
-            snake = [...INITIAL_SNAKE];
-            direction = {x: 0, z: -1}; // Prepared to move North
-            nextDirection = {x: 0, z: -1};
-            gameStarted = false;
-            score = 0;
-            isGameOver = false;
-            lastMoveTime = 0; // Ensure immediate move on start
-            document.getElementById('ui').innerText = `Score: ${score}`;
-            document.getElementById('game-over').style.display = 'none';
-            spawnFood(true);
-            updateSnakeMeshes();
-            updateFoodMesh();
+        };
+        document.getElementById('buy-shield').onclick = () => {
+            if(pState.credits >= shopState.shield) {
+                pState.credits -= shopState.shield;
+                pState.shields[0] = Math.min(200, pState.shields[0] + 50);
+                shopState.shield = Math.floor(shopState.shield * 1.5);
+                document.getElementById('cost-shield').innerText = shopState.shield;
+                sfx(1200, 0.1, 'sine');
+            }
+        };
+        document.getElementById('buy-damage').onclick = () => {
+            if(pState.credits >= shopState.damage) {
+                pState.credits -= shopState.damage;
+                pState.dmgPower += 5;
+                shopState.damage = Math.floor(shopState.damage * 1.5);
+                document.getElementById('cost-damage').innerText = shopState.damage;
+                sfx(1200, 0.1, 'sine');
+            }
         };
 
-        function moveSnake() {
-            if (isGameOver) return;
+        document.getElementById('btn-mine').onclick = () => {
+            if(pState.orbiting && pState.orbiting.ore > 0 && pState.cargo < 100) {
+                pState.orbiting.ore -= 10;
+                pState.cargo += 10;
+                sfx(200, 0.1, 'sawtooth');
+                updateOrbitUI();
+            }
+        };
 
-            direction = {...nextDirection};
-            const head = { x: snake[0].x + direction.x, z: snake[0].z + direction.z };
+        document.getElementById('btn-sell').onclick = () => {
+            if(pState.orbiting && pState.cargo > 0) {
+                pState.credits += pState.cargo * 10;
+                pState.cargo = 0;
+                sfx(1000, 0.2, 'sine');
+                updateOrbitUI();
+            }
+        };
 
-            // Wall collision
-            if (head.x < 0 || head.x >= GRID_SIZE || head.z < 0 || head.z >= GRID_SIZE) {
-                return gameOver();
+        document.getElementById('speed-up').onclick = () => { if(pState.speed < pState.maxSpeed) pState.speed++; updateSpeedUI(); };
+        document.getElementById('speed-down').onclick = () => { if(pState.speed > 0) pState.speed--; updateSpeedUI(); };
+        function updateSpeedUI() { document.getElementById('speed-val').innerText = 'SPD ' + pState.speed; sfx(600, 0.02, 'sine'); }
+
+        const weapons = ['PHASER', 'TORPEDO', 'NAV'];
+        let wpnIdx = 0;
+        document.getElementById('wpn-selector').onclick = () => {
+            wpnIdx = (wpnIdx + 1) % weapons.length;
+            pState.weapon = weapons[wpnIdx];
+            document.getElementById('wpn-label').innerText = pState.weapon;
+            sfx(800, 0.05);
+        };
+
+        // --- CONTROLS: Dual-Stick ---
+        const joyL = document.getElementById('joy-left');
+        const joyR = document.getElementById('joy-right');
+        const knobL = document.getElementById('knob-left');
+        const knobR = document.getElementById('knob-right');
+        let stickL = { active: false, id: -1, x: 0, y: 0 };
+        let stickR = { active: false, id: -1, x: 0, y: 0 };
+
+        // --- KEYBOARD ---
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.code] = true; });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+        function handlePointer(e, type) {
+            const rectL = joyL.getBoundingClientRect();
+            const rectR = joyR.getBoundingClientRect();
+
+            if (type === 'start') {
+                if (e.clientX >= rectL.left && e.clientX <= rectL.right && e.clientY >= rectL.top && e.clientY <= rectL.bottom) {
+                    stickL.active = true; stickL.id = e.pointerId;
+                } else if (e.clientX >= rectR.left && e.clientX <= rectR.right && e.clientY >= rectR.top && e.clientY <= rectR.bottom) {
+                    stickR.active = true; stickR.id = e.pointerId;
+                }
             }
 
-            // Self collision
-            if (snake.some(p => p.x === head.x && p.z === head.z)) {
-                return gameOver();
+            const joySize = window.innerWidth < 600 ? 50 : 60;
+            const joyRange = window.innerWidth < 600 ? 40 : 50;
+
+            if (stickL.active && e.pointerId === stickL.id) {
+                if (type === 'move') {
+                    const dx = e.clientX - (rectL.left + rectL.width/2);
+                    const dy = e.clientY - (rectL.top + rectL.height/2);
+                    const dist = Math.min(rectL.width/2, Math.sqrt(dx*dx + dy*dy));
+                    const angle = Math.atan2(dy, dx);
+                    stickL.x = (Math.cos(angle) * dist) / (rectL.width/2);
+                    stickL.y = (Math.sin(angle) * dist) / (rectL.width/2);
+                    knobL.style.transform = `translate(${stickL.x * (rectL.width/2 - 20)}px, ${stickL.y * (rectL.height/2 - 20)}px)`;
+                } else if (type === 'end') {
+                    stickL.active = false; stickL.x = 0; stickL.y = 0;
+                    knobL.style.transform = '';
+                }
             }
 
-            snake.unshift(head);
-
-            // Food collision
-            if (head.x === food.x && head.z === food.z) {
-                score++;
-                document.getElementById('ui').innerText = `Score: ${score}`;
-                spawnFood();
-                updateFoodMesh();
-                triggerHaptic(ImpactStyle.Light);
-            } else {
-                snake.pop();
+            if (stickR.active && e.pointerId === stickR.id) {
+                if (type === 'move') {
+                    const dx = e.clientX - (rectR.left + rectR.width/2);
+                    const dy = e.clientY - (rectR.top + rectR.height/2);
+                    const dist = Math.min(rectR.width/2, Math.sqrt(dx*dx + dy*dy));
+                    const angle = Math.atan2(dy, dx);
+                    stickR.x = (Math.cos(angle) * dist) / (rectR.width/2);
+                    stickR.y = (Math.sin(angle) * dist) / (rectR.width/2);
+                    knobR.style.transform = `translate(${stickR.x * (rectR.width/2 - 20)}px, ${stickR.y * (rectR.height/2 - 20)}px)`;
+                } else if (type === 'end') {
+                    stickR.active = false; stickR.x = 0; stickR.y = 0;
+                    knobR.style.transform = '';
+                }
             }
-
-            updateSnakeMeshes();
         }
 
-        // Input Handling
-        let touchStart = null;
-        let swipeProcessed = false;
-        window.addEventListener('touchstart', (e) => {
-            touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            swipeProcessed = false;
-        }, { passive: false });
+        window.addEventListener('pointerdown', e => handlePointer(e, 'start'));
+        window.addEventListener('pointermove', e => handlePointer(e, 'move'));
+        window.addEventListener('pointerup', e => handlePointer(e, 'end'));
+        window.addEventListener('pointercancel', e => handlePointer(e, 'end'));
 
-        window.addEventListener('touchmove', (e) => {
-            if (!touchStart) return;
-            e.preventDefault();
+        const projectiles = [];
+        let pCooldown = 0;
+        let rCooldown = 0;
+        const particles = [];
+        const partGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,0), new THREE.Vector3(-1,-1,0), new THREE.Vector3(1,-1,0)]);
+        const partMesh = new THREE.InstancedMesh(partGeom, new THREE.MeshBasicMaterial({ color: 0xffffff }), 1000);
+        scene.add(partMesh);
 
-            if (swipeProcessed) return;
-
-            const dx = e.touches[0].clientX - touchStart.x;
-            const dy = e.touches[0].clientY - touchStart.y;
-            const threshold = 20;
-
-            if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
-                if (!gameStarted) {
-                    gameStarted = true;
-                    swipeProcessed = true;
-                    return;
-                }
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    if (dx > 0 && direction.x === 0) nextDirection = { x: 1, z: 0 };
-                    else if (dx < 0 && direction.x === 0) nextDirection = { x: -1, z: 0 };
-                } else {
-                    if (dy > 0 && direction.z === 0) nextDirection = { x: 0, z: 1 };
-                    else if (dy < 0 && direction.z === 0) nextDirection = { x: 0, z: -1 };
-                }
-                swipeProcessed = true;
+        function explode(pos, color) {
+            for(let i=0; i<20; i++) {
+                particles.push({
+                    pos: pos.clone(),
+                    vel: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).multiplyScalar(5),
+                    life: 50,
+                    color: color
+                });
             }
-        }, { passive: false });
+            sfx(100, 0.2, 'sawtooth');
+        }
 
-        window.addEventListener('touchend', (e) => {
-            if (!gameStarted && touchStart && !swipeProcessed) {
-                gameStarted = true;
+        function fireWeapon(isPlayer = true) {
+            const ship = isPlayer ? playerShip : rivalShip;
+            const state = isPlayer ? pState : rState;
+            const mat = isPlayer ? projMatPlayer : projMatRival;
+
+            if(state.charge < 5) return;
+            state.charge -= 5;
+
+            const m = new THREE.Mesh(projGeom, mat);
+            m.position.copy(ship.position);
+            m.rotation.z = ship.rotation.z;
+            scene.add(m);
+
+            projectiles.push({
+                mesh: m,
+                owner: isPlayer ? 'player' : 'rival',
+                velocity: new THREE.Vector2(-Math.sin(m.rotation.z), Math.cos(m.rotation.z)).multiplyScalar(15),
+                life: 2.0 // 2 seconds
+            });
+            sfx(isPlayer ? 440 : 220, 0.05, 'square');
+
+            if(isPlayer) pState.vel.add(new THREE.Vector2(Math.sin(m.rotation.z), -Math.cos(m.rotation.z)).multiplyScalar(0.5));
+        }
+
+        function addComm(msg) {
+            const log = document.getElementById('comm-log');
+            const p = document.createElement('p');
+            p.innerText = `> ${msg}`;
+            log.prepend(p);
+        }
+
+        // --- RED ALERT ---
+        let redAlert = 0;
+        function triggerRedAlert() {
+            if(redAlert <= 0) sfx(100, 0.5, 'sawtooth');
+            redAlert = 600; // 10 seconds
+        }
+
+        // --- MISSION LOGIC ---
+        let missionTime = 300; // 5 minutes
+        setInterval(() => {
+            if(missionTime > 0) missionTime--;
+            else checkGameOver('TIME EXPIRED');
+        }, 1000);
+
+        function checkGameOver(reason) {
+            const debrief = document.getElementById('mission-debrief');
+            const status = document.getElementById('debrief-status');
+            const msg = document.getElementById('debrief-msg');
+            debrief.style.display = 'block';
+
+            if (pState.pop >= 10000000) {
+                status.innerText = "VICTORY";
+                msg.innerText = "The Galaxy has been United under your Path. Population: 10M+";
+            } else if (pState.hp <= 0) {
+                status.innerText = "DEFEATED";
+                msg.innerText = "Your ship was destroyed. The Path has failed.";
+            } else {
+                status.innerText = "MISSION END";
+                msg.innerText = `Reason: ${reason}. Final Population: ${Math.floor(pState.pop)}`;
             }
-            touchStart = null;
-        });
+        }
 
-        window.addEventListener('keydown', (e) => {
-            if (!gameStarted) {
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-                    gameStarted = true;
-                    return;
-                }
+        // --- LOOP ---
+        function update() {
+            if (pState.hp <= 0 || pState.pop >= 10000000) return;
+            requestAnimationFrame(update);
+
+            const dt = clock.getDelta();
+            const fpsScale = dt * 60; // Normalize to 60fps
+
+            // Red Alert Logic
+            if(redAlert > 0) {
+                redAlert -= fpsScale;
+                camera.zoom = Math.max(0.5, camera.zoom - 0.01 * fpsScale);
+                document.getElementById('crt-overlay').style.background = `rgba(255, 0, 0, ${Math.sin(Date.now()*0.01)*0.05 + 0.05})`;
+            } else {
+                camera.zoom = Math.min(1, camera.zoom + 0.01 * fpsScale);
+                document.getElementById('crt-overlay').style.background = '';
             }
-
-            if (e.key === 'ArrowUp' && direction.z === 0) nextDirection = { x: 0, z: -1 };
-            if (e.key === 'ArrowDown' && direction.z === 0) nextDirection = { x: 0, z: 1 };
-            if (e.key === 'ArrowLeft' && direction.x === 0) nextDirection = { x: -1, z: 0 };
-            if (e.key === 'ArrowRight' && direction.x === 0) nextDirection = { x: 1, z: 0 };
-        });
-
-        window.addEventListener('resize', () => {
-            const aspect = window.innerWidth / window.innerHeight;
-            // Adjust camera to fit the grid based on the narrower dimension
-            let d = CAMERA_D;
-            if (aspect < 1) {
-                // In portrait, we need to zoom out more to fit the width
-                d = CAMERA_D / aspect;
-            }
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
 
-        // Game Loop
-        function animate(time) {
-            requestAnimationFrame(animate);
+            // Snappy Rotation
+            let diff = pState.targetRot - pState.rot;
+            while(diff < -Math.PI) diff += Math.PI * 2;
+            while(diff > Math.PI) diff -= Math.PI * 2;
+            pState.rot += diff * 0.1 * fpsScale;
+            playerShip.rotation.z = pState.rot;
 
-            if (gameStarted && !isGameOver && time - lastMoveTime > MOVE_SPEED) {
-                moveSnake();
-                lastMoveTime = time;
+            // Input Logic: Dual-Stick + Keyboard
+            if (pCooldown > 0) pCooldown -= dt;
+
+            // Rotation
+            if (keys['KeyA']) pState.targetRot += 0.05 * fpsScale;
+            if (keys['KeyD']) pState.targetRot -= 0.05 * fpsScale;
+
+            if (stickL.active) {
+                const deadzone = 0.1;
+                if (Math.abs(stickL.x) > deadzone || Math.abs(stickL.y) > deadzone) {
+                    pState.targetRot = Math.atan2(-stickL.x, -stickL.y);
+                }
             }
+
+            // Thrust
+            let thrustMag = 0;
+            if (keys['KeyW']) thrustMag = 1;
+            if (stickL.active) {
+                const mag = Math.sqrt(stickL.x*stickL.x + stickL.y*stickL.y);
+                if (mag > 0.1) thrustMag = Math.max(thrustMag, mag);
+            }
+
+            if (thrustMag > 0) {
+                const thrust = new THREE.Vector2(-Math.sin(pState.rot), Math.cos(pState.rot)).multiplyScalar(thrustMag * pState.thrustPower * fpsScale);
+                pState.vel.add(thrust);
+            }
+
+            // Firing
+            if ((keys['Space'] || stickR.active) && pCooldown <= 0) {
+                if (!stickR.active || (Math.abs(stickR.x) > 0.5 || Math.abs(stickR.y) > 0.5)) {
+                    fireWeapon(true);
+                    pCooldown = 0.16; // ~10 frames at 60fps
+                }
+            }
+
+            // Movement
+            pState.vel.multiplyScalar(Math.pow(0.98, fpsScale));
+            playerShip.position.x += pState.vel.x * fpsScale;
+            playerShip.position.y += pState.vel.y * fpsScale;
+
+            // Camera follow
+            camera.position.x = playerShip.position.x;
+            camera.position.y = playerShip.position.y;
+
+            // Projectiles & Collision
+            for(let i=projectiles.length-1; i>=0; i--) {
+                const pr = projectiles[i];
+                pr.mesh.position.x += pr.velocity.x * fpsScale;
+                pr.mesh.position.y += pr.velocity.y * fpsScale;
+                pr.life -= dt;
+
+                // Collision with Rival
+                if (pr.owner === 'player' && pr.mesh.position.distanceTo(rivalShip.position) < 20 && rState.hp > 0) {
+                    if(rState.shields[0] > 0) rState.shields[0] -= pState.dmgPower;
+                    else rState.hp -= pState.dmgPower;
+                    rivalShip.material.color.set(0xffffff);
+                    setTimeout(() => rivalShip.material.color.set(0xff0000), 50);
+                    pr.life = 0;
+                    if(rState.hp <= 0) explode(rivalShip.position, 0xff0000);
+                }
+
+                // Collision with Player
+                if (pr.owner === 'rival' && pr.mesh.position.distanceTo(playerShip.position) < 20 && pState.hp > 0) {
+                    if(pState.shields[0] > 0) pState.shields[0] -= 10;
+                    else pState.hp -= 10;
+                    playerShip.material.color.set(0xffffff);
+                    setTimeout(() => playerShip.material.color.set(0x00ffff), 50);
+                    triggerRedAlert();
+                    pr.life = 0;
+                    if(pState.hp <= 0) explode(playerShip.position, 0x00ffff);
+                }
+
+                // Collision with Drones
+                for(let j=0; j<maxDrones; j++) {
+                    const d = droneData[j];
+                    if(d.active && pr.mesh.position.distanceTo(d.pos) < 15) {
+                        d.active = false;
+                        explode(d.pos, 0xffff00);
+                        pr.life = 0;
+                        break;
+                    }
+                }
+
+                if(pr.life <= 0) {
+                    scene.remove(pr.mesh);
+                    // Geometry and Material are now shared and reused
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for(let i=0; i<1000; i++) {
+                if (i < particles.length) {
+                    const p = particles[i];
+                    p.pos.add(p.vel.clone().multiplyScalar(fpsScale));
+                    p.life -= fpsScale;
+
+                    dummy.position.copy(p.pos);
+                    dummy.scale.setScalar(p.life/50);
+                    dummy.updateMatrix();
+                    partMesh.setMatrixAt(i, dummy.matrix);
+                } else {
+                    dummy.position.set(0, 0, -5000);
+                    dummy.updateMatrix();
+                    partMesh.setMatrixAt(i, dummy.matrix);
+                }
+            }
+            for(let i=particles.length-1; i>=0; i--) {
+                if(particles[i].life <= 0) particles.splice(i, 1);
+            }
+            partMesh.instanceMatrix.needsUpdate = true;
+
+            // Charge Recharge
+            if(pState.speed === 0) pState.charge = Math.min(100, pState.charge + 0.2 * fpsScale);
+            else pState.charge = Math.min(100, pState.charge + 0.05 * fpsScale);
+
+            // Update Rival AI
+            if (rCooldown > 0) rCooldown -= dt;
+            if (rState.hp > 0) {
+                // Firing logic
+                if (rCooldown <= 0 && rivalShip.position.distanceTo(playerShip.position) < 400) {
+                    rState.rot = Math.atan2(-(playerShip.position.x - rivalShip.position.x), playerShip.position.y - rivalShip.position.y);
+                    rivalShip.rotation.z = rState.rot;
+                    fireWeapon(false);
+                    rCooldown = 0.33; // ~20 frames
+                }
+
+                if (rState.state === 'SEARCH' || !rState.targetPlanet) {
+                    // Find closest non-rival planet
+                    let minDist = Infinity;
+                    planets.forEach(p => {
+                        if (p.owner !== 'rival') {
+                            const d = rivalShip.position.distanceTo(p.group.position);
+                            if (d < minDist) {
+                                minDist = d;
+                                rState.targetPlanet = p;
+                            }
+                        }
+                    });
+                    if (rState.targetPlanet) rState.state = 'CONVERT';
+                }
+
+                if (rState.targetPlanet) {
+                    const dToP = rivalShip.position.distanceTo(rState.targetPlanet.group.position);
+                    const targetAngle = Math.atan2(-(rState.targetPlanet.group.position.x - rivalShip.position.x), rState.targetPlanet.group.position.y - rivalShip.position.y);
+
+                    let rDiff = targetAngle - rState.rot;
+                    while(rDiff < -Math.PI) rDiff += Math.PI * 2;
+                    while(rDiff > Math.PI) rDiff -= Math.PI * 2;
+                    rState.rot += rDiff * 0.05 * fpsScale;
+                    rivalShip.rotation.z = rState.rot;
+
+                    if (dToP > rState.targetPlanet.r + 100) {
+                        const rThrust = new THREE.Vector2(-Math.sin(rState.rot), Math.cos(rState.rot)).multiplyScalar(0.2 * fpsScale);
+                        rState.vel.add(rThrust);
+                    } else {
+                        // Orbiting / Capturing
+                        rState.vel.multiplyScalar(Math.pow(0.95, fpsScale));
+                        if (rState.targetPlanet.owner !== 'rival') {
+                            rState.targetPlanet.loyalty -= 0.15 * fpsScale; // Rival captures faster
+                            if (rState.targetPlanet.loyalty <= -100) {
+                                rState.targetPlanet.loyalty = -100;
+                                rState.targetPlanet.owner = 'rival';
+                                rState.targetPlanet.mesh.material.color.set(0x440000);
+                                addComm(`WARNING: ${rState.targetPlanet.name} has fallen to the Rival Path!`);
+                                rState.state = 'SEARCH';
+                            }
+                        } else {
+                            rState.state = 'SEARCH';
+                        }
+                    }
+                }
+                rState.vel.multiplyScalar(Math.pow(0.98, fpsScale));
+                rivalShip.position.x += rState.vel.x * fpsScale;
+                rivalShip.position.y += rState.vel.y * fpsScale;
+            }
+
+            // Economy: Total Population & Tax
+            let totalPop = 0;
+            planets.forEach(p => { if(p.owner === 'player') totalPop += p.pop; });
+            pState.pop = totalPop;
+            pState.credits += totalPop * 0.00001 * fpsScale; // Tax
+
+            // Update Planets
+            planets.forEach(p => {
+                p.update();
+                const dist = playerShip.position.distanceTo(p.group.position);
+                const rivalDist = rivalShip.position.distanceTo(p.group.position);
+
+                if(dist < p.r + 150) {
+                    // Capture logic
+                    if(p.owner !== 'player') {
+                        p.loyalty += 0.1 * fpsScale;
+                        if(p.loyalty >= 100) {
+                            p.loyalty = 100;
+                            p.owner = 'player';
+                            p.mesh.material.color.set(0x004400);
+                            addComm(`Planet ${p.name} aligned with your Path!`);
+                        }
+                    }
+                }
+
+                if(dist < p.r + 50) {
+                    if(pState.orbiting !== p) {
+                        pState.orbiting = p;
+                        addComm(`Entering orbit around ${p.name}`);
+                        updateOrbitUI();
+                    }
+                    pState.vel.multiplyScalar(Math.pow(0.9, fpsScale));
+                }
+            });
+
+            function updateOrbitUI() {
+                const p = pState.orbiting;
+                if(!p) return;
+                document.getElementById('planet-name').innerText = p.name;
+                document.getElementById('planet-owner').innerText = `Path: ${p.owner.toUpperCase()}`;
+                document.getElementById('planet-stats-display').style.display = 'block';
+                document.getElementById('stat-ore').innerText = Math.floor(p.ore);
+                document.getElementById('stat-pop').innerText = Math.floor(p.pop);
+                document.getElementById('fill-cargo').style.width = pState.cargo + '%';
+            }
+
+            // Update Shield Visuals
+            playerShieldMesh.visible = pState.shields[0] > 0;
+            rivalShieldMesh.visible = rState.shields[0] > 0;
+            if(playerShieldMesh.visible) playerShieldMesh.material.opacity = pState.shields[0]/100 * 0.3;
+            if(rivalShieldMesh.visible) rivalShieldMesh.material.opacity = rState.shields[0]/100 * 0.3;
+
+            // Update UI
+            document.getElementById('fill-energy').style.width = Math.max(0, pState.hp) + '%';
+            document.getElementById('fill-charge').style.width = Math.max(0, pState.charge) + '%';
+            document.getElementById('fill-shield').style.width = Math.max(0, pState.shields[0]) + '%';
+
+            const galaxyCr = document.getElementById('galaxy-credits');
+            if(galaxyCr) galaxyCr.innerText = Math.floor(pState.credits);
+            const galaxyPop = document.getElementById('galaxy-pop');
+            if(galaxyPop) galaxyPop.innerText = Math.floor(pState.pop);
+
+            // Update Drones
+            for (let i = 0; i < maxDrones; i++) {
+                const d = droneData[i];
+                if (!d.active) {
+                    dummy.position.set(0, 0, -5000);
+                    dummy.updateMatrix();
+                    droneMesh.setMatrixAt(i, dummy.matrix);
+                    continue;
+                }
+
+                if (d.parent) {
+                    if (d.state === 'ORBIT') {
+                        const dist = d.pos.distanceTo(d.parent.group.position);
+                        const angle = Math.atan2(d.pos.y - d.parent.group.position.y, d.pos.x - d.parent.group.position.x);
+                        const orbitRadius = d.parent.r + 30;
+
+                        d.pos.x = d.parent.group.position.x + Math.cos(angle + 0.02 * fpsScale) * orbitRadius;
+                        d.pos.y = d.parent.group.position.y + Math.sin(angle + 0.02 * fpsScale) * orbitRadius;
+                        d.rot = angle + Math.PI/2;
+
+                        // Check for intruders
+                        const pDist = d.pos.distanceTo(playerShip.position);
+                        const rDist = d.pos.distanceTo(rivalShip.position);
+                        if (d.parent.owner === 'player' && rDist < 300) d.state = 'PURSUE';
+                        if (d.parent.owner === 'rival' && pDist < 300) d.state = 'PURSUE';
+                    } else if (d.state === 'PURSUE') {
+                        const target = d.parent.owner === 'player' ? rivalShip : playerShip;
+                        const targetState = d.parent.owner === 'player' ? rState : pState;
+
+                        const angle = Math.atan2(target.position.y - d.pos.y, target.position.x - d.pos.x);
+                        d.pos.x += Math.cos(angle) * 3 * fpsScale;
+                        d.pos.y += Math.sin(angle) * 3 * fpsScale;
+                        d.rot = angle + Math.PI/2;
+
+                        // Collision with target
+                        if (d.pos.distanceTo(target.position) < 20) {
+                            targetState.hp -= 0.5 * fpsScale;
+                            if (target === playerShip) triggerRedAlert();
+                            d.active = false;
+                            explode(d.pos, 0xffff00);
+                        }
+
+                        if (d.pos.distanceTo(d.parent.group.position) > 600) d.state = 'ORBIT';
+                    }
+                }
+
+                dummy.position.copy(d.pos);
+                dummy.rotation.z = d.rot;
+                dummy.updateMatrix();
+                droneMesh.setMatrixAt(i, dummy.matrix);
+            }
+            droneMesh.instanceMatrix.needsUpdate = true;
+
+            if(pState.pop >= 10000000) checkGameOver('POPULATION GOAL MET');
+            if(pState.hp <= 0) checkGameOver('SHIP DESTROYED');
 
             renderer.render(scene, camera);
         }
 
-        resetGame();
-        requestAnimationFrame(animate);
+        update();
+
+        window.addEventListener('resize', () => {
+            const sidebarW = getSidebarW();
+            const a = (window.innerWidth - sidebarW) / window.innerHeight;
+            const b = getCameraBounds(a);
+            camera.left = b.l; camera.right = b.r; camera.top = b.t; camera.bottom = b.b;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - sidebarW, window.innerHeight);
+        });
+
     </script>
 </body>
 </html>

@@ -1,29 +1,32 @@
-# VibeSnake 2.5D Development Guide
+# Warpath Classic Development Guide
 
-This document provides guidance for AI agents and developers working on this codebase.
+This document provides guidance for AI agents and developers working on the Warpath Classic rebirth.
 
 ## 🏗 Project Architecture
-- **Vanilla JS + Three.js:** The game uses Three.js for rendering and vanilla JavaScript for game logic.
-- **2.5D View:** Uses an `OrthographicCamera` positioned at `(30, 30, 30)` to achieve an isometric look.
-- **Capacitor Integration:** Uses `@capacitor/haptics` for mobile feedback. Always provide a fallback for browser environments.
+- **Three.js (WebGL):** Handles the "Space Combat" layer using an `OrthographicCamera` for a flat 2D aesthetic.
+- **HTML/CSS (98.css):** Handles the "Command" layer (HUD, menus, stats) as an overlay to mimic Windows 95.
+- **Galaxy State:** A central object managing planets, ships, and global economy.
 
-## 🐍 Snake Logic
-- **Grid Coordinates:** The game logic operates on a 2D grid (`x`, `z`). Rendering converts these to 3D space (`x - GRID_SIZE/2 + 0.5`, `0.5`, `z - GRID_SIZE/2 + 0.5`).
-- **Input Handling:** To prevent self-collision via rapid input, always validate `nextDirection` against the current `direction`. Only the last valid input per tick is processed.
-- **Food Spawning:** Always use the `emptySlots` method to spawn food to avoid infinite recursion when the grid is full.
+## 🚀 Physics & Movement
+- **Inertial Flight:** Ships use velocity and a friction coefficient (0.98) to simulate "space drag."
+- **Coordinate System:** All movement is on the XY plane. Z is used for layer ordering (background at -1, game at 0, effects at 1+).
+- **Collisions:** Simple distance-squared checks are used for performance instead of a heavy physics engine.
 
-## 🚫 Anti-Patterns to Avoid
-1.  **Direct DOM for Game Objects:** Never use DOM elements for snake segments or food. Use Three.js meshes.
-2.  **`setInterval` for Game Loop:** Use `requestAnimationFrame` with a time-delta check for consistent movement speed across different refresh rates.
-3.  **Recursive Spawning:** Avoid simple `Math.random` recursion for food spawning; it's unreliable as the snake grows.
-4.  **Excessive Object Creation:** While the current implementation recreates snake meshes for simplicity, in larger games, reuse `Geometry` and `Material` instances.
-5.  **Hardcoded Initial State:** When resetting, ensure all state variables (including `gameStarted`, `isGameOver`, and `lastMoveTime`) are correctly reset to their initial values.
+## 🛡 Combat & Systems
+- **Drone Swarms:** Managed via `THREE.InstancedMesh` for high-performance rendering of 1,000+ units.
+- **Weapon Energy (Charge):** Depletes on fire and recharges over time.
+- **Shields:** Protect the ship but require manual repair/purchase at Starbases (Planets) in the current implementation.
 
 ## 📱 Mobile Considerations
-- **Touch Events:** Use `passive: false` and `preventDefault()` on `touchmove` to prevent browser scrolling during gameplay.
-- **Haptics:** Wrap haptic calls in `try/catch` blocks to ensure the game remains playable in environments where the Capacitor plugin is missing or fails.
-- **UI Scaling:** Ensure the `OrthographicCamera` frustum is updated on window resize to maintain the correct "vibe" across different screen sizes.
+- **Dual-Stick Controls:** Virtual joysticks for Navigation (left) and Firing (right).
+- **Responsive Layout:** CSS media queries handle small screens by scaling HUD meters (0.8x) and shrinking joysticks (90px) to prevent overlap with the ticker.
+- **Multi-touch:** Uses `pointerId` to track separate fingers for movement and shooting.
 
 ## 🛠 Development Commands
 - `npx serve .`: Start a local development server.
-- `npm run build`: Placeholder for web asset optimization.
+- `python3 verify_mobile_v2.py`: Run Playwright verification for mobile layouts.
+
+## 🚫 Anti-Patterns to Avoid
+1. **Depth Buffer Issues:** When adding new visual effects, ensure their Z-position doesn't cause flickering or hide the UI.
+2. **Direct State Mutation in Render:** Keep game logic (velocity updates, loyalty shifts) separate from Three.js render calls where possible.
+3. **Ignoring Mobile Offsets:** The 50px left sidebar is constant; ensure game centering logic accounts for this offset on mobile.
